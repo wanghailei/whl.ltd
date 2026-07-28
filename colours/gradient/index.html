@@ -84,7 +84,9 @@
 	--line-strong:rgba(255,255,255,.34);
 }
 *{box-sizing:border-box; border-radius:0 !important}
-html,body{height:100%; margin:0; background:#0B0B0B}
+/* No Safari rubber-band bounce at any scroll end — here and on every inner
+	 scroller (#stage, #toolbar, #pGrid). */
+html,body{height:100%; margin:0; background:#0B0B0B; overscroll-behavior:none}
 body{min-width:var(--base-min-width); overflow-x:auto; overflow-y:hidden}
 body{font-family:var(--font-mono); font-size:var(--base-font-size); line-height:var(--base-line-height); color:#fff; -webkit-font-smoothing:antialiased}
 /* Controls inherit their panel's ink — each toolbar section flips black or
@@ -102,6 +104,7 @@ button,input,select{font-family:inherit; font-size:inherit; color:inherit}
 	 A panorama therefore runs off the sides and the stage scrolls sideways;
 	 anything narrower simply sits centred. */
 #stage{position:fixed; inset:0; min-width:var(--base-min-width); overflow-x:auto; overflow-y:hidden;
+	overscroll-behavior:none;
 	display:flex; align-items:stretch; justify-content:flex-start}
 #canvas{flex:0 0 auto; height:100%; margin:0 auto}
 #canvas{overflow:hidden}
@@ -168,7 +171,7 @@ button,input,select{font-family:inherit; font-size:inherit; color:inherit}
 
 /* The bar is the right-hand grid cell. Too much content scrolls inside it;
 	 the cell itself never grows past the viewport. */
-#toolbar{overflow-y:auto; overflow-x:hidden}
+#toolbar{overflow-y:auto; overflow-x:hidden; overscroll-behavior:none}
 
 /* ── Toolbar ── */
 /* The bar lives along the right edge and stays there. Everything floats on
@@ -272,7 +275,7 @@ button:disabled{opacity:.35; cursor:default}
 /* One hue family per row, dark to light, tiles butted — the shelf reads as
 	 woven colour cloth. Ungrouped sets flow and wrap instead. Tall shelves
 	 scroll inside the popover; the popover width follows the longest row. */
-#pGrid{margin-top:6px; max-height:52vh; overflow:auto}
+#pGrid{margin-top:6px; max-height:52vh; overflow:auto; overscroll-behavior:none}
 #pGrid .pRow{display:flex}
 #pGrid.flow .pRow{flex-wrap:wrap; max-width:288px}
 #pGrid button{width:16px; height:16px; padding:0; border:0; display:block; cursor:pointer; flex:0 0 auto}
@@ -660,7 +663,7 @@ const state = {
 	 (init writes the title — it cannot live here, the regress harness pulls
 	 this section into Node where there is no document). major.minor.patch —
 	 major bumps on Hailei's instruction; minor and patch on judgement. */
-const VERSION = "0.54.4"
+const VERSION = "0.54.5"
 const element = function( id ){ return document.getElementById( id ) }
 
 /* The output is a pixel width and a proportion; the height follows. Nothing

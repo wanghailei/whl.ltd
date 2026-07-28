@@ -32,6 +32,9 @@
 	font-display:swap;
 }
 *{margin:0; padding:0; box-sizing:border-box; border-radius:0}
+/* No Safari rubber-band bounce at scroll ends — Hailei's call for every WHL
+	 page (2026-07-28). On the root so the viewport scroller obeys. */
+html,body{overscroll-behavior:none}
 /* Set like a terminal: one font, one size, hierarchy from whitespace and ink
 	 strength alone. No lines, no shadows, no second size. */
 body{

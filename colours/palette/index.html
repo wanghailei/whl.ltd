@@ -60,6 +60,8 @@
 				html,
 				body {
 					height: 100%;
+					/* No Safari rubber-band bounce at scroll ends. */
+					overscroll-behavior: none;
 				}
 				body {
 					font-family: var(--base-font);
@@ -202,6 +204,7 @@
 					display: grid;
 					min-height: 0;
 					overflow: auto;
+					overscroll-behavior: none;
 				}
 
 				.cell {
@@ -409,7 +412,7 @@
 			// ----------------------------------------------------------------
 			// State — no main colour: the whole swatch is the starting point
 			// ----------------------------------------------------------------
-			const version = "0.49.3"
+			const version = "0.49.4"
 			const storageKey = "whl-colour-palette-v3"
 			const settings = { hueStart: 25, chroma: 0.2, hueCount: 12, lightnessCount: 20 }
 			try {
