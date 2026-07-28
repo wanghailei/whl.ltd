@@ -115,7 +115,10 @@ button,input,select{font-family:inherit; font-size:inherit; color:inherit}
 	 pointer events, so clicks fall through to the canvas; its children take
 	 them back, which is also what makes their text selectable. */
 #fg{position:fixed; inset:0; min-width:var(--base-min-width); z-index:10; display:grid;
-	grid-template-columns:var(--panel-width-wide) 1fr var(--panel-width);
+	/* The third column must hold the bar AND its right page-margin compensation:
+		 at exactly --panel-width, the fixed-width panels overflow the toolbar's
+		 padding and end flush with the window edge — measured live at 3px. */
+	grid-template-columns:var(--panel-width-wide) 1fr calc(var(--panel-width) + var(--page-margin) - var(--base-edge-gap) - 10px);
 	grid-template-rows:auto 1fr auto;
 	gap:var(--base-edge-gap); padding:var(--base-edge-gap);
 	padding-bottom:calc(var(--base-edge-gap) + env(safe-area-inset-bottom));
@@ -638,7 +641,7 @@ const state = {
 	 (init writes the title — it cannot live here, the regress harness pulls
 	 this section into Node where there is no document). major.minor.patch —
 	 major bumps on Hailei's instruction; minor and patch on judgement. */
-const VERSION = "0.52.1"
+const VERSION = "0.52.2"
 const element = function( id ){ return document.getElementById( id ) }
 
 /* The output is a pixel width and a proportion; the height follows. Nothing
