@@ -125,17 +125,26 @@ button,input,select{font-family:inherit; font-size:inherit; color:inherit}
 	padding-bottom:calc(var(--base-edge-gap) + env(safe-area-inset-bottom));
 	pointer-events:none}
 #fg > *{pointer-events:auto}
-#hud{grid-column:1; grid-row:1; margin:calc(var(--page-margin) - var(--base-edge-gap)); padding:0;
+#lead{grid-column:1; grid-row:1; margin:calc(var(--page-margin) - var(--base-edge-gap)); padding:0;
 	background:none; border:0;
 	font-size:var(--base-font-size); line-height:var(--base-line-height); white-space:pre;
 	-webkit-user-select:text; user-select:text}
-/* Only the title carries weight. ::first-line keeps the readout a single
-	 text buffer — splitting it into two elements would break the blank line
-	 that holds the title apart from the parameters. */
-#hud::first-line{font-weight:500}
-#foot{grid-column:1; grid-row:3; align-self:end; margin:calc(var(--page-margin) - var(--base-edge-gap));
+/* The site title is its own line and its own element; the parameters are
+	 their own block beneath, held apart by one blank line of margin
+	 (Hailei, 2026-07-28 — the single-buffer readout retired). On a phone
+	 the title stays pinned to the top of the screen. */
+#title{font-weight:500; margin-bottom:calc(var(--base-line-height) * var(--base-font-size))}
+@media (max-width:760px){
+	#title{position:fixed; top:0; left:0; right:0; z-index:30; padding:15px}
+}
+/* The bottom lines span past the readout column so the terms line never
+	 folds on a desk (Hailei's rule); the licence sheet keeps its measure. */
+#foot{grid-column:1 / 3; grid-row:3; align-self:end; margin:calc(var(--page-margin) - var(--base-edge-gap));
 	font-size:var(--base-font-size); line-height:var(--base-line-height);
 	-webkit-user-select:text; user-select:text}
+@media (min-width:960px){
+	#terms{white-space:nowrap}
+}
 /* One line of terms above the copyright line; pressing it unfolds the full
 	 licence above, pressing again folds it away. The unfolded text is bare on
 	 the render like everything else — no ground — one flesh with the terms
@@ -317,11 +326,11 @@ input[type=range]::-moz-range-thumb{width:3px; height:13px; background:currentCo
 </div>
 
 <div id="fg">
-<div id="hud"></div>
+<div id="lead"><div id="title"></div><div id="hud"></div></div>
 <button id="lang" title="Toolbar language" aria-label="Toolbar language"><span id="langEn" class="on">EN</span><span> / </span><span id="langCn">CN</span></button>
 <div id="foot">
-<div id="licence" class="hidden" data-cn-html='© 2026 Wanted Hacker Limited。個人與非商業使用免費，無任何限制。<br><br>以本工具產出的圖像作商業使用，須一次性支付每圖 US$1 的授權費，經 <a href="https://paypal.me/wanghailei" target="_blank" rel="noopener">paypal.me/wanghailei</a> 支付；付訖後該圖像即可無限制商用——任何媒介、任何期限、毋須署名。你的 PayPal 收據即授權憑證。<br><br>源碼可見但版權保留：未經書面許可，不得複製、修改、再散佈或另行架設。<br><br>聯絡：<a href="mailto:wanghailei@gmail.com">wanghailei@gmail.com</a>'>© 2026 Wanted Hacker Limited. Personal and non-commercial use is free, without limitation.<br><br>Commercial use of an image produced with this tool requires a one-time licence fee of US$1 per image, paid via <a href="https://paypal.me/wanghailei" target="_blank" rel="noopener">paypal.me/wanghailei</a>. Once paid, that image may be used commercially without limit — any medium, any duration, no attribution required. Your PayPal receipt is your proof of licence.<br><br>The source is visible but remains copyrighted: do not copy, modify, redistribute or rehost it without written permission.<br><br>Contact: <a href="mailto:wanghailei@gmail.com">wanghailei@gmail.com</a></div>
-<div id="terms" data-cn-html='$ 個人使用免費 · 商業使用每圖 US$1，經 <a href="https://paypal.me/wanghailei" target="_blank" rel="noopener">paypal.me/wanghailei</a> 支付'>$ Free for personal use · Commercial use US$1 per image, paid via <a href="https://paypal.me/wanghailei" target="_blank" rel="noopener">paypal.me/wanghailei</a></div>
+<div id="licence" class="hidden" data-cn-html='© 2026 Wanted Hacker Limited。個人與非商業使用免費，無任何限制。<br><br>以本工具產出的圖像作商業使用，須一次性支付每圖 US$1 的授權費，經 <a href="https://paypal.me/wanghailei/1USD" target="_blank" rel="noopener">paypal.me/wanghailei</a> 支付；付訖後該圖像即可無限制商用——任何媒介、任何期限、毋須署名。你的 PayPal 收據即授權憑證。<br><br>源碼可見但版權保留：未經書面許可，不得複製、修改、再散佈或另行架設。<br><br>聯絡：<a href="mailto:wanghailei@gmail.com">wanghailei@gmail.com</a>'>© 2026 Wanted Hacker Limited. Personal and non-commercial use is free, without limitation.<br><br>Commercial use of an image produced with this tool requires a one-time licence fee of US$1 per image, paid via <a href="https://paypal.me/wanghailei/1USD" target="_blank" rel="noopener">paypal.me/wanghailei</a>. Once paid, that image may be used commercially without limit — any medium, any duration, no attribution required. Your PayPal receipt is your proof of licence.<br><br>The source is visible but remains copyrighted: do not copy, modify, redistribute or rehost it without written permission.<br><br>Contact: <a href="mailto:wanghailei@gmail.com">wanghailei@gmail.com</a></div>
+<div id="terms" data-cn-html='$ 個人使用免費 · 商業使用每圖 US$1，經 <a href="https://paypal.me/wanghailei/1USD" target="_blank" rel="noopener">paypal.me/wanghailei</a> 支付'>$ Free for personal use · Commercial use US$1 per image, paid via <a href="https://paypal.me/wanghailei/1USD" target="_blank" rel="noopener">paypal.me/wanghailei</a></div>
 <div id="copy">© 2026 Wanted Hacker Limited · <a href="https://whl.ltd" target="_blank" rel="noopener">whl.ltd</a></div>
 </div>
 
@@ -642,7 +651,7 @@ const state = {
 	 (init writes the title — it cannot live here, the regress harness pulls
 	 this section into Node where there is no document). major.minor.patch —
 	 major bumps on Hailei's instruction; minor and patch on judgement. */
-const VERSION = "0.52.3"
+const VERSION = "0.53.0"
 const element = function( id ){ return document.getElementById( id ) }
 
 /* The output is a pixel width and a proportion; the height follows. Nothing
@@ -1274,6 +1283,7 @@ function colourAtPoint( x, y, W, H ){
 const inkDark = { hud:false, copy:false }   /* remembered per element, so the flip
 																							has a dead band and cannot flicker */
 function tuneHud(){
+	tuneInk( element( "title" ), "title" )
 	tuneInk( element( "hud" ), "hud" )
 	tuneInk( element( "copy" ), "copy" )
 	tuneInk( element( "terms" ), "terms" )
@@ -1325,7 +1335,7 @@ function draw(){
 	element( "canvas" ).style.width = Math.max( 1, Math.round( stage.clientHeight * state.aspect ) ) + "px"
 	const dimensions = renderDims()
 	element( "canvas" ).innerHTML = buildSvg( "screen", dimensions.w, dimensions.h )
-	element( "hud" ).textContent = "WHL COLOURS GRADIENT " + VERSION + "\n\n" + hudLines().join( "\n" )
+	element( "hud" ).textContent = hudLines().join( "\n" )
 	tuneHud()
 }
 function renderSwatches(){
@@ -1749,6 +1759,7 @@ function syncSize(){
 
 function init(){
 	document.title = "WHL Colours Gradient " + VERSION
+	element( "title" ).textContent = "WHL COLOURS GRADIENT " + VERSION
 	/* the toggle sits five characters after the version on the title line */
 	element( "lang" ).style.marginLeft = "calc(var(--page-margin) - var(--base-edge-gap) + " + ( "WHL COLOURS GRADIENT ".length + VERSION.length + 5 ) + "ch)"
 	element( "lang" ).addEventListener( "click", function(){ lang = lang === "en" ? "cn" : "en"; applyLang() } )
