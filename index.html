@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<!--
+	whl.ltd — the front door of Wanted Hacker Limited.
+
+	One page, no build step, no dependencies. The tools it points to are
+	self-contained files in this same repository, served as they are.
+-->
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WHL — Wanted Hacker Limited</title>
+<style>
+/* The typeface is the licensed Berkeley Mono web font, served from beside the
+	 Gradient tool so the file exists once in the repository. Machines with the
+	 desktop family installed resolve it locally; everyone else falls through
+	 the stack gracefully. */
+@font-face{
+	font-family:"Berkeley Mono Web";
+	src:url(colours/gradient/berkeley.woff2) format("woff2");
+	font-display:swap;
+}
+*{margin:0; padding:0; box-sizing:border-box; border-radius:0}
+/* The page is set like a terminal: one font, one size, hierarchy from
+	 whitespace and ink strength alone. No lines, no shadows, no second size. */
+body{
+	font-family:"Berkeley Mono Variable","Berkeley Mono","Berkeley Mono Web","IBM Plex Mono",ui-monospace,monospace;
+	font-size:0.75rem; line-height:1.5;
+	color:#111; background:#fff;
+	padding:57px 60px;
+	min-height:100vh;
+	display:flex; flex-direction:column;
+}
+h1{font-size:inherit; font-weight:500}
+main{flex:1}
+a{color:inherit; text-decoration:none}
+a:hover{text-decoration:underline}
+.quiet{color:#999}
+section{margin-top:54px}
+section p{max-width:60ch}
+footer{margin-top:54px}
+</style>
+</head>
+<body>
+
+<h1>WHL · WANTED HACKER LIMITED</h1>
+
+<main>
+<section>
+	<p class="quiet">COLOURS</p>
+	<p><a href="colours/gradient/">GRADIENT — IS LIFE A RANDOM GRADIENT?</a></p>
+	<p class="quiet">Continuous colour for packaging and brand visuals. Free for
+	personal use · commercial use US$1 per image.</p>
+</section>
+</main>
+
+<footer class="quiet">© 2026 Wanted Hacker Limited · whl.ltd</footer>
+
+</body>
+</html>

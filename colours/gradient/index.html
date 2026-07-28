@@ -1,0 +1,2003 @@
+<!DOCTYPE html>
+<!--
+	WHL Colours Gradient — gradient artwork for WHL packaging.
+
+	One self-contained file: no build step, no dependencies, no network, no
+	browser storage. Double-click to open from disk and it runs.
+
+	Licence: © 2026 Wanted Hacker Limited. Personal and non-commercial use is
+	free, without limitation. Commercial use of an image produced with this
+	tool requires a one-time licence fee of US$1 per image, paid via
+	paypal.me/wanghailei; once paid, that image may be used commercially
+	without limit — any medium, any duration, no attribution required. Your
+	PayPal receipt is your proof of licence. The source is visible but remains
+	copyrighted: do not copy, modify, redistribute or rehost it without
+	written permission. Contact: wanghailei@gmail.com
+
+	What it makes is a proportion and a pixel count, never a physical size. The
+	artwork is cropped and rescaled downstream in Figma, so any millimetre this
+	file claimed would be fiction. Every texture is therefore counted across the
+	width — the one quantity the screen and the exported file agree on.
+
+	Preview and export come from one function, buildSvg(), so what is on screen
+	is what leaves the tool. Where a shape is both drawn and sampled, both forms
+	derive from a single definition: patternShapes/patternSample for the pattern
+	filter, shapeAlpha/blobBlur for the multi-point masses. Defining either side
+	separately lets them drift, which has already happened once.
+
+	Sections below, in order: colour maths (sRGB/OKLab/OKLCh), state, geometry,
+	SVG construction, palette generation, render, colour picker, helpers, wiring.
+-->
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>WHL Colours Gradient</title>
+<style>
+/* The typeface travels inside the file. Berkeley Mono is sold as a web font
+   in woff2, which macOS cannot install as a system font, so no family name
+   would ever resolve it; and a browser opened from file:// refuses to fetch
+   a sibling font file. Embedding is the only way this tool can be double-
+   clicked on any machine and still look like itself.
+   Axes: wght 100-900, wdth 60-100, slnt -16-0. */
+@font-face{
+	font-family:"Berkeley Mono Variable";
+	src:url(berkeley.woff2) format("woff2");
+	font-weight:100 900;
+	font-stretch:60% 100%;
+	font-style:oblique -16deg 0deg;
+	font-display:block;
+}
+:root{
+	/* The @font-face above embeds the typeface in this file, so it renders the
+	   same on a machine that has never installed it. That embedded face is
+	   declared as "Berkeley Mono Variable" and is named first here so it wins:
+	   listing an installed family ahead of it — "TX-02" was first — lets
+	   whatever happens to be on that machine override the copy the file
+	   carries, which is the one thing embedding was meant to prevent. The names
+	   after it matter only if the embedded data ever fails to decode. */
+	--font-mono:"Berkeley Mono Variable","TX-02","Berkeley Mono","IBM Plex Mono",
+		ui-monospace,SFMono-Regular,Menlo,"IBM Plex Sans TC","PingFang TC",monospace;
+	/* IBM Plex Sans TC Light, subset to the characters the Chinese toolbar
+	 can show (~11KB), embedded under the SIL Open Font Licence. Declared at
+	 normal weight so the Light cut carries the UI's ordinary text — the
+	 light CJK stroke is the order, not an accident. Regenerate the subset
+	 whenever the data-cn vocabulary changes. */
+@font-face{
+	font-family:"IBM Plex Sans TC";
+	font-weight:400;
+	src:url(data:font/woff2;base64,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);
+}
+/* PingFang TC is the deliberate CJK fallback — Berkeley Mono carries no
+		 CJK glyphs, and the toolbar speaks Chinese when toggled. */
+	/* One type size for every word on screen. rem, so it follows the browser's
+		 own text setting. 0.75rem = 12px at the default — an integer, so the
+		 monospace cell stays whole and columns line up. This is the only dial:
+		 0.625rem=10px  0.6875rem=11px  0.75rem=12px  0.8125rem=13px  0.875rem=14px */
+	--panel-width:252px;
+	--base-row-height:36px;               /* one row of the panel = two line boxes */
+	--panel-width-wide:calc(var(--panel-width) * 2);  /* the left column is twice the right */
+	--base-min-width:960px;             /* narrowest viewport the layout is drawn for */
+	--tile-fill:rgba(0,0,0,.62);                        /* ground under #note */
+	--base-edge-gap:3px;               /* how far the bar sits off the window edge */
+	--base-font-size:0.75rem;
+	--base-line-height:1.5;                 /* 18px line box at the default size */
+	--line-strong:rgba(255,255,255,.34);
+}
+*{box-sizing:border-box; border-radius:0 !important}
+html,body{height:100%; margin:0; background:#0B0B0B}
+body{min-width:var(--base-min-width); overflow-x:auto; overflow-y:hidden}
+body{font-family:var(--font-mono); font-size:var(--base-font-size); line-height:var(--base-line-height); color:#fff; -webkit-font-smoothing:antialiased}
+/* Controls inherit their panel's ink — each toolbar section flips black or
+	 white with its own backdrop, exactly as the readout does (§3.2). The
+	 picker and the note carry their own dark grounds and pin white below. */
+button,input,select{font-family:inherit; font-size:inherit; color:inherit}
+/* No focus box. Nothing else in this interface is boxed, and a ring round a
+	 select is the one place the browser insists on drawing one. */
+:focus{outline:none}
+:focus-visible{outline:none}
+.hidden{display:none !important}
+
+/* ── Canvas: the whole screen is the render ── */
+/* The render is shown at its own proportions, scaled to the window height.
+	 A panorama therefore runs off the sides and the stage scrolls sideways;
+	 anything narrower simply sits centred. */
+#stage{position:fixed; inset:0; min-width:var(--base-min-width); overflow-x:auto; overflow-y:hidden;
+	display:flex; align-items:stretch; justify-content:flex-start}
+#canvas{flex:0 0 auto; height:100%; margin:0 auto}
+#canvas{overflow:hidden}
+#canvas svg{display:block; width:100%; height:100%}
+#stage.radial{cursor:crosshair}
+
+/* ── Readout: one text buffer. No plate, no shadow, no rules — the title is
+			simply the first line, held apart by a blank one, as in a terminal.
+			Ink flips to black or white against whatever is behind it. ── */
+/* Foreground layout. One grid pinned over the render: the readout top left,
+	 the notice bottom left, the bar down the right. The layer itself takes no
+	 pointer events, so clicks fall through to the canvas; its children take
+	 them back, which is also what makes their text selectable. */
+#fg{position:fixed; inset:0; min-width:var(--base-min-width); z-index:10; display:grid;
+	grid-template-columns:var(--panel-width-wide) 1fr var(--panel-width);
+	grid-template-rows:auto 1fr auto;
+	gap:var(--base-edge-gap); padding:var(--base-edge-gap);
+	padding-bottom:calc(var(--base-edge-gap) + env(safe-area-inset-bottom));
+	pointer-events:none}
+#fg > *{pointer-events:auto}
+#hud{grid-column:1; grid-row:1; margin:15px; padding:0;
+	background:none; border:0;
+	font-size:var(--base-font-size); line-height:var(--base-line-height); white-space:pre;
+	-webkit-user-select:text; user-select:text}
+/* Only the title carries weight. ::first-line keeps the readout a single
+	 text buffer — splitting it into two elements would break the blank line
+	 that holds the title apart from the parameters. */
+#hud::first-line{font-weight:500}
+#foot{grid-column:1; grid-row:3; align-self:end; margin:15px;
+	font-size:var(--base-font-size); line-height:var(--base-line-height);
+	-webkit-user-select:text; user-select:text}
+/* One line of terms above the copyright line; pressing it unfolds the full
+	 licence above, pressing again folds it away. The unfolded sheet takes the
+	 note's ground — a paragraph must stay readable whatever gradient is behind
+	 it — with the white ink pinned, so it sits outside the ink judging. Links
+	 dress as plain text: the URLs already read as links, and browser-blue
+	 would fight the ink. New tab is mandatory: state lives only in memory,
+	 so navigating away destroys the composition. */
+#terms{cursor:pointer}
+#licence{background:var(--tile-fill); backdrop-filter:blur(16px) saturate(1.2);
+	-webkit-backdrop-filter:blur(16px) saturate(1.2);
+	color:#fff; padding:12px 18px; margin-bottom:9px; max-width:56ch}
+#licence a, #copy a{color:inherit; text-decoration:none}
+/* The language toggle sits on the readout's title line, five characters
+	 after the version — init sets the exact ch offset from the title length.
+	 One press swaps the toolbar's tongue; ink strength says which side is live. */
+#lang{grid-column:1; grid-row:1; justify-self:start; align-self:start;
+	margin:15px 0 0 15px; line-height:var(--base-line-height);
+	background:none; border:0; padding:0; cursor:pointer; white-space:pre}
+#lang span{opacity:.42}
+#lang span.on{opacity:1}
+
+/* The bar is the right-hand grid cell. Too much content scrolls inside it;
+	 the cell itself never grows past the viewport. */
+#toolbar{overflow-y:auto; overflow-x:hidden}
+
+/* ── Toolbar ── */
+/* The bar lives along the right edge and stays there. Everything floats on
+	 the render, so there is nothing to gain from moving or folding it. */
+#toolbar{grid-column:3; grid-row:1 / span 3; min-height:0}
+/* No plate, no drawn dividers. The controls sit straight on the render, the
+	 way the readout does. #note keeps a ground because it is a transient alert
+	 that has to stay readable whatever is behind it. */
+.panel{background:none; border:0; backdrop-filter:none; -webkit-backdrop-filter:none}
+/* When a panel's ink turns dark, its line-work follows: swatch frames and
+	 slider tracks read the panel-scoped variable. */
+.ink-dark{--line-strong:rgba(0,0,0,.42)}
+#note{background:var(--tile-fill); backdrop-filter:blur(16px) saturate(1.2);
+	-webkit-backdrop-filter:blur(16px) saturate(1.2)}
+#note{padding:8px 18px; font-size:var(--base-font-size); color:#fff}
+/* The dock sits outside the scroller: whatever the window width, the control
+	 that moves or folds the bar must always be reachable. Losing it off the
+	 scroll edge is what made the right-hand dock look broken. */
+/* One column of panels, stacked. Width comes from the panel itself; nothing
+	 sets a flex-basis here — in a column that would size the height instead,
+	 which is what once squashed every panel into a square. */
+#bar{display:block}
+#blocks{display:block; width:var(--panel-width)}
+#blocks::-webkit-scrollbar{height:5px}
+#blocks::-webkit-scrollbar-thumb{background:rgba(255,255,255,.45)}
+.panel{width:var(--panel-width); padding:4px 10px 8px}
+.panel > h2{margin:0; display:flex; align-items:center; min-height:var(--base-row-height);
+	font-size:var(--base-font-size); font-weight:400; text-transform:uppercase; opacity:.55}
+/* Every row is the same height, headings included, so the column keeps one
+	 vertical rhythm instead of packing each control against the next. */
+.control-row{display:flex; align-items:center; gap:6px; min-height:var(--base-row-height)}
+.control-row > .label:first-child{min-width:42px}
+
+.label{font-size:var(--base-font-size); text-transform:uppercase; opacity:.45; white-space:nowrap;
+	flex:0 0 auto; min-width:38px}
+.label.tight{min-width:0}
+
+/* Buttons are words you can press — no box, no fill. Strength of ink says
+	 which one is live; the rest hold back. */
+button.btn{background:none; border:0; padding:2px 2px; font-size:var(--base-font-size);
+	text-transform:uppercase; cursor:pointer; white-space:nowrap; color:inherit}
+button.btn:hover{opacity:.85}
+#typeRow .btn:not(.on), #seamless:not(.on){opacity:.42}
+#typeRow .btn.on, #seamless.on{opacity:1}
+button:disabled{opacity:.35; cursor:default}
+
+.swatch{position:relative; width:26px; height:26px; border:1px solid var(--line-strong); cursor:pointer;
+	display:block; padding:0; flex:0 0 auto}
+.swatch.sel{outline:1px solid #fff; outline-offset:2px}
+/* an empty holder reads as an empty box, not as a black colour */
+.swatch.empty{background:transparent; border-style:dashed; border-color:rgba(255,255,255,.28)}
+#swatches{display:flex; gap:5px}
+
+/* Proportion ramp: one handle per colour, each wearing its own colour so it
+	 stays identifiable after the handles cross over each other. */
+/* The ramp is a hairline of the gradient with a dot per colour. The block
+	 keeps a taller invisible hit area so the dots are still easy to grab.
+	 The dots are the one round thing in the interface — asked for, and they
+	 read as handles rather than as more panel furniture. */
+#ramp{position:relative; flex:1 1 auto; height:16px; min-width:110px;
+	border:0; touch-action:none; cursor:pointer}
+#rampFill{position:absolute; left:0; right:0; top:50%; height:2px; margin-top:-1px}
+.handle{position:absolute; top:50%; width:10px; height:10px; margin:-5px 0 0 -5px;
+	border:1px solid rgba(255,255,255,.55); border-radius:50% !important;
+	cursor:ew-resize}
+
+/* ── Colour picker: a hue strip over a rectangular field.
+			Across the field is chroma, up it is lightness. The right edge is the
+			gamut edge for that lightness, so every point in the rectangle is a
+			colour sRGB can actually hold — no dead corners. ── */
+#picker{position:fixed; z-index:20; background:rgba(0,0,0,.78); color:#fff;
+	--line-strong:rgba(255,255,255,.34);
+	backdrop-filter:blur(18px) saturate(1.2); -webkit-backdrop-filter:blur(18px) saturate(1.2);
+	border:1px solid var(--line-strong); padding:14px}
+#hueWrap{position:relative; width:176px; height:14px; margin-bottom:8px}
+#hue{display:block; width:176px; height:14px; cursor:crosshair; touch-action:none}
+#hueDot{position:absolute; top:-2px; bottom:-2px; width:3px; margin-left:-1px;
+	background:#fff; box-shadow:0 0 0 1px #000; pointer-events:none}
+#fieldWrap{position:relative; width:176px; height:118px; margin-bottom:10px}
+#field{display:block; width:176px; height:118px; cursor:crosshair; touch-action:none}
+#dot{position:absolute; width:9px; height:9px; margin:-5px 0 0 -5px; pointer-events:none;
+	border:1px solid #000; box-shadow:0 0 0 1px #fff inset, 0 0 0 1px #fff}
+.picker-row{display:flex; align-items:center; gap:7px}
+#pClear{width:26px; height:26px; border:1px solid var(--line-strong); opacity:.8}
+#pClear:hover{opacity:1; border-color:#fff}
+#pClear svg{width:12px; height:12px}
+#phex{background:transparent; border:1px solid var(--line-strong); padding:5px 6px;
+	font-size:var(--base-font-size); width:100%; text-transform:lowercase}
+/* The swatch library: imported sets on a name line, the open set as a tight
+	 tile grid. Tiles butt edge to edge — the grid reads as colour cloth, not
+	 furniture. Tall sets scroll inside the popover. */
+#pSets{display:flex; flex-wrap:wrap; gap:2px 10px; margin-top:12px; max-width:288px}
+#pSets .btn:not(.on){opacity:.42}
+#pSets .btn.on{opacity:1}
+/* One hue family per row, dark to light, tiles butted — the shelf reads as
+	 woven colour cloth. Ungrouped sets flow and wrap instead. Tall shelves
+	 scroll inside the popover; the popover width follows the longest row. */
+#pGrid{margin-top:6px; max-height:52vh; overflow:auto}
+#pGrid .pRow{display:flex}
+#pGrid.flow .pRow{flex-wrap:wrap; max-width:288px}
+#pGrid button{width:16px; height:16px; padding:0; border:0; display:block; cursor:pointer; flex:0 0 auto}
+#pClose{position:absolute; top:2px; right:6px; background:none; border:0; color:#fff;
+	opacity:.55; cursor:pointer; padding:2px; font-size:var(--base-font-size)}
+#pClose:hover{opacity:1}
+
+/* No boxes. A field is the value itself, editable where it stands. */
+input[type=number],select{background:transparent; border:0; padding:0;
+	font-size:var(--base-font-size); color:inherit}
+input[type=number]{width:44px; -moz-appearance:textfield}
+
+input[type=number]::-webkit-outer-spin-button,
+input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none; margin:0}
+/* The mark sits on the vertical centre of the control, not a fixed distance
+	 from its top — that was what left it riding high against the label. */
+select{appearance:none; padding-right:15px; cursor:pointer;
+	background-image:linear-gradient(45deg,transparent 50%,rgba(255,255,255,.7) 50%),
+									 linear-gradient(135deg,rgba(255,255,255,.7) 50%,transparent 50%);
+	background-position:right 6px center, right 2px center;
+	background-size:4px 4px,4px 4px; background-repeat:no-repeat}
+select option{background:#111; color:#fff; font-size:var(--base-font-size)}
+
+input[type=range]{-webkit-appearance:none; appearance:none; background:transparent;
+	height:14px; margin:0; width:clamp(72px, 8vw, 92px)}
+input[type=range]::-webkit-slider-runnable-track{height:1px; background:var(--line-strong)}
+input[type=range]::-moz-range-track{height:1px; background:var(--line-strong)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:3px; height:13px;
+	background:currentColor; margin-top:-6px; cursor:pointer}
+input[type=range]::-moz-range-thumb{width:3px; height:13px; background:currentColor; border:0; cursor:pointer}
+.value{font-size:var(--base-font-size); min-width:30px; text-align:right; opacity:.85}
+
+</style>
+</head>
+<body>
+
+<div id="stage"><div id="canvas"></div></div>
+
+
+
+<div id="picker" class="hidden">
+	<button id="pClose" title="Close" aria-label="Close">×</button>
+	<div id="hueWrap"><canvas id="hue" width="176" height="14"></canvas><div id="hueDot"></div></div>
+	<div id="fieldWrap"><canvas id="field" width="132" height="88"></canvas><div id="dot"></div></div>
+	<div class="picker-row">
+		<input type="text" id="phex" spellcheck="false">
+		<button id="pClear" title="Clear this colour" aria-label="Clear this colour">
+			<svg viewBox="0 0 12 12"><rect x=".5" y=".5" width="11" height="11" fill="none" stroke="currentColor"/><path d="M1.5 10.5 10.5 1.5" stroke="currentColor" fill="none"/></svg>
+		</button>
+	</div>
+	<div id="pSets"></div>
+	<div id="pGrid"></div>
+</div>
+
+<div id="fg">
+<div id="hud"></div>
+<button id="lang" title="Toolbar language" aria-label="Toolbar language"><span id="langEn" class="on">EN</span><span> / </span><span id="langCn">CN</span></button>
+<div id="foot">
+<div id="licence" class="hidden">© 2026 Wanted Hacker Limited. Personal and non-commercial use is free, without limitation.<br><br>Commercial use of an image produced with this tool requires a one-time licence fee of US$1 per image, paid via <a href="https://paypal.me/wanghailei" target="_blank" rel="noopener">paypal.me/wanghailei</a>. Once paid, that image may be used commercially without limit — any medium, any duration, no attribution required. Your PayPal receipt is your proof of licence.<br><br>The source is visible but remains copyrighted: do not copy, modify, redistribute or rehost it without written permission.<br><br>Contact: <a href="mailto:wanghailei@gmail.com">wanghailei@gmail.com</a></div>
+<div id="terms">Free for personal use · Commercial use US$1 per image</div>
+<div id="copy">© 2026 Wanted Hacker Limited · whl.ltd</div>
+</div>
+
+<div id="toolbar">
+	<div id="note" class="hidden"></div>
+	<div id="bar">
+		<div id="blocks">
+
+		<!-- 0 ── Random: one press rolls the whole composition -->
+		<section class="panel">
+			<div class="control-row">
+				<button class="btn" id="randomAll" data-cn="人生是隨機漸變嗎？">Is life a random gradient?</button>
+			</div>
+		</section>
+
+		<!-- 1 ── Colours -->
+		<section class="panel">
+			<h2 data-cn="顏色">Colours</h2>
+			<div class="control-row">
+				<div id="swatches"></div>
+			</div>
+			<div class="control-row">
+				<div id="ramp">
+					<div id="rampFill"></div>
+				</div>
+			</div>
+			<div class="control-row">
+				<button class="btn" id="randColours" data-cn="隨機">Randomise</button>
+			</div>
+		</section>
+
+		<!-- 2 ── Type -->
+		<section class="panel">
+			<h2 data-cn="型態">Type</h2>
+			<div class="control-row" id="typeRow">
+				<button class="btn on" data-type="linear" data-cn="線性">Linear</button>
+				<button class="btn" data-type="radial" data-cn="徑向">Radial</button>
+				<button class="btn" data-type="mesh" data-cn="多焦點">Multi-point</button>
+			</div>
+
+			<div class="control-row" id="paramLinear">
+				<span class="label" data-cn="角度">Angle</span>
+				<input type="range" id="angle" min="0" max="360">
+				<span class="value" id="angleVal"></span>
+			</div>
+			<div class="control-row" id="paramLinear2">
+				<button class="btn" id="seamless" data-cn="無縫">Seamless</button>
+			</div>
+
+			<div class="control-row hidden" id="paramRadial">
+				<span class="label" data-cn="半徑">Radius</span>
+				<input type="range" id="radius" min="10" max="180">
+				<span class="value" id="radiusVal"></span>
+			</div>
+
+			<div class="control-row hidden" id="paramMesh">
+				<span class="label" data-cn="團徑">Size</span>
+				<input type="range" id="blobSize" min="10" max="100">
+				<span class="value" id="blobSizeVal"></span>
+			</div>
+			<div class="control-row hidden" id="paramMesh3">
+				<span class="label" data-cn="柔邊">Soft</span>
+				<input type="range" id="blobSoft" min="4" max="70">
+				<span class="value" id="blobSoftVal"></span>
+			</div>
+			<div class="control-row hidden" id="paramMesh4">
+				<button class="btn" id="randShapes" data-cn="重排">Randomise</button>
+			</div>
+
+
+
+		</section>
+
+		<!-- 3 ── Blend -->
+		<section class="panel">
+			<h2 data-cn="混色">Blend</h2>
+			<div class="control-row">
+				<select id="space" title="How colours travel between stops. Not a colour profile — output is always sRGB."></select>
+			</div>
+			<div class="control-row">
+				<select id="ease"></select>
+			</div>
+		</section>
+
+		<!-- 4 ── Pattern: a filter applied to whatever the gradient produced -->
+		<section class="panel">
+			<h2 data-cn="圖紋">Pattern</h2>
+			<div class="control-row">
+				<select id="gridPattern">
+					<option value="off" data-cn="無">None</option>
+					<option value="plaid" data-cn="織紋">Plaid</option>
+					<option value="cells" data-cn="方格">Cells</option>
+					<option value="columns" data-cn="直條">Columns</option>
+					<option value="rows" data-cn="橫條">Rows</option>
+					<option value="rings" data-cn="環紋">Rings</option>
+					<option value="hex" data-cn="蜂窩">Hexagons</option>
+					<option value="tri" data-cn="三角">Triangles</option>
+				</select>
+			</div>
+			<div class="control-row hidden" id="paramGrid2">
+				<span class="label" data-cn="數目">Count</span>
+				<input type="range" id="gridNR" min="2" max="160">
+				<input type="number" id="gridN" min="2" max="400" step="1" style="width:44px">
+			</div>
+		</section>
+
+		<!-- 5 ── Grain: a texture laid over the result, nothing to do with quantising -->
+		<section class="panel">
+			<h2 data-cn="顆粒">Grain</h2>
+			<div class="control-row">
+				<span class="label" data-cn="強度">Amount</span>
+				<input type="range" id="grain" min="0" max="60">
+				<span class="value" id="grainVal"></span>
+			</div>
+			<div class="control-row" id="grainDetail">
+				<span class="label" data-cn="密度">Count</span>
+				<input type="range" id="grainN" min="60" max="4000">
+				<span class="value" id="grainNVal"></span>
+			</div>
+			<div class="control-row" id="grainDetail2">
+				<span class="label" data-cn="咬合">Bite</span>
+				<input type="range" id="grainBite" min="0" max="100">
+				<span class="value" id="grainBiteVal"></span>
+			</div>
+		</section>
+
+		<!-- 6 ── Size -->
+		<section class="panel">
+			<h2 data-cn="尺寸">Size</h2>
+			<div class="control-row">
+				<select id="ratioSel"></select>
+			</div>
+			<div class="control-row">
+				<input type="number" id="ratioNum" min="1.6" max="20" step="0.01" style="width:60px">
+				<span class="label tight">: 1</span>
+			</div>
+			<div class="control-row">
+				<span class="label tight" id="outWShown"></span>
+				<span class="label tight">×</span>
+				<input type="number" id="outH" min="200" max="8000" step="100" style="width:64px">
+				<span class="label tight">px</span>
+			</div>
+			<div class="control-row">
+				<button class="btn" id="dlSvg">SVG</button>
+				<button class="btn" id="dlPng">PNG</button>
+			</div>
+		</section>
+
+		</div>
+	</div>
+</div>
+</div>
+
+<script>
+"use strict"
+
+/* ══════════════════════════════════════════════════════════
+	 1. Colour maths — sRGB / OKLab / OKLCh
+	 ══════════════════════════════════════════════════════════ */
+const clamp01 = function( x ){ return Math.min( 1, Math.max( 0, x ) ) }
+
+function hexToRgb( hex ){
+	if( typeof hex !== "string" ) return null
+	let h = hex.replace( "#","" ).trim()
+	if( h.length === 3 ) h = h.split( "" ).map( function( c ){ return c + c } ).join( "" )
+	if( !/^[0-9a-fA-F]{6}$/.test( h ) ) return null
+	const n = parseInt( h,16 )
+	return [ ( ( n >> 16 ) & 255 ) / 255, ( ( n >> 8 ) & 255 ) / 255, ( n & 255 ) / 255 ]
+}
+function rgbToHex( rgb ){
+	const f = function( v ){ return Math.round( clamp01( v ) * 255 ).toString( 16 ).padStart( 2,"0" ) }
+	return "#" + f( rgb[0] ) + f( rgb[1] ) + f( rgb[2] )
+}
+function srgbToLinear( c ){ return c <= 0.04045 ? c / 12.92 : Math.pow( ( c + 0.055 ) / 1.055, 2.4 ) }
+function linearToSrgb( c ){ return c <= 0.0031308 ? c * 12.92 : 1.055 * Math.pow( c,1 / 2.4 ) - 0.055 }
+
+function rgbToOklab( rgb ){
+	const lr = srgbToLinear( rgb[0] ), lg = srgbToLinear( rgb[1] ), lb = srgbToLinear( rgb[2] )
+	const l = 0.4122214708 * lr + 0.5363325363 * lg + 0.0514459929 * lb
+	const m = 0.2119034982 * lr + 0.6806995451 * lg + 0.1073969566 * lb
+	const s = 0.0883024619 * lr + 0.2817188376 * lg + 0.6299787005 * lb
+	const l_ = Math.cbrt( l ), m_ = Math.cbrt( m ), s_ = Math.cbrt( s )
+	return [
+		0.2104542553 * l_ + 0.7936177850 * m_ - 0.0040720468 * s_,
+		1.9779984951 * l_ - 2.4285922050 * m_ + 0.4505937099 * s_,
+		0.0259040371 * l_ + 0.7827717662 * m_ - 0.8086757660 * s_
+	]
+}
+function oklabToRgb( lab ){
+	const l_ = lab[0] + 0.3963377774 * lab[1] + 0.2158037573 * lab[2]
+	const m_ = lab[0] - 0.1055613458 * lab[1] - 0.0638541728 * lab[2]
+	const s_ = lab[0] - 0.0894841775 * lab[1] - 1.2914855480 * lab[2]
+	const l = l_ * l_ * l_, m = m_ * m_ * m_, s = s_ * s_ * s_
+	return [
+		linearToSrgb( 4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s ),
+		linearToSrgb( -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s ),
+		linearToSrgb( -0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s )
+	]
+}
+function oklabToOklch( lab ){
+	return [ lab[0], Math.hypot( lab[1],lab[2] ), ( Math.atan2( lab[2],lab[1] ) * 180 / Math.PI + 360 ) % 360 ]
+}
+function oklchToOklab( lch ){
+	const r = lch[2] * Math.PI / 180
+	return [ lch[0], lch[1] * Math.cos( r ), lch[1] * Math.sin( r ) ]
+}
+function inGamut( rgb ){ return rgb.every( function( v ){ return v >= -0.0008 && v <= 1.0008 } ) }
+
+/* Out of sRGB: hold lightness and hue, bisect chroma down until it fits */
+function gamutFit( lch ){
+	const L = clamp01( lch[0] )
+	let rgb = oklabToRgb( oklchToOklab( [ L, lch[1], lch[2] ] ) )
+	if( inGamut( rgb ) ) return rgb.map( clamp01 )
+	let lo = 0, hi = lch[1]
+	for( let i = 0;i < 22;i++ ){
+		const mid = ( lo + hi ) / 2
+		rgb = oklabToRgb( oklchToOklab( [ L, mid, lch[2] ] ) )
+		if( inGamut( rgb ) ) lo = mid; else hi = mid
+	}
+	return oklabToRgb( oklchToOklab( [ L, lo, lch[2] ] ) ).map( clamp01 )
+}
+function lchToHex( lch ){ return rgbToHex( gamutFit( lch ) ) }
+function hexToLch( hex ){ return oklabToOklch( rgbToOklab( hexToRgb( hex ) || [ 0,0,0 ] ) ) }
+
+function mixHex( hexA, hexB, t, space ){
+	const A = hexToRgb( hexA ) || [ 0,0,0 ]
+	const B = hexToRgb( hexB ) || [ 0,0,0 ]
+	if( space === "srgb" ) return rgbToHex( A.map( function( v,i ){ return v + ( B[i] - v ) * t } ) )
+	const la = rgbToOklab( A ), lb = rgbToOklab( B )
+	if( space === "oklab" ){
+		const m = la.map( function( v,i ){ return v + ( lb[i] - v ) * t } )
+		return lchToHex( oklabToOklch( m ) )
+	}
+	/* OKLCh: shortest hue path; an achromatic end inherits the other's hue,
+		 so greys do not spin the wheel on their way across */
+	const ca = oklabToOklch( la ), cb = oklabToOklch( lb )
+	let H1 = ca[2], H2 = cb[2]
+	if( ca[1] < 2e-3 ) H1 = H2
+	if( cb[1] < 2e-3 ) H2 = H1
+	const dh = ( ( H2 - H1 + 540 ) % 360 ) - 180
+	return lchToHex( [ ca[0] + ( cb[0] - ca[0] ) * t, ca[1] + ( cb[1] - ca[1] ) * t, H1 + dh * t ] )
+}
+function applyEase( t, mode ){
+	if( mode === "smooth" ) return t * t * ( 3 - 2 * t )
+	if( mode === "start" )  return t * t
+	if( mode === "end" )    return 1 - ( 1 - t ) * ( 1 - t )
+	return t
+}
+function mulberry32( a ){
+	return function(){
+		a |= 0; a = ( a + 0x6D2B79F5 ) | 0
+		let t = Math.imul( a ^ ( a >>> 15 ), 1 | a )
+		t = ( t + Math.imul( t ^ ( t >>> 7 ), 61 | t ) ) ^ t
+		return ( ( t ^ ( t >>> 14 ) ) >>> 0 ) / 4294967296
+	}
+}
+
+/* ══════════════════════════════════════════════════════════
+	 2. State
+	 ══════════════════════════════════════════════════════════ */
+/* Proportions, not sizes. "Window" follows the browser, which is how the
+	 tool is actually used; the rest are the shapes that keep coming up. */
+const RATIOS = [
+	{ label:"Window",  cn:"視窗", r:0 },
+	{ label:"16 : 10", r:16 / 10 },
+	{ label:"16 : 9",  r:16 / 9 },
+	{ label:"2 : 1",   r:2 },
+	{ label:"3 : 1",   r:3 },
+	{ label:"4 : 1",   r:4 }
+]
+/* How colours travel between stops. This is interpolation maths, not a colour profile —
+	 every option still writes sRGB into the file. */
+const SPACES = [
+	{ k:"oklch", label:"Vivid · OKLCh", cn:"鮮明 · OKLCh" },
+	{ k:"oklab", label:"Even · OKLab", cn:"均勻 · OKLab" },
+	{ k:"srgb",  label:"Legacy · sRGB", cn:"傳統 · sRGB" }
+]
+const EASES = [
+	{ k:"smooth", label:"Smooth", cn:"平滑" },
+	{ k:"linear", label:"Even", cn:"勻速" },
+	{ k:"start",  label:"Weight start", cn:"重頭" },
+	{ k:"end",    label:"Weight end", cn:"重尾" }
+]
+const SMOOTH = 24   /* baked stops per segment — fixed, not a user knob */
+
+/* The picker's swatch library — sets of candidate colours: { name, colours,
+	 rows }, where colours is the flat pool and rows carries hue-family
+	 grouping when the source has it (one family per row, dark to light;
+	 black and white close the shelf as their own row). Seeded with the
+	 default set — a baked copy of swatch/default.json, read through
+	 parseSwatch and kept identical by the regress check through that SAME
+	 parser, because a file:// page cannot read a neighbouring file at run
+	 time (the wall that embedded the font, §4). Pasted and dropped sets
+	 join for the session only — no browser storage, by constraint. The
+	 same name replaces its set. The constant line is generated — do not
+	 hand-edit; change swatch/default.json and re-bake. */
+const DEFAULT_SWATCH = [["#030000","#0f0000","#220001","#360104","#49080a","#5c1314","#6f201f","#812d2b","#933c38","#a54b46","#b55c56","#c46d67","#d27f79","#df928c","#eba6a0","#f6bab4","#ffcfca","#ffe7e5"],["#030000","#0e0100","#1f0300","#310800","#460f00","#5b1700","#6e2309","#803016","#923f25","#a34e34","#b45f45","#c37057","#d1826a","#de957e","#eaa894","#f4bcab","#fed1c2","#ffe8e1"],["#030000","#0b0200","#1b0600","#2c0f00","#3e1800","#522200","#662d00","#7b3700","#8f4408","#a0531f","#b06333","#bf7447","#cd865c","#da9873","#e6ab8a","#f1bfa3","#fbd3bc","#ffe9dc"],["#030000","#090200","#180900","#271300","#391d00","#4b2800","#5d3400","#714000","#854c00","#9a5900","#aa6921","#b97a3a","#c78b51","#d49d69","#e1af82","#ecc29c","#f7d5b7","#ffe9d6"],["#020000","#080300","#150a00","#241500","#342000","#452c00","#563900","#684600","#7b5300","#8e6000","#a16f0f","#b07f2f","#be904a","#cca263","#d9b47d","#e6c698","#f2d8b4","#fdebd1"],["#020000","#060300","#120c00","#201700","#2f2300","#3f3000","#4f3d00","#604a00","#725800","#836700","#967505","#a5862c","#b39647","#c2a761","#d0b87c","#ddca97","#ebdbb3","#f8edd0"],["#010000","#050400","#100d00","#1d1900","#2a2500","#393300","#484000","#574e00","#675d00","#786c00","#887c0f","#978c30","#a69c4a","#b5ac64","#c5bd7e","#d4ce99","#e3deb5","#f2efd1"],["#010100","#040400","#0c0e00","#181b00","#242800","#313600","#3e4400","#4c5300","#5a6200","#697200","#788222","#88913a","#97a152","#a8b16a","#b8c183","#c9d19d","#dbe1b8","#ecf1d3"],["#000100","#020500","#081000","#111d00","#1b2b00","#253900","#304800","#3c5800","#486808","#577720","#668734","#769648","#87a65e","#99b574","#abc58b","#bed4a4","#d2e4bd","#e6f3d7"],["#000100","#000600","#011200","#021f00","#052e00","#093d00","#154d09","#225c17","#316c26","#407b36","#518b46","#629a58","#75aa6c","#89b980","#9ec896","#b3d7ac","#c9e6c4","#e0f5dc"],["#000100","#000601","#001205","#001f0c","#002e14","#003d1d","#004d26","#005d30","#026e3a","#207e49","#378e59","#4d9d69","#63ac7b","#79bc8e","#91caa2","#a9d9b6","#c1e8cc","#daf6e2"],["#000100","#000603","#00110a","#001f14","#002d1f","#003c2a","#004c36","#005c43","#006d4f","#007e5d","#0c8f6a","#349f7a","#50ae8b","#6bbd9d","#85ccaf","#a0dac1","#bbe9d4","#d6f7e8"],["#000101","#000504","#00110d","#001e19","#002c25","#003b32","#004b40","#005b4e","#006b5d","#007c6c","#008e7b","#139f8b","#3faf9b","#5fbeab","#7cccbc","#99dbcc","#b5e9dd","#d2f7ee"],["#000101","#000505","#001010","#001e1d","#002c2a","#003a39","#004a48","#005a58","#006a68","#007b78","#008c89","#009e9b","#33aeaa","#57bdb9","#77ccc8","#95dad7","#b3e9e6","#d0f7f4"],["#000101","#000506","#001012","#001d20","#002b2f","#00393f","#00494f","#005860","#006971","#007983","#008a96","#009ca9","#32acb8","#56bbc6","#76cad4","#94d9e1","#b2e8ee","#d0f6fa"],["#000101","#000508","#001015","#001c24","#002a34","#003845","#004756","#005769","#00677b","#00778f","#0088a3","#0a99b6","#3ca9c4","#5cb8d1","#7ac8de","#97d7ea","#b4e6f5","#d2f5ff"],["#000102","#000509","#000f18","#001c28","#00293a","#00374c","#00465f","#005573","#006587","#00759c","#0085b2","#2e95c1","#4ba5ce","#66b5db","#81c5e6","#9dd4f1","#b8e4fb","#daf2ff"],["#000003","#00040c","#000e1c","#001a2e","#002741","#003556","#00436b","#005281","#006197","#1771aa","#3080ba","#4690c8","#5da1d5","#74b1e1","#8cc1ec","#a5d1f6","#bee1ff","#dff0ff"],["#000006","#000311","#000c24","#001739","#002350","#043065","#0f3e79","#1c4c8c","#2a5c9e","#396bae","#497bbe","#5b8bcc","#6e9cd9","#83ace5","#98bdf0","#aecef9","#c7deff","#e3efff"],["#000006","#010217","#04082a","#0a133e","#131f52","#1d2b66","#28397a","#34478d","#41569f","#4f65b0","#5e75bf","#6e86ce","#7f96db","#92a7e6","#a5b9f1","#b9cafa","#cfdcff","#e7edff"],["#010006","#030116","#0a0529","#150f3c","#201b50","#2c2764","#383478","#45428a","#53519c","#6160ad","#7070bd","#7f80cb","#8f91d9","#a0a3e4","#b1b4ef","#c3c6f8","#d6d9ff","#eaecff"],["#010005","#060014","#100427","#1d0c39","#29174d","#372360","#452f73","#533d85","#624b97","#705ba8","#7f6bb8","#8f7bc6","#9e8cd3","#ae9ee0","#beb0eb","#cec3f5","#ded6fe","#eeeaff"],["#010004","#080012","#150223","#230935","#311347","#401f5a","#502b6c","#5f387e","#6e478f","#7e56a0","#8d66af","#9c76be","#ab88cb","#ba9ad8","#c9ade4","#d8c0ef","#e6d3f9","#f4e8ff"],["#020003","#0b000e","#19011e","#28062f","#381040","#481b51","#592763","#693474","#794284","#895195","#9961a4","#a872b3","#b784c1","#c596cf","#d3a9db","#e0bde7","#eed1f3","#fae5fe"],["#020002","#0c000a","#1c0019","#2d0428","#3e0d37","#4f1847","#602458","#723068","#823f78","#934e87","#a35e97","#b26fa6","#c181b5","#ce93c3","#dca7d1","#e8bbdf","#f4cfec","#ffe4f9"],["#020001","#0e0006","#1f0013","#310220","#420a2e","#54153c","#66214b","#782e5a","#8a3c69","#9b4b79","#ab5b88","#ba6c97","#c87fa7","#d691b6","#e2a5c5","#eeb9d4","#f9cee4","#ffe5f2"],["#030000","#0e0004","#20000c","#330117","#460723","#581330","#6b1f3e","#7d2c4c","#8f3a5a","#a04969","#b05a78","#c06b88","#ce7d98","#db91a8","#e7a4b9","#f2b9ca","#fccedb","#ffe6ed"],["#030000","#0f0002","#210006","#35000e","#480718","#5b1223","#6e1e2f","#802c3c","#923a49","#a44958","#b45a67","#c36b77","#d17e88","#de919a","#eaa5ac","#f5b9bf","#ffced2","#ffe7e9"],["#000000","#ffffff"]]
+const swatches = [ { name:"default", colours:DEFAULT_SWATCH.flat(), rows:DEFAULT_SWATCH } ]
+let pastedCount = 0   /* numbers the "pasted n" sets */
+
+const state = {
+	colours:[ "#e8e1d4" ],
+	positions:[ 0.5 ],
+	slots:5,
+	type:"linear", angle:160, cx:50, cy:35, radius:78, seamless:false,
+	blobSize:0.55, seed:11, blobSoft:0.30,
+	/* counts are per height-span; the old across-width defaults 24/900 at a
+		 ~1.7 ratio correspond to about these */
+	grid:false, gridN:14, gridPattern:"plaid",
+	space:"oklch", ease:"smooth", grain:0, grainN:540, grainBite:45,
+	/* The artwork has no physical size. It is a proportion and a pixel width;
+		 what it becomes on paper is decided downstream, in the layout tool. Every
+		 texture is therefore counted across the width, which is the one quantity
+		 the screen and the exported file agree on. */
+	aspect:16 / 10, outH:2400, followWindow:true
+}
+/* One place holds the version; the readout and the title both draw from it
+	 (init writes the title — it cannot live here, the regress harness pulls
+	 this section into Node where there is no document). major.minor.patch —
+	 major bumps on Hailei's instruction; minor and patch on judgement. */
+const VERSION = "0.49.0"
+const element = function( id ){ return document.getElementById( id ) }
+
+/* The output is a pixel width and a proportion; the height follows. Nothing
+	 here is physical — what the file becomes on paper is decided downstream. */
+/* The height is what the artwork is pinned to, exactly as in the preview:
+	 widen the proportion and it grows sideways, it does not get shorter. */
+function outSize(){
+	const h = Math.max( 1, Math.round( state.outH ) )
+	return [ Math.max( 1, Math.round( h * Math.max( 1, state.aspect ) ) ), h ]
+}
+
+/* One colour in → derive tint / base / shade */
+function derive( hex ){
+	const lch = hexToLch( hex )
+	const L = lch[0], C = lch[1], h = lch[2]
+	return [
+		lchToHex( [ Math.min( 0.97, L + 0.18 ), C * 0.55, ( h - 8 + 360 ) % 360 ] ),
+		hex,
+		lchToHex( [ Math.max( 0.10, L - 0.20 ), C * 1.10, ( h + 10 ) % 360 ] )
+	]
+}
+/* The primary colour holds a flat plateau on the axis, so it occupies more of the sheet.
+	 With no primary set, every colour is evenly spaced — identical to plain interpolation. */
+/* Even spacing for n colours */
+function evenPositions( n ){
+	/* With one colour the single position means something else: it is where the
+		 pure colour sits between the derived tint and shade, so it starts halfway
+		 rather than pinned to the left. */
+	if( n === 1 ) return [ 0.5 ]
+	const out = []
+	for( let i = 0;i < n;i++ ) out.push( i / ( n - 1 ) )
+	return out
+}
+/* Stop positions are set per colour, not derived from the count.
+	 This is what the Nuevo Tokyo work depends on: a colour may hold a wide
+	 calm stretch or flash past in a narrow band, and even spacing can never
+	 produce that rhythm. Two handles carrying the same colour give a plateau. */
+function stops(){
+	const c = state.colours
+	let out = []
+	if( c.length === 1 ){
+		/* one colour becomes tint, base and shade — and that derived ramp can be
+			 closed into a loop just like a hand-built one */
+		/* Tint and shade are derived and sit at the ends; only the pure colour has
+			 a place worth moving, and moving it is what tips the whole sheet light
+			 or dark. */
+		const mid = Math.min( 0.94, Math.max( 0.06, state.positions[0] === undefined ? 0.5 : state.positions[0] ) )
+		const d3 = derive( c[0] )
+		out = [ { hex:d3[0], pos:0 }, { hex:d3[1], pos:mid }, { hex:d3[2], pos:1 } ]
+	} else {
+		for( let i = 0;i < c.length;i++ )
+			out.push( { hex:c[i], pos:clamp01( state.positions[i] === undefined ? i / ( c.length - 1 ) : state.positions[i] ) } )
+		out.sort( function( a,b ){ return a.pos - b.pos } )
+	}
+
+	/* Seamless closes the ramp into a loop rather than folding it back.
+		 Mirroring also makes the two ends meet, but it walks the whole palette
+		 twice across one sheet — the composition is squashed to half and a hard
+		 axis of symmetry appears down the middle. Here the palette is squeezed
+		 into the first part of the sheet and the remainder carries it back to
+		 the opening colour, so the ramp is travelled once and the join is still
+		 continuous. With only two colours the two are the same thing: there is
+		 no other way home. */
+	if( state.seamless && state.type === "linear" && out.length > 1 ){
+		const span = out[out.length - 1].pos - out[0].pos
+		const ret = 1 / out.length                       /* length of the return leg */
+		const keep = 1 - ret
+		const base = out[0].pos
+		out = out.map( function( q ){
+			return { hex:q.hex, pos: span > 1e-6 ? ( q.pos - base ) / span * keep : 0 }
+		} )
+		out.push( { hex:out[0].hex, pos:1 } )
+	}
+	return out
+}
+/* Multi-point: the first colour is the ground the others sit on */
+function meshColours(){
+	const c = state.colours
+	if( c.length === 1 ) return { base:derive( c[0] )[1], blobs:[ derive( c[0] )[0], derive( c[0] )[2] ] }
+	return { base:c[0], blobs:c.slice( 1 ) }
+}
+function colourAt(){
+	const s = stops(), space = state.space, ease = state.ease
+	return function( t ){
+		const x = clamp01( t )
+		if( x <= s[0].pos ) return s[0].hex
+		if( x >= s[s.length - 1].pos ) return s[s.length - 1].hex
+		for( let i = 0;i < s.length - 1;i++ ){
+			const a = s[i], b = s[i + 1]
+			if( x >= a.pos && x <= b.pos ){
+				const span = ( b.pos - a.pos ) || 1e-6
+				return mixHex( a.hex, b.hex, applyEase( ( x - a.pos ) / span, ease ), space )
+			}
+		}
+		return s[s.length - 1].hex
+	}
+}
+
+/* ══════════════════════════════════════════════════════════
+	 3. Geometry — SVG construction and point sampling both read
+	 from here, so screen, file and readout can never drift apart
+	 ══════════════════════════════════════════════════════════ */
+
+/* Position along the gradient axis, 0 at one corner-most edge, 1 at the other */
+function axisT( x, y, W, H ){
+	const a = state.angle * Math.PI / 180, dx = Math.sin( a ), dy = -Math.cos( a )
+	const half = ( Math.abs( dx ) * W + Math.abs( dy ) * H ) / 2
+	const x1 = W / 2 - dx * half, y1 = H / 2 - dy * half
+	const vx = 2 * dx * half, vy = 2 * dy * half
+	return ( ( x - x1 ) * vx + ( y - y1 ) * vy ) / ( vx * vx + vy * vy || 1 )
+}
+/* Solid discs, heavily blurred — not radial falloffs.
+	 A radial gradient fades from its centre and never has a flat middle; a
+	 blurred solid disc keeps an even core and only softens at the shoulder.
+	 That difference is the whole character of the reference work. Centres may
+	 sit outside the sheet so discs crop at the edge instead of always
+	 floating clear of it. */
+/* Discs must overlap without ever sitting inside one another.
+	 A shape nested in another reads as a bullseye; shapes that clip each other
+	 read as colour bleeding into colour, which is the thing being aimed at.
+	 Two circles are nested when the distance between centres is less than the
+	 difference of their radii, and separate when it exceeds the sum — so every
+	 placement is drawn from the band strictly between those two. */
+function composeBlobs( n, W, H ){
+	const random = mulberry32( state.seed )
+	const span = H   /* blob size pegs to the height, like every texture */
+	const base = ( 0.26 + state.blobSize * 0.52 ) * span
+	const out = []
+	for( let i = 0; i < n; i++ ){
+		const r = base * ( 0.60 + random() * 0.85 )
+		if( !out.length ){
+			out.push( { x:( 0.22 + random() * 0.56 ) * W, y:( 0.22 + random() * 0.56 ) * H, r:r } )
+			continue
+		}
+		/* Anchoring to one disc only guarantees the pair; the placement has to be
+			 checked against every disc already down, or the third one quietly ends
+			 up swallowed by the first. Try a few positions and take the first that
+			 clips something and is buried in nothing. */
+		let best = null
+		for( let t = 0; t < 24; t++ ){
+			const a = out[Math.floor( random() * out.length )]
+			const lo = Math.abs( a.r - r ) + Math.min( a.r, r ) * 0.30
+			let hi = ( a.r + r ) * 0.86
+			if( hi <= lo ) hi = lo * 1.15
+			const dist = lo + random() * ( hi - lo )
+			const th = random() * Math.PI * 2
+			const c = {
+				x: Math.max( -0.2 * W, Math.min( 1.2 * W, a.x + Math.cos( th ) * dist ) ),
+				y: Math.max( -0.2 * H, Math.min( 1.2 * H, a.y + Math.sin( th ) * dist ) ),
+				r: r
+			}
+			let nested = false, touches = false
+			for( let k = 0; k < out.length; k++ ){
+				const o = out[k], dd = Math.hypot( c.x - o.x, c.y - o.y )
+				if( dd < Math.abs( o.r - c.r ) ) { nested = true; break }
+				if( dd < o.r + c.r ) touches = true
+			}
+			if( !best ) best = c
+			if( !nested && touches ){ best = c; break }
+		}
+		out.push( best )
+	}
+	return out.map( function( o ){
+		return { x:o.x, y:o.y, w:o.r * 2, soft:state.blobSoft }
+	} )
+}
+/* One place decides how much blur a softness means, so the drawn disc and the
+	 sampled disc cannot drift apart. */
+const blobBlurFactor = 0.50   /* blur sigma per unit of softness — measured, not guessed */
+function blobBlur( b ){
+	const r = b.w * 0.5
+	return Math.max( 0.5, r * Math.max( 0.02, Math.min( 0.98, b.soft ) ) * blobBlurFactor )
+}
+function shapeSvg( b, hex ){
+	return '<circle cx="0" cy="0" r="' + ( b.w * 0.5 ).toFixed( 1 ) + '" fill="' + hex + '"/>'
+}
+/* Rough coverage of a disc at a point, used only to pick black or white ink.
+	 A Gaussian blur of a hard edge is an error function; smoothstep is close
+	 enough for a decision that only has two outcomes. */
+function shapeAlpha( b, x, y ){
+	const r = b.w * 0.5
+	const d = Math.hypot( ( x - b.x ) / r, ( y - b.y ) / r )
+	/* soft is the fraction of the radius the falloff occupies. Below 1 there is
+		 still a flat saturated core — which is the whole point of building these
+		 out of blurred solids rather than radial gradients. */
+	const soft = Math.max( 0.02, Math.min( 0.98, b.soft ) )
+	const t = ( d - ( 1 - soft ) ) / ( 2 * soft )
+	if( t <= 0 ) return 1
+	if( t >= 1 ) return 0
+	return 1 - t * t * ( 3 - 2 * t )
+}
+/* The cell is sized against the height — the pinned dimension — so a wider
+	 ratio extends the weave with more columns instead of inflating each cell.
+	 (Hailei, 2026-07-28; replaces the width-anchored counting.) */
+function gridCells( W, H ){
+	const cell = H / Math.max( 1, Math.round( state.gridN ) )
+	const cols = Math.max( 1, Math.round( W / cell ) )
+	const rows = Math.max( 1, Math.round( H / cell ) )
+	/* Cells butt directly. The tiny overlap stops the renderer's own
+		 antialiasing from drawing a pale hairline along every shared edge —
+		 that hairline is exactly the drawn border we do not want. */
+	return { cols:cols, rows:rows, ov:Math.max( W / cols, H / rows ) * 0.012 }
+}
+/* Colour of one cell. Grid is a filter, not a gradient of its own — it reads
+	 whatever the gradient underneath produces and flattens it cell by cell.
+		 cells — the colour at the cell's own centre
+		 plaid — the column crossed with the row, each read from the base. That
+						 crossing is what gives the woven look and the square bright core.
+		 columns — full-height vertical stripes, read across the width
+		 rows    — full-width horizontal stripes, read down the height */
+function gridColour( cx, cy, W, H ){
+	if( state.gridPattern === "columns" ) return baseColourAt( cx, H / 2, W, H )
+	if( state.gridPattern === "rows" )    return baseColourAt( W / 2, cy, W, H )
+	if( state.gridPattern === "rings" || state.gridPattern === "hex" || state.gridPattern === "tri" )
+		return baseColourAt( cx, cy, W, H )
+	if( state.gridPattern === "plaid" )
+		return mixHex( baseColourAt( cx, H / 2, W, H ), baseColourAt( W / 2, cy, W, H ), 0.5, state.space )
+	return baseColourAt( cx, cy, W, H )
+}
+/* How many divisions each way. Count always means the number of divisions in
+	 the direction the pattern runs, so the slider does the same thing whichever
+	 is chosen: fewer means wider. */
+/* A pattern is no longer a grid of rectangles. It is a list of shapes, each
+	 carrying the point whose colour it should take, plus a way to ask which
+	 shape a given point falls in. Everything stays flat fill, so everything
+	 stays vector. */
+function gridShape( geometry ){
+	if( state.gridPattern === "columns" ) return { cols:geometry.cols, rows:1 }
+	if( state.gridPattern === "rows" )    return { cols:1, rows:Math.max( 1, Math.round( state.gridN ) ) }
+	return { cols:geometry.cols, rows:geometry.rows }
+}
+function ringGeom( W, H ){
+	const cx = W * state.cx / 100, cy = H * state.cy / 100
+	const far = Math.max( Math.hypot( cx, cy ), Math.hypot( W - cx, cy ),
+										 Math.hypot( cx, H - cy ), Math.hypot( W - cx, H - cy ) )
+	const a = state.angle * Math.PI / 180
+	/* ring thickness pegs to the height; the count follows the reach */
+	const rings = Math.max( 1, Math.round( far / ( H / Math.max( 1, Math.round( state.gridN ) ) ) ) )
+	return { cx:cx, cy:cy, R:far, n:rings,
+					dx:Math.sin( a ), dy:-Math.cos( a ) }
+}
+function hexGeom( W, H ){
+	const n = Math.max( 2, Math.round( state.gridN ) )
+	const side = H / ( n * Math.sqrt( 3 ) )          /* n hexes per height-span; tiling covers the width */
+	return { s:side, n:n, W:W, H:H }
+}
+function triGeom( W, H ){
+	const n = Math.max( 2, Math.round( state.gridN ) )
+	const b = H / n                            /* base = height / count; columns follow the width */
+	return { b:b, h:b * Math.sqrt( 3 ) / 2, n:n, W:W, H:H }
+}
+/* Push the vertices out from the centre a hair so neighbours overlap. Two
+	 shapes that merely touch each get antialiased against the background and
+	 the blend leaves a pale seam — the drawn border we do not want. */
+function grow( v, c, k ){
+	return v.map( function( pt ){
+		return ( c[0] + ( pt[0] - c[0] ) * k ).toFixed( 2 ) + "," + ( c[1] + ( pt[1] - c[1] ) * k ).toFixed( 2 )
+	} ).join( " " )
+}
+function cubeRound( x, y, z ){
+	let rx = Math.round( x ), ry = Math.round( y ), rz = Math.round( z )
+	const dx = Math.abs( rx - x ), dy = Math.abs( ry - y ), dz = Math.abs( rz - z )
+	if( dx > dy && dx > dz ) rx = -ry - rz; else if( dy > dz ) ry = -rx - rz; else rz = -rx - ry
+	return [ rx, ry, rz ]
+}
+function hexCentre( geometry, q, r ){
+	return [ geometry.s * Math.sqrt( 3 ) * ( q + r / 2 ), geometry.s * 1.5 * r ]
+}
+function hexAt( geometry, x, y ){
+	const q = ( Math.sqrt( 3 ) / 3 * x - y / 3 ) / geometry.s, r = ( 2 / 3 * y ) / geometry.s
+	const c = cubeRound( q, -q - r, r )
+	return hexCentre( geometry, c[0], c[2] )
+}
+/* Alternate rows shift by half a base. Without that the diagonals reverse at
+	 every row boundary and meet in a V; with it they run straight across the
+	 whole plane, which is what an equilateral tiling looks like. */
+function triRowOffset( geometry, row ){ return ( row % 2 ) ? geometry.b / 2 : 0 }
+/* Which triangle holds this point: test the ones that can, rather than deriving
+	 an index — the lookup runs a handful of times, and being certain is worth
+	 more than being clever. */
+function triAt( geometry, x, y ){
+	const row = Math.floor( y / geometry.h ), yy = y - row * geometry.h
+	const off = triRowOffset( geometry, row )
+	const m = Math.floor( ( x - off ) / ( geometry.b / 2 ) )
+	for( let k = m - 1; k <= m + 1; k++ ){
+		const x0 = off + k * geometry.b / 2
+		const up = ( k % 2 !== 0 )
+		let ax, bx, cx2, ay, by, cy2
+		if( up ){ ax = x0; ay = geometry.h; bx = x0 + geometry.b; by = geometry.h; cx2 = x0 + geometry.b / 2; cy2 = 0 }
+		else  { ax = x0; ay = 0;   bx = x0 + geometry.b; by = 0;   cx2 = x0 + geometry.b / 2; cy2 = geometry.h }
+		const det = ( by - cy2 ) * ( ax - cx2 ) + ( cx2 - bx ) * ( ay - cy2 )
+		if( Math.abs( det ) < 1e-9 ) continue
+		const l1 = ( ( by - cy2 ) * ( ( x - x0 ) - ( cx2 - x0 ) ) + ( cx2 - bx ) * ( yy - cy2 ) ) / det
+		const l2 = ( ( cy2 - ay ) * ( ( x - x0 ) - ( cx2 - x0 ) ) + ( ax - cx2 ) * ( yy - cy2 ) ) / det
+		if( l1 >= -0.001 && l2 >= -0.001 && l1 + l2 <= 1.001 )
+			return [ ( ax + bx + cx2 ) / 3, row * geometry.h + ( ay + by + cy2 ) / 3 ]
+	}
+	return [ off + m * geometry.b / 2 + geometry.b / 2, row * geometry.h + geometry.h / 2 ]
+}
+/* Every shape the pattern draws, with the point each takes its colour from */
+function patternShapes( W, H ){
+	const out = []
+	let i, j
+	if( state.gridPattern === "rings" ){
+		const ringGeometry = ringGeom( W, H )
+		for( i = ringGeometry.n; i >= 1; i-- ){                    /* largest first, painted over */
+			const rOut = ringGeometry.R * i / ringGeometry.n, rMid = ringGeometry.R * ( i - 0.5 ) / ringGeometry.n
+			out.push( { svg:'<circle cx="' + ringGeometry.cx.toFixed( 2 ) + '" cy="' + ringGeometry.cy.toFixed( 2 )
+									 + '" r="' + rOut.toFixed( 2 ) + '"',
+								cx:ringGeometry.cx + ringGeometry.dx * rMid, cy:ringGeometry.cy + ringGeometry.dy * rMid } )
+		}
+		return out
+	}
+	if( state.gridPattern === "hex" ){
+		const hexGeometry = hexGeom( W, H )
+		const rows = Math.ceil( H / ( hexGeometry.s * 1.5 ) ) + 2, cols = Math.ceil( W / ( hexGeometry.s * Math.sqrt( 3 ) ) ) + 2
+		for( let r = -1; r <= rows; r++ ){
+			for( let q = -Math.ceil( r / 2 ) - 1; q <= cols; q++ ){
+				const c = hexCentre( hexGeometry, q, r )
+				if( c[0] < -hexGeometry.s * 2 || c[0] > W + hexGeometry.s * 2 || c[1] < -hexGeometry.s * 2 || c[1] > H + hexGeometry.s * 2 ) continue
+				const vs = []
+				for( let k = 0; k < 6; k++ ){
+					const ang = Math.PI / 180 * ( 60 * k - 30 )
+					vs.push( [ c[0] + hexGeometry.s * Math.cos( ang ), c[1] + hexGeometry.s * Math.sin( ang ) ] )
+				}
+				out.push( { svg:'<polygon points="' + grow( vs, c, 1.02 ) + '"', cx:c[0], cy:c[1] } )
+			}
+		}
+		return out
+	}
+	if( state.gridPattern === "tri" ){
+		const triangleGeometry = triGeom( W, H )
+		const nRows = Math.ceil( H / triangleGeometry.h ) + 1
+		const nCols = Math.ceil( W / triangleGeometry.b )   /* coverage, not the count — the count sizes the base */
+		for( let rr = 0; rr < nRows; rr++ ){
+			const off = triRowOffset( triangleGeometry, rr )
+			for( let kk = -2; kk <= nCols * 2 + 2; kk++ ){
+				const x0 = off + kk * triangleGeometry.b / 2, yTop = rr * triangleGeometry.h
+				const upT = ( kk % 2 !== 0 )
+				const v = upT
+					? [ [ x0, yTop + triangleGeometry.h ], [ x0 + triangleGeometry.b, yTop + triangleGeometry.h ], [ x0 + triangleGeometry.b / 2, yTop ] ]
+					: [ [ x0, yTop ], [ x0 + triangleGeometry.b, yTop ], [ x0 + triangleGeometry.b / 2, yTop + triangleGeometry.h ] ]
+				const tc = [ ( v[0][0] + v[1][0] + v[2][0] ) / 3, ( v[0][1] + v[1][1] + v[2][1] ) / 3 ]
+				out.push( { svg:'<polygon points="' + grow( v, tc, 1.02 ) + '"', cx:tc[0], cy:tc[1] } )
+			}
+		}
+		return out
+	}
+	/* the rectangular family */
+	const geometry = gridCells( W, H ), shape = gridShape( geometry )
+	const columnWidth = W / shape.cols, rowHeight = H / shape.rows
+	for( j = 0; j < shape.rows; j++ ){
+		for( i = 0; i < shape.cols; i++ ){
+			out.push( { svg:'<rect x="' + ( i * columnWidth ).toFixed( 3 ) + '" y="' + ( j * rowHeight ).toFixed( 3 )
+									 + '" width="' + ( columnWidth + geometry.ov ).toFixed( 3 ) + '" height="' + ( rowHeight + geometry.ov ).toFixed( 3 ) + '"',
+								cx:i * columnWidth + columnWidth / 2, cy:j * rowHeight + rowHeight / 2 } )
+		}
+	}
+	return out
+}
+/* The representative point for whatever shape holds (x,y) */
+function patternSample( x, y, W, H ){
+	if( state.gridPattern === "rings" ){
+		const ringGeometry = ringGeom( W, H )
+		const dist = Math.hypot( x - ringGeometry.cx, y - ringGeometry.cy )
+		const i = Math.min( ringGeometry.n - 1, Math.max( 0, Math.floor( dist / ringGeometry.R * ringGeometry.n ) ) )
+		const rMid = ringGeometry.R * ( i + 0.5 ) / ringGeometry.n
+		return [ ringGeometry.cx + ringGeometry.dx * rMid, ringGeometry.cy + ringGeometry.dy * rMid ]
+	}
+	if( state.gridPattern === "hex" ) return hexAt( hexGeom( W, H ), x, y )
+	if( state.gridPattern === "tri" ) return triAt( triGeom( W, H ), x, y )
+	const geometry = gridCells( W, H ), shape = gridShape( geometry )
+	const columnWidth = W / shape.cols, rowHeight = H / shape.rows
+	const gx = Math.min( shape.cols - 1, Math.max( 0, Math.floor( x / columnWidth ) ) )
+	const gy = Math.min( shape.rows - 1, Math.max( 0, Math.floor( y / rowHeight ) ) )
+	return [ gx * columnWidth + columnWidth / 2, gy * rowHeight + rowHeight / 2 ]
+}
+/* ══════════════════════════════════════════════════════════
+	 4. SVG — screen and file both come from here
+	 ══════════════════════════════════════════════════════════ */
+/* crop is an optional {x,y,w,h} in millimetres. With it the viewBox is that
+	 window rather than the whole sheet, which is how the 100% view shows the
+	 file at its own pixel scale without rasterising all of it. */
+function buildSvg( mode, W, H, pxW, pxH, crop ){
+	const at = colourAt()
+	const list = stops()
+	const count = Math.max( 3, Math.min( 260, ( list.length - 1 ) * SMOOTH + 1 ) )
+
+	let sizeAttr
+	if( mode === "screen" ) sizeAttr = 'width="100%" height="100%"'
+	else if( mode === "raster" ) sizeAttr = 'width="' + pxW + '" height="' + pxH + '"'
+	/* unitless: the file is a proportion and a pixel count, nothing physical */
+	else sizeAttr = 'width="' + W + '" height="' + H + '"'
+
+	let stopTags = ""
+	for( let i = 0;i < count;i++ ){
+		const t = i / ( count - 1 )
+		stopTags += '    <stop offset="' + ( t * 100 ).toFixed( 3 ) + '%" stop-color="' + at( t ) + '"/>\n'
+	}
+
+	let defs = "", body = ""
+
+	if( state.grid ){
+		/* the filter: read the gradient underneath and flatten it shape by shape */
+		patternShapes( W, H ).forEach( function( shapeSpec ){
+			body += "  " + shapeSpec.svg + ' fill="' + gridColour( shapeSpec.cx, shapeSpec.cy, W, H ) + '"/>\n'
+		} )
+	} else if( state.type === "linear" ){
+		const a = state.angle * Math.PI / 180
+		const dx = Math.sin( a ), dy = -Math.cos( a )
+		const half = ( Math.abs( dx ) * W + Math.abs( dy ) * H ) / 2
+		defs += '  <linearGradient id="wgG" gradientUnits="userSpaceOnUse"'
+				 + ' x1="' + ( W / 2 - dx * half ).toFixed( 3 ) + '" y1="' + ( H / 2 - dy * half ).toFixed( 3 ) + '"'
+				 + ' x2="' + ( W / 2 + dx * half ).toFixed( 3 ) + '" y2="' + ( H / 2 + dy * half ).toFixed( 3 ) + '">\n'
+				 + stopTags + "  </linearGradient>\n"
+		body += '  <rect width="' + W + '" height="' + H + '" fill="url(#wgG)"/>\n'
+	} else if( state.type === "radial" ){
+		defs += '  <radialGradient id="wgG" cx="' + ( state.cx / 100 ).toFixed( 4 ) + '" cy="' + ( state.cy / 100 ).toFixed( 4 )
+				 + '" r="' + ( state.radius / 100 ).toFixed( 4 ) + '">\n' + stopTags + "  </radialGradient>\n"
+		body += '  <rect width="' + W + '" height="' + H + '" fill="url(#wgG)"/>\n'
+	} else if( state.type === "mesh" ){
+		const mesh = meshColours()
+		const blobs = composeBlobs( mesh.blobs.length, W, H )
+		body += '  <rect width="' + W + '" height="' + H + '" fill="' + mesh.base + '"/>\n'
+		for( let k = 0;k < blobs.length;k++ ){
+			const b = blobs[k]
+			defs += '  <filter id="wgB' + k + '" x="-70%" y="-70%" width="240%" height="240%"'
+					 + ' color-interpolation-filters="sRGB">\n'
+					 + '    <feGaussianBlur stdDeviation="' + blobBlur( b ).toFixed( 2 ) + '"/>\n  </filter>\n'
+			body += '  <g filter="url(#wgB' + k + ')" transform="translate(' + b.x.toFixed( 1 ) + " " + b.y.toFixed( 1 )
+					 + ')">' + shapeSvg( b, mesh.blobs[k] ) + "</g>\n"
+		}
+
+	}
+
+	if( state.grain > 0 ){
+		/* Grain size is stated in millimetres of paper, so it means the same thing
+			 on screen as on the sheet. Four octaves give film-like clumping rather
+			 than flat television static; the transfer curve pulls the noise away
+			 from mid-grey so it bites without milking the whole image. Bite is the
+			 slope of that curve: 0 leaves the raw turbulence, higher values widen
+			 the spread and give the sandy, printed-paper feel of the references. */
+		/* cycles per viewBox unit — the count pegs to the height, the pinned
+			 dimension, so grain size survives a ratio change (2026-07-28) */
+		const freq = Math.max( 1, state.grainN ) / H
+		/* widen the noise about mid-grey so it bites instead of hazing over */
+		const bite = ( 1 + state.grainBite / 50 ).toFixed( 3 )
+		defs += '  <filter id="wgGrain" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">\n'
+				 + '    <feTurbulence type="fractalNoise" baseFrequency="' + freq.toFixed( 4 )
+				 + '" numOctaves="4" seed="' + state.seed + '" stitchTiles="stitch"/>\n'
+				 + '    <feColorMatrix type="saturate" values="0"/>\n'
+				 + "    <feComponentTransfer>\n"
+				 + '      <feFuncR type="linear" slope="' + bite + '" intercept="' + ( 0.5 - bite * 0.5 ).toFixed( 3 ) + '"/>\n'
+				 + '      <feFuncG type="linear" slope="' + bite + '" intercept="' + ( 0.5 - bite * 0.5 ).toFixed( 3 ) + '"/>\n'
+				 + '      <feFuncB type="linear" slope="' + bite + '" intercept="' + ( 0.5 - bite * 0.5 ).toFixed( 3 ) + '"/>\n'
+				 + "    </feComponentTransfer>\n  </filter>\n"
+		/* One full-canvas filter rect dies silently in WebKit above its filter
+			 rasterisation cap (~4096×4096 device px) — on a 6K display the grain
+			 simply vanished while Chrome kept rendering it. Tiles stay under the
+			 cap, and because turbulence is anchored in user space every tile
+			 samples the same continuous noise field — no seams. 1024 units keeps
+			 a tile safe even at ~3 device px per unit. */
+		const tile = 1024
+		const alpha = ( state.grain / 100 ).toFixed( 3 )
+		for( let ty = 0;ty < Math.ceil( H / tile );ty++ ){
+			for( let tx = 0;tx < Math.ceil( W / tile );tx++ ){
+				body += '  <rect x="' + tx * tile + '" y="' + ty * tile
+						 + '" width="' + Math.min( tile, W - tx * tile ) + '" height="' + Math.min( tile, H - ty * tile )
+						 + '" filter="url(#wgGrain)" opacity="' + alpha + '" style="mix-blend-mode:overlay"/>\n'
+			}
+		}
+	}
+
+	const viewBox = crop ? ( crop.x + " " + crop.y + " " + crop.w + " " + crop.h ) : ( "0 0 " + W + " " + H )
+	return '<svg xmlns="http://www.w3.org/2000/svg" ' + sizeAttr + ' viewBox="' + viewBox + '">\n'
+			 + "<defs>\n" + defs + '</defs>\n<g style="isolation:isolate">\n' + body + "</g>\n</svg>"
+}
+
+/* ══════════════════════════════════════════════════════════
+	 5. Palette generation
+	 ══════════════════════════════════════════════════════════ */
+/* Random colours come from the default palette now, not from thin air:
+	 one to three ADJACENT hue families, n picks spread dark to light across
+	 a window that skips the crushed ends of the ramp. Black and white stay
+	 out of the pool. (Hailei, 2026-07-28.) */
+function randomColours( n ){
+	const pool = DEFAULT_SWATCH
+		.map( function( row ){ return row.filter( function( h ){ return h !== "#000000" && h !== "#ffffff" } ) } )
+		.filter( function( row ){ return row.length > 0 } )
+	const random = mulberry32( Math.floor( Math.random() * 1e9 ) )
+	const span = 1 + Math.floor( random() * 3 )
+	const start = Math.floor( random() * pool.length )
+	const rows = []
+	for( let i = 0;i < span;i++ ) rows.push( pool[( start + i ) % pool.length] )
+	const steps = rows[0].length
+	const out = []
+	for( let i = 0;i < n;i++ ){
+		const f = n === 1 ? 0.4 + random() * 0.3 : i / ( n - 1 )
+		let idx = Math.round( ( 0.12 + 0.76 * f ) * ( steps - 1 ) + ( random() - 0.5 ) * 2 )
+		idx = Math.max( 0, Math.min( steps - 1, idx ) )
+		const row = rows[Math.floor( random() * rows.length )]
+		out.push( row[Math.min( idx, row.length - 1 )] )
+	}
+	return out
+}
+function extendColours( n ){
+	const c = state.colours.slice()
+	while( c.length > n ) c.pop()
+	while( c.length < n ){
+		if( c.length === 0 ){ c.push( "#e8e1d4" ); continue }
+		const last = hexToLch( c[c.length - 1] )
+		const first = hexToLch( c[0] )
+		let step = ( ( last[2] - first[2] + 540 ) % 360 ) - 180
+		if( Math.abs( step ) < 4 ) step = 22
+		const L = clamp01( last[0] + ( last[0] > 0.55 ? -0.16 : 0.16 ) )
+		const C = last[1] * 0.95 + 0.01
+		c.push( lchToHex( [ L, C, ( last[2] + step + 360 ) % 360 ] ) )
+	}
+	return c
+}
+/* One library entry per name: importing under an existing name replaces
+	 that set, a new name joins the shelf. Returns the set's index so the
+	 caller can put it on display. */
+function addSwatchSet( name, colours, rows ){
+	for( let i = 0;i < swatches.length;i++ ){
+		if( swatches[i].name === name ){ swatches[i].colours = colours; swatches[i].rows = rows || null; return i }
+	}
+	swatches.push( { name:name, colours:colours, rows:rows || null } )
+	return swatches.length - 1
+}
+/* Read any swatch text. The Palette export object (families → one row per
+	 hue, steps keyed by lightness so a sort gives dark to light; black and
+	 white close the shelf as their own row) yields grouped rows; a bare hex
+	 array or loose text falls back to plain extraction, no grouping. */
+function parseSwatch( text ){
+	try{
+		const data = JSON.parse( text )
+		if( data && data.families && data.families.length ){
+			const rows = data.families.map( function( f ){
+				return Object.keys( f.steps ).map( Number ).sort( function( a, b ){ return a - b } )
+					.map( function( k ){ return String( f.steps[k] ).toLowerCase() } )
+			} )
+			if( data.black && data.white ) rows.push( [ String( data.black ).toLowerCase(), String( data.white ).toLowerCase() ] )
+			return { colours: rows.flat(), rows: rows }
+		}
+	}catch( e ){}
+	return { colours: hexesFrom( text ), rows: null }
+}
+
+/* ══════════════════════════════════════════════════════════
+	 6. Render
+	 ══════════════════════════════════════════════════════════ */
+function renderDims(){
+	const r = element( "canvas" ).getBoundingClientRect()
+	return { w:Math.max( 1, Math.round( r.width ) ), h:Math.max( 1, Math.round( r.height ) ) }
+}
+function labelFor( list, k ){
+	for( let i = 0;i < list.length;i++ ) if( list[i].k === k ) return list[i].label
+	return k
+}
+/* Everything that defines this gradient — read it top to bottom, same order as the toolbar */
+function hudLines(){
+	const out = []
+	if( state.type === "mesh" ){
+		const m = meshColours()
+		out.push( m.base.toUpperCase() + " \u00B7 BASE" )
+		m.blobs.forEach( function( h ){ out.push( h.toUpperCase() ) } )
+	} else {
+		stops().forEach( function( q ){
+			out.push( q.hex.toUpperCase() + " \u00B7 " + Math.round( q.pos * 100 ) + "%" )
+		} )
+	}
+	if( state.type === "linear" )
+		out.push( "LINEAR \u00B7 " + state.angle + "\u00B0" + ( state.seamless ? " \u00B7 SEAMLESS" : "" ) )
+	else if( state.type === "radial" )
+		out.push( "RADIAL \u00B7 " + state.cx + "/" + state.cy + " \u00B7 R" + state.radius + "%" )
+	else
+		out.push( "MULTI-POINT \u00B7 SIZE " + Math.round( state.blobSize * 100 )
+					 + " \u00B7 SOFT " + Math.round( state.blobSoft * 100 ) )
+
+	if( state.grid ) out.push( "PATTERN \u00B7 " + state.gridPattern.toUpperCase() + " \u00B7 " + state.gridN )
+	const easeShort = { smooth:"SMOOTH", linear:"EVEN", start:"START", end:"END" }
+	let blend = labelFor( SPACES, state.space ).toUpperCase() + " \u00B7 " + easeShort[state.ease]
+	if( state.grain > 0 ) blend += " \u00B7 GRAIN " + state.grain + "% \u00B7 "
+		+ state.grainN + "\u00D7 \u00B7 BITE " + Math.round( state.grainBite )
+	out.push( blend )
+	if( state.type === "mesh" || state.grain > 0 ) out.push( "SEED " + state.seed )
+	/* One grain cell measured where it matters: on this screen right now, on
+		 the press, and against a 175lpi halftone. Below about two screen pixels
+		 the preview is aliasing rather than showing texture; below about two
+		 halftone cells the press swallows it. The numbers say when the thing
+		 being judged is real. */
+	if( state.grain > 0 ){
+		const dimensions = renderDims(), o = outSize()
+		/* the count pegs to the height now, so the cell divides the height */
+		out.push( "GRAIN CELL " + ( dimensions.h / state.grainN ).toFixed( 1 ) + "PX SCREEN \u00B7 "
+					 + ( o[1] / state.grainN ).toFixed( 1 ) + "PX OUT" )
+	}
+	const px = outSize()
+	out.push( "RATIO " + String( Math.round( state.aspect * 1000 ) / 1000 ) + " : 1" )
+	out.push( px[0] + " \u00D7 " + px[1] + " PX" )
+	return out
+}
+
+/* ── What colour is the render at this point? Used to decide black or white text. ── */
+function baseColourAt( x, y, W, H ){
+	const at = colourAt()
+	if( state.type === "linear" ) return at( axisT( x, y, W, H ) )
+	if( state.type === "radial" )
+		return at( Math.hypot( x / W - state.cx / 100, y / H - state.cy / 100 ) / ( state.radius / 100 || 1e-6 ) )
+	const mesh = meshColours()
+	const blobs = composeBlobs( mesh.blobs.length, W, H )
+	const acc = hexToRgb( mesh.base ) || [ 0,0,0 ]
+	for( let k = 0;k < blobs.length;k++ ){
+		const al = shapeAlpha( blobs[k], x, y )
+		if( al <= 0 ) continue
+		const c = hexToRgb( mesh.blobs[k] ) || [ 0,0,0 ]
+		for( let q = 0;q < 3;q++ ) acc[q] = acc[q] * ( 1 - al ) + c[q] * al
+	}
+	return rgbToHex( acc )
+}
+/* What the sheet actually shows here, filter included */
+function colourAtPoint( x, y, W, H ){
+	if( !state.grid ) return baseColourAt( x, y, W, H )
+	const pt = patternSample( x, y, W, H )
+	return gridColour( pt[0], pt[1], W, H )
+}
+/* Sample a grid across the readout; outside the sheet it is the dark surround */
+const inkDark = { hud:false, copy:false }   /* remembered per element, so the flip
+																							has a dead band and cannot flicker */
+function tuneHud(){
+	tuneInk( element( "hud" ), "hud" )
+	tuneInk( element( "copy" ), "copy" )
+	tuneInk( element( "terms" ), "terms" )
+	tuneInk( element( "lang" ), "lang" )
+	/* each toolbar section judges its own stretch of the gradient — on a
+		 light-top artwork the upper panels turn black while the lower stay
+		 white, every label reading against its own ground */
+	Array.prototype.forEach.call( document.querySelectorAll( "#blocks .panel" ), function( panel, i ){
+		tuneInk( panel, "panel" + i )
+	} )
+}
+function tuneInk( el, key ){
+	const canvasRect = element( "canvas" ).getBoundingClientRect()
+	const hud = el.getBoundingClientRect()
+	if( !hud.width ) return
+	const dimensions = renderDims()
+	let sum = 0, n = 0
+	for( let i = 0;i <= 2;i++ ){
+		for( let j = 0;j <= 2;j++ ){
+			/* sample inset from the edges — an element whose rect grazes the
+				 dark band below the canvas must not hand it a third of the votes */
+			const x = hud.left + hud.width * ( 0.15 + 0.35 * i )
+			const y = hud.top + hud.height * ( 0.15 + 0.35 * j )
+			let L
+			if( x < canvasRect.left || x > canvasRect.right || y < canvasRect.top || y > canvasRect.bottom ){
+				L = 0.07
+			} else {
+				const gx = ( x - canvasRect.left ) / canvasRect.width * dimensions.w
+				const gy = ( y - canvasRect.top ) / canvasRect.height * dimensions.h
+				L = rgbToOklab( hexToRgb( colourAtPoint( gx, gy, dimensions.w, dimensions.h ) ) || [ 0,0,0 ] )[0]
+			}
+			sum += L; n++
+		}
+	}
+	const mean = sum / n
+	if( inkDark[key] && mean < 0.58 ) inkDark[key] = false
+	else if( !inkDark[key] && mean > 0.66 ) inkDark[key] = true
+	el.style.color = inkDark[key] ? "#000" : "#fff"
+	/* line-work (swatch frames, slider tracks) follows the ink via a
+		 panel-scoped variable */
+	el.classList.toggle( "ink-dark", inkDark[key] )
+}
+
+function draw(){
+	element( "stage" ).classList.toggle( "radial", state.type === "radial" )
+	const stage = element( "stage" )
+	/* size the canvas to the artwork's proportions before measuring it */
+	element( "canvas" ).style.width = Math.max( 1, Math.round( stage.clientHeight * state.aspect ) ) + "px"
+	const dimensions = renderDims()
+	element( "canvas" ).innerHTML = buildSvg( "screen", dimensions.w, dimensions.h )
+	element( "hud" ).textContent = "WHL COLOURS GRADIENT " + VERSION + "\n\n" + hudLines().join( "\n" )
+	tuneHud()
+}
+function renderSwatches(){
+	const box = element( "swatches" )
+	box.innerHTML = ""
+	for( let i = 0;i < state.slots;i++ ){
+		( function( i ){
+			const filled = i < state.colours.length
+			const b = document.createElement( "button" )
+			b.className = "swatch" + ( filled ? "" : " empty" ) + ( i === picker.index ? " sel" : "" )
+			if( filled ){ b.style.background = state.colours[i]; b.title = state.colours[i] }
+			else b.title = "Add a colour"
+			b.setAttribute( "aria-label", filled ? "Colour " + ( i + 1 ) : "Add a colour" )
+			b.addEventListener( "click", function( e ){
+				e.stopPropagation()
+				if( !filled ){ addColour(); return }
+				if( picker.open && picker.index === i ) closePicker(); else openPicker( i, b )
+			} )
+			box.appendChild( b )
+		} )( i )
+	}
+	renderRamp()
+}
+/* A new colour lands between the last two, so it reads as an extension
+	 of the set rather than an unrelated hue dropped on the end. */
+/* Paste a palette straight in. Copy whatever the Colour Palette tool gives —
+	 a list of codes, a CSS block, a JSON blob — and press paste anywhere in the
+	 tool. Every hex in the text is pulled out, the first five become the set.
+	 No field, no button: the interface stays as it is. */
+function hexesFrom( text ){
+	let hits = text.match( /#[0-9a-fA-F]{6}\b|#[0-9a-fA-F]{3}\b/g )
+	if( !hits || !hits.length ) hits = ( text.match( /\b[0-9a-fA-F]{6}\b/g ) || [] ).map( function( h ){ return "#" + h } )
+	const out = [];
+	( hits || [] ).forEach( function( h ){
+		h = h.toLowerCase()
+		if( h.length === 4 ) h = "#" + h[1] + h[1] + h[2] + h[2] + h[3] + h[3]
+		if( hexToRgb( h ) && out.indexOf( h ) < 0 ) out.push( h )
+	} )
+	return out
+}
+function addColour(){
+	if( state.colours.length >= state.slots ) return
+	/* the new colour is derived from the set so it arrives already related,
+		 never as a duplicate of what is already there */
+	state.colours = extendColours( state.colours.length + 1 )
+	state.positions = evenPositions( state.colours.length )
+	renderSwatches(); draw()
+	openPicker( state.colours.length - 1, element( "swatches" ).children[state.colours.length - 1] )
+}
+function removeColour( i ){
+	if( state.colours.length <= 1 ) return
+	state.colours.splice( i, 1 )
+	state.positions = evenPositions( state.colours.length )
+	closePicker()
+	renderSwatches(); draw()
+}
+/* The ramp shows the gradient itself with one handle per colour. Handles wear
+	 their own colour, so they stay identifiable once they cross each other. */
+function renderRamp(){
+	const ramp = element( "ramp" ), fill = element( "rampFill" )
+	const at = colourAt(), parts = []
+	for( let k = 0;k <= 24;k++ ) parts.push( at( k / 24 ) + " " + ( k / 24 * 100 ).toFixed( 1 ) + "%" )
+	fill.style.background = "linear-gradient(90deg, " + parts.join( ", " ) + ")"
+	Array.prototype.slice.call( ramp.querySelectorAll( ".handle" ) ).forEach( function( h ){ h.remove() } )
+	state.colours.forEach( function( hex, i ){
+		const h = document.createElement( "div" )
+		h.className = "handle"
+		h.style.left = ( clamp01( state.positions[i] ) * 100 ) + "%"
+		h.style.background = hex
+		h.title = hex + " · " + Math.round( clamp01( state.positions[i] ) * 100 ) + "%"
+		h.addEventListener( "pointerdown", function( e ){
+			e.stopPropagation()
+			const r = ramp.getBoundingClientRect(), x0 = e.clientX
+			let moved = false
+			h.setPointerCapture( e.pointerId )
+			const move = function( ev ){
+				if( Math.abs( ev.clientX - x0 ) > 2 ) moved = true
+				if( !moved ) return
+				state.positions[i] = clamp01( ( ev.clientX - r.left ) / r.width )
+				h.style.left = ( state.positions[i] * 100 ) + "%"
+				draw()
+			}
+			const up = function(){
+				h.removeEventListener( "pointermove", move )
+				h.removeEventListener( "pointerup", up )
+				if( !moved ) openPicker( i, h ); else renderRamp()
+			}
+			h.addEventListener( "pointermove", move )
+			h.addEventListener( "pointerup", up )
+			e.preventDefault()
+		} )
+		ramp.appendChild( h )
+	} )
+}
+
+/* ══════════════════════════════════════════════════════════
+	 7. Colour picker — a hue strip over a chroma × lightness field
+	 ══════════════════════════════════════════════════════════ */
+const picker = { open:false, index:-1, L:0.8, cr:0.5, h:80, set:0 }
+
+/* Highest chroma sRGB can hold at this lightness and hue */
+function chromaEdge( L, h ){
+	let lo = 0, hi = 0.44
+	for( let i = 0;i < 18;i++ ){
+		const mid = ( lo + hi ) / 2
+		if( inGamut( oklabToRgb( oklchToOklab( [ L, mid, h ] ) ) ) ) lo = mid; else hi = mid
+	}
+	return lo
+}
+function fieldPaint(){
+	const canvas = element( "field" ), w = canvas.width, h = canvas.height, ctx = canvas.getContext( "2d" )
+	const img = ctx.createImageData( w, h ), data = img.data
+	for( let y = 0;y < h;y++ ){
+		const L = 1 - ( y + 0.5 ) / h
+		const edge = chromaEdge( L, picker.h )              /* one bisection per row */
+		for( let x = 0;x < w;x++ ){
+			const rgb = oklabToRgb( oklchToOklab( [ L, ( ( x + 0.5 ) / w ) * edge, picker.h ] ) )
+			const o = ( y * w + x ) * 4
+			data[o]   = Math.round( clamp01( rgb[0] ) * 255 )
+			data[o + 1] = Math.round( clamp01( rgb[1] ) * 255 )
+			data[o + 2] = Math.round( clamp01( rgb[2] ) * 255 )
+			data[o + 3] = 255
+		}
+	}
+	ctx.putImageData( img, 0, 0 )
+}
+function huePaint(){
+	const canvas = element( "hue" ), w = canvas.width, h = canvas.height, ctx = canvas.getContext( "2d" )
+	const img = ctx.createImageData( w, h ), data = img.data
+	for( let x = 0;x < w;x++ ){
+		const hue = ( x + 0.5 ) / w * 360
+		const rgb = oklabToRgb( oklchToOklab( [ 0.68, chromaEdge( 0.68, hue ) * 0.95, hue ] ) )
+		for( let y = 0;y < h;y++ ){
+			const o = ( y * w + x ) * 4
+			data[o]   = Math.round( clamp01( rgb[0] ) * 255 )
+			data[o + 1] = Math.round( clamp01( rgb[1] ) * 255 )
+			data[o + 2] = Math.round( clamp01( rgb[2] ) * 255 )
+			data[o + 3] = 255
+		}
+	}
+	ctx.putImageData( img, 0, 0 )
+}
+function pickerMarks(){
+	element( "dot" ).style.left = ( picker.cr * element( "fieldWrap" ).clientWidth ) + "px"
+	element( "dot" ).style.top  = ( ( 1 - picker.L ) * element( "fieldWrap" ).clientHeight ) + "px"
+	element( "hueDot" ).style.left = ( picker.h / 360 * element( "hueWrap" ).clientWidth ) + "px"
+}
+function pickerHex(){
+	return lchToHex( [ picker.L, picker.cr * chromaEdge( picker.L, picker.h ), picker.h ] )
+}
+function pickerCommit( hex ){
+	state.colours[picker.index] = hex
+	const swatch = element( "swatches" ).children[picker.index]
+	if( swatch ){ swatch.style.background = hex; swatch.title = hex }
+	element( "phex" ).value = hex
+	draw()
+}
+/* The library on display: set names as pressable words, the open set as a
+	 grid of tiles the editing slot can take a colour from. */
+function renderSwatchLibrary(){
+	const names = element( "pSets" )
+	names.innerHTML = ""
+	swatches.forEach( function( s, i ){
+		const b = document.createElement( "button" )
+		b.textContent = s.name
+		b.className = i === picker.set ? "btn on" : "btn"
+		b.addEventListener( "click", function(){ picker.set = i; renderSwatchLibrary() } )
+		names.appendChild( b )
+	} )
+	const grid = element( "pGrid" )
+	grid.innerHTML = ""
+	const open = swatches[picker.set]
+	/* grouped sets show one hue family per row, dark to light; ungrouped
+		 sets flow and wrap — the class picks the stylesheet's mode */
+	grid.classList.toggle( "flow", !open.rows )
+	const rows = open.rows || [ open.colours ]
+	rows.forEach( function( rowColours ){
+		const line = document.createElement( "div" )
+		line.className = "pRow"
+		rowColours.forEach( function( hex ){
+			const t = document.createElement( "button" )
+			t.style.background = hex
+			t.title = hex
+			t.addEventListener( "click", function(){ swatchPick( hex ) } )
+			line.appendChild( t )
+		} )
+		grid.appendChild( line )
+	} )
+}
+/* A tile click takes the same road as a typed hex: adopt the colour into
+	 the cursor, repaint the field, commit it to the editing slot. */
+function swatchPick( hex ){
+	const lch = hexToLch( hex )
+	picker.L = clamp01( lch[0] ); picker.h = lch[2]
+	picker.cr = Math.min( 1, lch[1] / Math.max( 1e-4, chromaEdge( picker.L, picker.h ) ) )
+	fieldPaint(); pickerMarks()
+	pickerCommit( hex )
+}
+function openPicker( i, anchorEl ){
+	picker.open = true; picker.index = i
+	const lch = hexToLch( state.colours[i] )
+	picker.L = clamp01( lch[0] ); picker.h = lch[2]
+	picker.cr = Math.min( 1, lch[1] / Math.max( 1e-4, chromaEdge( picker.L, picker.h ) ) )
+	const pick = element( "picker" )
+	pick.classList.remove( "hidden" )
+	/* paint the library before measuring — the grid is part of the height
+		 the clamping below must account for */
+	renderSwatchLibrary()
+	const toolbar = element( "toolbar" ).getBoundingClientRect()
+	const box = pick.getBoundingClientRect()
+	const roomLeft = toolbar.left - box.width - 10
+	if( roomLeft >= 10 ){
+		let top = anchorEl ? anchorEl.getBoundingClientRect().top : 18
+		top = Math.max( 10, Math.min( top, window.innerHeight - box.height - 10 ) )
+		pick.style.top = top + "px"
+		pick.style.bottom = "auto"
+		pick.style.left = roomLeft + "px"
+	} else {
+		let left = anchorEl ? anchorEl.getBoundingClientRect().left : 18
+		left = Math.max( 10, Math.min( left, window.innerWidth - box.width - 10 ) )
+		pick.style.left = left + "px"
+		pick.style.top = "auto"
+		/* sit above the bar when it is along the bottom, otherwise off the
+			 viewport edge — a right-hand bar is full height and gives no clearance */
+		pick.style.bottom = "18px"
+	}
+	huePaint(); fieldPaint()
+	element( "phex" ).value = state.colours[i]
+	element( "pClear" ).classList.toggle( "hidden", state.colours.length <= 1 )
+	pickerMarks()
+	renderSwatches()
+}
+function closePicker(){
+	picker.open = false; picker.index = -1
+	element( "picker" ).classList.add( "hidden" )
+	renderSwatches()
+}
+
+/* ══════════════════════════════════════════════════════════
+	 8. Helpers
+	 ══════════════════════════════════════════════════════════ */
+function note( msg ){
+	const n = element( "note" )
+	if( !msg ){ n.classList.add( "hidden" ); n.textContent = ""; return }
+	n.textContent = msg
+	n.classList.remove( "hidden" )
+}
+function download( blob, name ){
+	const url = URL.createObjectURL( blob )
+	const a = document.createElement( "a" )
+	a.href = url; a.download = name
+	document.body.appendChild( a ); a.click(); a.remove()
+	setTimeout( function(){ URL.revokeObjectURL( url ) }, 4000 )
+}
+function stamp(){ return new Date().toISOString().slice( 0,16 ).replace( /[-:T]/g,"" ) }
+
+/* data URL keeps the canvas untainted when the file is opened from file:// */
+function rasterise( mime, quality ){
+	return new Promise( function( resolve, reject ){
+		const o = outSize()
+		const pxW = o[0], pxH = o[1], W = pxW, H = pxH
+		/* Beyond ~140 megapixels the browser dies rather than reporting anything
+			 useful, so refuse it with a readable reason. */
+		if( pxW * pxH > 1.4e8 ){
+			reject( new Error( "too big: " + pxW + " \u00D7 " + pxH + " px" ) )
+			return
+		}
+		const svg = buildSvg( "raster", W, H, pxW, pxH )
+		const img = new Image()
+		img.onload = function(){
+			const canvas = document.createElement( "canvas" )
+			canvas.width = pxW; canvas.height = pxH
+			canvas.getContext( "2d" ).drawImage( img, 0, 0, pxW, pxH )
+			canvas.toBlob( function( b ){
+				if( b ) resolve( { blob:b, pxW:pxW, pxH:pxH } )
+				else reject( new Error( "canvas failed" ) )
+			}, mime, quality )
+		}
+		img.onerror = function(){ reject( new Error( "svg failed" ) ) }
+		img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent( svg )
+	} )
+}
+
+/* ══════════════════════════════════════════════════════════
+	 9. Wiring
+	 ══════════════════════════════════════════════════════════ */
+/* Seamless tiles across the left and right edges only — sheets are butted
+	 side by side, and a vertical run is had by turning the paper. So the angle
+	 is held horizontal while it is on: 90 or 270, which decides only which
+	 colour meets the left edge. */
+function snapAngle(){
+	if( !( state.seamless && state.type === "linear" ) ) return
+	state.angle = ( state.angle >= 180 ) ? 270 : 90
+	element( "angle" ).value = state.angle
+	element( "angleVal" ).textContent = state.angle + "\u00B0"
+}
+/* Every wired slider registers its state→display closure here, so anything
+	 that rewrites state wholesale (RANDOM) can replay the lot without a second
+	 copy of any formatting rule. */
+const rangeSync = []
+function wireRange( id, key, opts ){
+	opts = opts || {}
+	const scale = opts.scale || 1, unit = opts.unit || ""
+	const input = element( id ), out = element( id + "Val" )
+	const show = opts.fmt || function( v ){ return v + unit }
+	const sync = function(){
+		input.value = String( Math.round( state[key] * scale ) )
+		out.textContent = show( input.value )
+	}
+	sync()
+	rangeSync.push( sync )
+	input.addEventListener( "input", function(){
+		state[key] = Number( input.value ) / scale
+		out.textContent = show( input.value )
+		if( opts.after ) opts.after()
+		draw()
+	} )
+}
+function fillSelect( el, items, current, onChange ){
+	items.forEach( function( it ){
+		const o = document.createElement( "option" )
+		o.value = it.k; o.textContent = it.label
+		if( it.cn ) o.dataset.cn = it.cn   /* the language toggle walks data-cn */
+		if( it.k === current ) o.selected = true
+		el.appendChild( o )
+	} )
+	el.addEventListener( "change", function(){ onChange( el.value ) } )
+}
+/* The toolbar speaks two tongues. English is the default; one press of
+	 EN / CN swaps every element carrying data-cn — headings, buttons,
+	 labels and select options alike. The readout, the notes and the copy
+	 line stay English. Session-only, like all state. */
+let lang = "en"
+function applyLang(){
+	document.querySelectorAll( "[data-cn]" ).forEach( function( el ){
+		if( !el.dataset.en ) el.dataset.en = el.textContent
+		el.textContent = lang === "cn" ? el.dataset.cn : el.dataset.en
+	} )
+	element( "langEn" ).classList.toggle( "on", lang === "en" )
+	element( "langCn" ).classList.toggle( "on", lang === "cn" )
+}
+/* Push the whole state back into the controls — RANDOM rewrites state
+	 directly, and the toolbar must never claim anything but the truth. */
+function syncControls(){
+	Array.prototype.forEach.call( element( "typeRow" ).children, function( b ){
+		b.classList.toggle( "on", b.dataset.type === state.type )
+	} );
+	[ "paramLinear","paramLinear2" ].forEach( function( id ){
+		element( id ).classList.toggle( "hidden", state.type !== "linear" ) } )
+	element( "paramRadial" ).classList.toggle( "hidden", state.type !== "radial" );
+	[ "paramMesh","paramMesh3","paramMesh4" ].forEach( function( id ){
+		element( id ).classList.toggle( "hidden", state.type !== "mesh" ) } )
+	rangeSync.forEach( function( f ){ f() } )
+	element( "gridN" ).value = Math.round( state.gridN )
+	element( "gridNR" ).value = Math.round( Math.min( 160, Math.max( 2, state.gridN ) ) )
+	element( "gridPattern" ).value = state.grid ? state.gridPattern : "off"
+	element( "paramGrid2" ).classList.toggle( "hidden", !state.grid )
+	element( "ease" ).value = state.ease
+	element( "seamless" ).classList.toggle( "on", state.seamless )
+}
+/* One press rolls the whole composition — colours from the default palette,
+	 a type and its geometry, maybe a pattern, maybe grain — with the dramatic
+	 knobs held to civil ranges: grain never past 28%, soft never soupy.
+	 Size, ratio, blend space and seamless are production choices and stay put. */
+function randomAll(){
+	const r = Math.random
+	state.colours = randomColours( [ 2, 2, 3, 3, 3, 4, 4, 5 ][Math.floor( r() * 8 )] )
+	state.positions = evenPositions( state.colours.length )
+	const kind = r()
+	state.type = kind < 0.5 ? "linear" : kind < 0.75 ? "radial" : "mesh"
+	state.angle = Math.round( r() * 360 )
+	state.seamless = false
+	state.cx = Math.round( 15 + r() * 70 ); state.cy = Math.round( 15 + r() * 70 )
+	state.radius = Math.round( 40 + r() * 80 )
+	state.blobSize = 0.35 + r() * 0.40
+	state.blobSoft = 0.10 + r() * 0.35
+	state.seed = Math.floor( r() * 9999 )
+	state.grid = r() < 0.5
+	if( state.grid ){
+		const kinds = [ "plaid", "cells", "columns", "rows", "rings", "hex", "tri" ]
+		state.gridPattern = kinds[Math.floor( r() * kinds.length )]
+		state.gridN = Math.round( 5 + r() * 31 )
+	}
+	state.ease = r() < 0.7 ? "smooth" : [ "linear", "start", "end" ][Math.floor( r() * 3 )]
+	state.grain = r() < 0.4 ? Math.round( 8 + r() * 20 ) : 0
+	state.grainN = Math.round( 300 + r() * 600 )
+	state.grainBite = Math.round( 30 + r() * 30 )
+	if( picker.open ) closePicker()
+	syncControls()
+	renderSwatches(); draw()
+}
+function windowRatio(){
+	const stage = element( "stage" )
+	return Math.max( 1, stage.clientWidth / Math.max( 1, stage.clientHeight ) )
+}
+function syncSize(){
+	element( "ratioNum" ).value = Math.round( state.aspect * 1000 ) / 1000
+	element( "outH" ).value = Math.round( state.outH )
+	element( "outWShown" ).textContent = String( outSize()[0] )
+	/* Window is a mode, not a one-off reading: pick it and the proportion keeps
+		 following the browser as it is resized. It also has r:0, which the old
+		 truthiness test skipped — so it could never match and the menu always fell
+		 back to Custom. */
+	let found = "custom"
+	if( state.followWindow ){
+		RATIOS.forEach( function( p,i ){ if( !p.r ) found = String( i ) } )
+	} else {
+		RATIOS.forEach( function( p,i ){
+			if( p.r && Math.abs( p.r - state.aspect ) < 0.002 ) found = String( i )
+		} )
+	}
+	element( "ratioSel" ).value = found
+}
+
+
+function init(){
+	document.title = "WHL Colours Gradient " + VERSION
+	/* the toggle sits five characters after the version on the title line */
+	element( "lang" ).style.marginLeft = "calc(15px + " + ( "WHL COLOURS GRADIENT ".length + VERSION.length + 5 ) + "ch)"
+	element( "lang" ).addEventListener( "click", function(){ lang = lang === "en" ? "cn" : "en"; applyLang() } )
+	element( "terms" ).addEventListener( "click", function(){ element( "licence" ).classList.toggle( "hidden" ) } )
+	element( "randomAll" ).addEventListener( "click", randomAll )
+	/* 1 Colours */
+	element( "randColours" ).addEventListener( "click", function(){
+		state.colours = randomColours( state.colours.length )
+		if( picker.open ) openPicker( picker.index, element( "swatches" ).children[picker.index] )
+		renderSwatches(); draw()
+	} )
+	element( "ramp" ).addEventListener( "dblclick", function(){
+		state.positions = evenPositions( state.colours.length )
+		renderRamp(); draw()
+	} )
+
+	/* 1b Picker */
+	let drag = null
+	const readField = function( e ){
+		const r = element( "field" ).getBoundingClientRect()
+		picker.cr = Math.min( 1, Math.max( 0, ( e.clientX - r.left ) / r.width ) )
+		picker.L  = Math.min( 1, Math.max( 0, 1 - ( e.clientY - r.top ) / r.height ) )
+		pickerMarks()
+		pickerCommit( pickerHex() )
+	}
+	const readHue = function( e ){
+		const r = element( "hue" ).getBoundingClientRect()
+		picker.h = Math.min( 359.99, Math.max( 0, ( e.clientX - r.left ) / r.width * 360 ) )
+		fieldPaint(); pickerMarks()
+		pickerCommit( pickerHex() )
+	}
+	element( "field" ).addEventListener( "pointerdown", function( e ){
+		drag = readField; element( "field" ).setPointerCapture( e.pointerId ); readField( e ); e.preventDefault()
+	} )
+	element( "hue" ).addEventListener( "pointerdown", function( e ){
+		drag = readHue; element( "hue" ).setPointerCapture( e.pointerId ); readHue( e ); e.preventDefault()
+	} )
+	window.addEventListener( "pointermove", function( e ){ if( drag ) drag( e ) } )
+	window.addEventListener( "pointerup", function(){ drag = null } )
+	element( "pClear" ).addEventListener( "click", function(){ removeColour( picker.index ) } )
+	element( "pClose" ).addEventListener( "click", closePicker )
+	element( "phex" ).addEventListener( "input", function(){
+		let v = this.value.trim()
+		if( v && v.charAt( 0 ) !== "#" ) v = "#" + v
+		if( !hexToRgb( v ) ) return
+		const lch = hexToLch( v )
+		picker.L = clamp01( lch[0] ); picker.h = lch[2]
+		picker.cr = Math.min( 1, lch[1] / Math.max( 1e-4, chromaEdge( picker.L, picker.h ) ) )
+		fieldPaint(); pickerMarks()
+		state.colours[picker.index] = v.toLowerCase()
+		const swatch = element( "swatches" ).children[picker.index]
+		if( swatch ) swatch.style.background = state.colours[picker.index]
+		draw()
+	} )
+	element( "picker" ).addEventListener( "pointerdown", function( e ){ e.stopPropagation() } )
+	/* Anything outside dismisses it. This has to test containment, not rely on
+		 stopPropagation: the listener runs in the capture phase, which reaches
+		 document before the target, so a click inside the picker would otherwise
+		 close it before it could ever be used. */
+	document.addEventListener( "pointerdown", function( e ){
+		if( !picker.open ) return
+		const t = e.target
+		if( element( "picker" ).contains( t ) ) return
+		if( element( "swatches" ).contains( t ) || element( "ramp" ).contains( t ) ) return
+		closePicker()
+	}, true )
+	window.addEventListener( "blur", function(){ if( picker.open ) closePicker() } )
+	window.addEventListener( "keydown", function( e ){ if( e.key === "Escape" && picker.open ) closePicker() } )
+
+	/* 2 Type */
+	Array.prototype.forEach.call( element( "typeRow" ).children, function( b ){
+		b.addEventListener( "click", function(){
+			state.type = b.dataset.type
+			Array.prototype.forEach.call( element( "typeRow" ).children, function( x ){
+				x.classList.toggle( "on", x === b )
+			} );
+			[ "paramLinear","paramLinear2" ].forEach( function( id ){
+				element( id ).classList.toggle( "hidden", state.type !== "linear" ) } )
+			element( "paramRadial" ).classList.toggle( "hidden", state.type !== "radial" );
+			[ "paramMesh","paramMesh3","paramMesh4" ].forEach( function( id ){
+				element( id ).classList.toggle( "hidden", state.type !== "mesh" ) } )
+			draw()
+		} )
+	} )
+	wireRange( "angle", "angle", { unit:"°", after:snapAngle } )
+	wireRange( "radius", "radius", { unit:"%" } )
+	wireRange( "blobSize", "blobSize", { scale:100 } )
+	wireRange( "blobSoft", "blobSoft", { scale:100 } )
+	/* Cell size can be dragged or typed; the two stay in step */
+	const setCell = function( v, from ){
+		state.gridN = Math.max( 2, v )
+		if( from !== "num" ) element( "gridN" ).value = Math.round( state.gridN )
+		if( from !== "slider" ) element( "gridNR" ).value = Math.round( Math.min( 160, Math.max( 2, state.gridN ) ) )
+		draw()
+	}
+	element( "gridN" ).value = state.gridN
+	element( "gridNR" ).value = Math.round( Math.min( 160, Math.max( 2, state.gridN ) ) )
+	element( "gridN" ).addEventListener( "input", function(){ setCell( Number( this.value ) || 2, "num" ) } )
+	element( "gridNR" ).addEventListener( "input", function(){ setCell( Number( this.value ), "slider" ) } )
+	/* Choosing a shape switches the filter on; choosing None switches it off.
+		 A separate Quantise button said the same thing the heading already said. */
+	element( "gridPattern" ).addEventListener( "change", function(){
+		state.grid = ( this.value !== "off" )
+		if( state.grid ) state.gridPattern = this.value
+		element( "paramGrid2" ).classList.toggle( "hidden", !state.grid )
+		draw()
+	} )
+	element( "gridPattern" ).value = state.grid ? state.gridPattern : "off"
+	element( "paramGrid2" ).classList.toggle( "hidden", !state.grid )
+	wireRange( "grain", "grain", { unit:"%" } )
+	wireRange( "grainN", "grainN", { fmt:function( v ){ return v + "\u00D7" } } )
+	wireRange( "grainBite", "grainBite" )
+	element( "seamless" ).addEventListener( "click", function(){
+		state.seamless = !state.seamless
+		this.classList.toggle( "on", state.seamless )
+		snapAngle()
+		draw()
+	} )
+	element( "randShapes" ).addEventListener( "click", function(){
+		state.seed = Math.floor( Math.random() * 9999 ); draw()
+	} )
+	/* place the radial centre by pointing at the canvas */
+	let placing = false
+	const place = function( e ){
+		if( state.type !== "radial" ) return
+		const r = element( "canvas" ).getBoundingClientRect()
+		state.cx = Math.round( ( ( e.clientX - r.left ) / r.width ) * 1000 ) / 10
+		state.cy = Math.round( ( ( e.clientY - r.top ) / r.height ) * 1000 ) / 10
+		draw()
+	}
+	element( "stage" ).addEventListener( "pointerdown", function( e ){
+		if( state.type !== "radial" ) return
+		placing = true; place( e ); e.preventDefault()
+	} )
+	window.addEventListener( "pointermove", function( e ){ if( placing ) place( e ) } )
+	window.addEventListener( "pointerup", function(){ placing = false } )
+
+	/* 3 Blend */
+	fillSelect( element( "space" ), SPACES, state.space, function( v ){ state.space = v; draw() } )
+	fillSelect( element( "ease" ), EASES, state.ease, function( v ){ state.ease = v; draw() } )
+
+	/* 4 Size */
+	const select = element( "ratioSel" )
+	RATIOS.forEach( function( p,i ){
+		const o = document.createElement( "option" )
+		o.value = String( i ); o.textContent = p.label
+		if( p.cn ) o.dataset.cn = p.cn   /* the language toggle walks data-cn */
+		select.appendChild( o )
+	} )
+	const custom = document.createElement( "option" )
+	custom.value = "custom"; custom.textContent = "Custom"; custom.dataset.cn = "自訂"
+	select.appendChild( custom )
+	select.addEventListener( "change", function(){
+		if( select.value === "custom" ) return
+		const p = RATIOS[Number( select.value )]
+		state.followWindow = !p.r
+		state.aspect = p.r || windowRatio()
+		syncSize(); draw()
+	} )
+	element( "ratioNum" ).addEventListener( "input", function(){
+		state.aspect = Math.min( 20, Math.max( 1.6, Number( this.value ) || 1.6 ) )   /* 16:10 is as square as it goes */
+		state.followWindow = false
+		element( "ratioSel" ).value = "custom"
+		element( "outWShown" ).textContent = String( outSize()[0] )
+		draw()
+	} )
+	element( "outH" ).addEventListener( "input", function(){
+		state.outH = Math.min( 8000, Math.max( 200, Number( this.value ) || 200 ) )
+		element( "outWShown" ).textContent = String( outSize()[0] )
+		draw()
+	} )
+	state.followWindow = true
+	state.aspect = windowRatio()
+	syncSize()
+
+	/* 5 Export */
+	element( "dlSvg" ).addEventListener( "click", function(){
+		note( "" )
+		const o = outSize(), W = o[0], H = o[1]
+		download( new Blob( [ buildSvg( "file", W, H ) ], { type:"image/svg+xml" } ),
+			"WHL-gradient-" + stamp() + ".svg" )
+	} )
+	element( "dlPng" ).addEventListener( "click", function(){
+		note( "" ); const b = this; b.disabled = true; b.textContent = "…"
+		rasterise( "image/png" )
+			.then( function( r ){ download( r.blob, "WHL-gradient-" + stamp() + ".png" ) } )
+			.catch( function( e ){ note( String( e.message || e ) + " \u2014 try a smaller output height." ) } )
+			.then( function(){ b.disabled = false; b.textContent = "PNG" } )
+	} )
+	/* the screen render uses viewport dimensions, so redraw on resize */
+	let t = null
+	window.addEventListener( "resize", function(){
+		clearTimeout( t )
+		t = setTimeout( function(){
+			if( state.followWindow ){ state.aspect = windowRatio(); syncSize() }
+			draw()
+		}, 120 )
+	} )
+
+	/* Paste a palette. Ignored while a field has focus, so typing a hex code
+		 into the picker still behaves normally. */
+	window.addEventListener( "paste", function( e ){
+		const t = e.target
+		if( t && ( t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable ) ) return
+		const text = ( e.clipboardData || window.clipboardData )
+		if( !text ) return
+		const found = parseSwatch( text.getData( "text" ) || "" )
+		if( !found.colours.length ){ note( "Nothing that looks like a colour in there." ); return }
+		e.preventDefault()
+		/* The whole paste goes on the shelf; the working set still takes the
+			 first five. A hundred candidates survive in the picker's grid
+			 instead of evaporating past the slot limit. */
+		pastedCount += 1
+		picker.set = addSwatchSet( "pasted " + pastedCount, found.colours, found.rows )
+		state.colours = found.colours.slice( 0, state.slots )
+		state.positions = evenPositions( state.colours.length )
+		if( picker.open ) closePicker()
+		note( found.colours.length > state.slots
+			? "PASTED " + pastedCount + " · " + found.colours.length + " colours — first " + state.slots + " in use."
+			: found.colours.length + ( found.colours.length === 1 ? " colour" : " colours" ) + " pasted." )
+		setTimeout( function(){ note( "" ) }, 2600 )
+		renderSwatches(); draw()
+	} )
+
+	/* Drop palette files — the file-shaped twin of paste. Each file becomes
+		 a set named after it (extension off, lowercased): sage.json lands as
+		 SAGE. Several files dropped together each land as their own set. The
+		 first file behaves exactly like a paste — its first five become the
+		 working set — so both doors feel the same. */
+	window.addEventListener( "dragover", function( e ){ e.preventDefault() } )
+	window.addEventListener( "drop", function( e ){
+		e.preventDefault()
+		const files = Array.prototype.slice.call( ( e.dataTransfer && e.dataTransfer.files ) || [] )
+		if( !files.length ) return
+		files.forEach( function( f, fi ){
+			const reader = new FileReader()
+			reader.onload = function(){
+				const found = parseSwatch( String( reader.result || "" ) )
+				if( !found.colours.length ){ note( "No colours in " + f.name + "." ); setTimeout( function(){ note( "" ) }, 2600 ); return }
+				const name = f.name.replace( /\.[^.]*$/, "" ).toLowerCase()
+				picker.set = addSwatchSet( name, found.colours, found.rows )
+				if( fi === 0 ){
+					state.colours = found.colours.slice( 0, state.slots )
+					state.positions = evenPositions( state.colours.length )
+					if( picker.open ) closePicker()
+					renderSwatches(); draw()
+				}
+				note( name.toUpperCase() + " · " + found.colours.length + ( found.colours.length === 1 ? " colour" : " colours" ) )
+				setTimeout( function(){ note( "" ) }, 2600 )
+			}
+			reader.readAsText( f )
+		} )
+	} )
+
+	syncSize()
+	/* open on a fresh single-colour linear gradient rather than a blank sheet */
+	state.colours = randomColours( 1 )
+	state.positions = evenPositions( state.colours.length )
+	renderSwatches()
+	draw()
+}
+init()
+</script>
+</body>
+</html>
