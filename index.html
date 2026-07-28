@@ -43,7 +43,10 @@ body{
 	display:grid;
 	grid-template-columns:1fr 252px;
 	grid-template-rows:1fr auto;
-	padding:50px;
+	/* Content-to-edge distance follows imightfeel.ai — Hailei's reference:
+		 3ch of the page's own type, ~25 CSS px, which is the 50 device pixels
+		 his XDR ruler reads. The flat 50px CSS doubled that and read wrong. */
+	padding:calc(1.5 * 2ch);
 }
 /* The render is the page. The engine draws in a hidden viewport-sized iframe;
 	 its SVG is lifted into #canvas, full bleed behind everything. */
