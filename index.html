@@ -25,7 +25,7 @@
 	 desktop family installed resolve it locally; everyone else falls through
 	 the stack gracefully. */
 @font-face{
-	font-family:"Berkeley Mono Web";
+	font-family:"Berkeley Mono";
 	src:url(colours/gradient/berkeley.woff2) format("woff2");
 	font-display:swap;
 }
@@ -33,7 +33,10 @@
 /* Set like a terminal: one font, one size, hierarchy from whitespace and ink
 	 strength alone. No lines, no shadows, no second size. */
 body{
-	font-family:"Berkeley Mono Variable","Berkeley Mono","Berkeley Mono Web","IBM Plex Mono",ui-monospace,monospace;
+	/* Hailei's law for every WHL site: Berkeley Mono, IBM Plex Mono, monospace —
+		 one size, one set of weight rules. The @font-face above lets the served
+		 woff2 answer to the same name an installed copy would. */
+	font-family:"Berkeley Mono","IBM Plex Mono",monospace;
 	font-size:0.75rem; line-height:1.5;
 	color:#fff; background:#111;
 	min-height:100vh; min-height:100dvh;
@@ -47,8 +50,12 @@ body{
 #engine{position:fixed; inset:0; width:100%; height:100%; border:0; visibility:hidden; pointer-events:none; z-index:-2}
 #canvas{position:fixed; inset:0; z-index:-1}
 #canvas svg{width:100%; height:100%; display:block}
-#hud{grid-column:1; grid-row:1; white-space:pre; user-select:text}
-#hud::first-line{font-weight:500}
+#lead{grid-column:1; grid-row:1; white-space:pre; user-select:text}
+/* The site title is its own line and element, the parameters their own
+	 block — and on a phone the title stays pinned to the top (Hailei's
+	 rule, 2026-07-28). */
+#title{font-weight:500; margin-bottom:18px}
+
 #list{grid-column:2; grid-row:1 / span 2; justify-self:end; text-align:left}
 #list p{margin-bottom:18px}
 #copy{grid-column:1; grid-row:2; align-self:end}
@@ -62,6 +69,7 @@ a:hover{text-decoration:underline}
 	body{padding:15px; grid-template-columns:1fr; grid-template-rows:auto auto 1fr}
 	#list{grid-column:1; grid-row:2; justify-self:start; margin-top:36px}
 	#copy{grid-row:3}
+	#title{position:sticky; top:15px; z-index:30}
 }
 </style>
 </head>
@@ -70,7 +78,7 @@ a:hover{text-decoration:underline}
 <iframe id="engine" src="colours/gradient/" title="WHL Colours Gradient engine"></iframe>
 <div id="canvas"></div>
 
-<div id="hud">WHL · WANTED HACKER LIMITED</div>
+<div id="lead"><div id="title">WHL · WANTED HACKER LIMITED</div><div id="hud"></div></div>
 
 <nav id="list">
 	<p><a href="colours/gradient/" target="_blank" rel="noopener">WHL COLOURS GRADIENT</a></p>
@@ -102,9 +110,12 @@ function roll(){
 		/* The tool's readout, retitled. Its first line names the tool; the
 			 ratio and pixel lines describe the export, which a front door does
 			 not sell. Everything else is the truth about what is behind. */
-		const told = doc.getElementById( "hud" ).textContent.split( "\n" ).slice( 2 )
+		/* the tool's readout may or may not still carry its own title line —
+			 drop it if present, keep only the parameters */
+		const lines = doc.getElementById( "hud" ).textContent.split( "\n" )
+		const told = ( lines[0].indexOf( "WHL COLOURS GRADIENT" ) === 0 ? lines.slice( 2 ) : lines )
 			.filter( function( line ){ return line.indexOf( "RATIO" ) !== 0 && !/PX$/.test( line ) } )
-		document.getElementById( "hud" ).textContent = [ "WHL · WANTED HACKER LIMITED", "" ].concat( told ).join( "\n" )
+		document.getElementById( "hud" ).textContent = told.join( "\n" )
 
 		/* Each region judges its own ground with the engine's sampler: nine
 			 points, OKLab lightness, dark ink on light paper. Screen points map
@@ -127,7 +138,7 @@ function roll(){
 			}
 			el.classList.toggle( "ink-dark", sum / 9 > 0.62 )
 		}
-		judge( "hud" ); judge( "list" ); judge( "copy" )
+		judge( "title" ); judge( "hud" ); judge( "list" ); judge( "copy" )
 	}catch( fault ){
 		/* No engine, no roll — the page stands on its dark ground in white. */
 	}
