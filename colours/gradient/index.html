@@ -80,6 +80,7 @@
 	--base-min-width:960px;             /* narrowest viewport the layout is drawn for */
 	--tile-fill:rgba(0,0,0,.62);                        /* ground under #note */
 	--base-edge-gap:3px;               /* how far the bar sits off the window edge */
+	--page-margin:50px;                /* content-to-edge distance — Hailei's rule for every WHL site (2026-07-28) */
 	--base-font-size:0.75rem;
 	--base-line-height:1.5;                 /* 18px line box at the default size */
 	--line-strong:rgba(255,255,255,.34);
@@ -123,7 +124,7 @@ button,input,select{font-family:inherit; font-size:inherit; color:inherit}
 	padding-bottom:calc(var(--base-edge-gap) + env(safe-area-inset-bottom));
 	pointer-events:none}
 #fg > *{pointer-events:auto}
-#hud{grid-column:1; grid-row:1; margin:15px; padding:0;
+#hud{grid-column:1; grid-row:1; margin:calc(var(--page-margin) - var(--base-edge-gap)); padding:0;
 	background:none; border:0;
 	font-size:var(--base-font-size); line-height:var(--base-line-height); white-space:pre;
 	-webkit-user-select:text; user-select:text}
@@ -131,26 +132,25 @@ button,input,select{font-family:inherit; font-size:inherit; color:inherit}
 	 text buffer — splitting it into two elements would break the blank line
 	 that holds the title apart from the parameters. */
 #hud::first-line{font-weight:500}
-#foot{grid-column:1; grid-row:3; align-self:end; margin:15px;
+#foot{grid-column:1; grid-row:3; align-self:end; margin:calc(var(--page-margin) - var(--base-edge-gap));
 	font-size:var(--base-font-size); line-height:var(--base-line-height);
 	-webkit-user-select:text; user-select:text}
 /* One line of terms above the copyright line; pressing it unfolds the full
-	 licence above, pressing again folds it away. The unfolded sheet takes the
-	 note's ground — a paragraph must stay readable whatever gradient is behind
-	 it — with the white ink pinned, so it sits outside the ink judging. Links
-	 dress as plain text: the URLs already read as links, and browser-blue
-	 would fight the ink. New tab is mandatory: state lives only in memory,
-	 so navigating away destroys the composition. */
+	 licence above, pressing again folds it away. The unfolded text is bare on
+	 the render like everything else — no ground — one flesh with the terms
+	 line, its ink judged against its own stretch of the gradient. Links dress
+	 as plain text: the URLs already read as links, and browser-blue would
+	 fight the ink. New tab is mandatory: state lives only in memory, so
+	 navigating away destroys the composition. */
 #terms{cursor:pointer}
-#licence{background:var(--tile-fill); backdrop-filter:blur(16px) saturate(1.2);
-	-webkit-backdrop-filter:blur(16px) saturate(1.2);
-	color:#fff; padding:12px 18px; margin-bottom:9px; max-width:56ch}
+#licence{margin-bottom:18px; max-width:56ch}
 #licence a, #copy a{color:inherit; text-decoration:none}
 /* The language toggle sits on the readout's title line, five characters
 	 after the version — init sets the exact ch offset from the title length.
 	 One press swaps the toolbar's tongue; ink strength says which side is live. */
 #lang{grid-column:1; grid-row:1; justify-self:start; align-self:start;
-	margin:15px 0 0 15px; line-height:var(--base-line-height);
+	margin:calc(var(--page-margin) - var(--base-edge-gap)) 0 0 calc(var(--page-margin) - var(--base-edge-gap));
+	line-height:var(--base-line-height);
 	background:none; border:0; padding:0; cursor:pointer; white-space:pre}
 #lang span{opacity:.42}
 #lang span.on{opacity:1}
@@ -162,7 +162,12 @@ button,input,select{font-family:inherit; font-size:inherit; color:inherit}
 /* ── Toolbar ── */
 /* The bar lives along the right edge and stays there. Everything floats on
 	 the render, so there is nothing to gain from moving or folding it. */
-#toolbar{grid-column:3; grid-row:1 / span 3; min-height:0}
+#toolbar{grid-column:3; grid-row:1 / span 3; min-height:0;
+	/* Panels carry 4/10/8px of their own padding; the scroller makes up the
+		 difference so panel content sits the full page margin off the edge. */
+	padding:calc(var(--page-margin) - var(--base-edge-gap) - 4px)
+		calc(var(--page-margin) - var(--base-edge-gap) - 10px)
+		calc(var(--page-margin) - var(--base-edge-gap) - 8px) 0}
 /* No plate, no drawn dividers. The controls sit straight on the render, the
 	 way the readout does. #note keeps a ground because it is a transient alert
 	 that has to stay readable whatever is behind it. */
@@ -316,7 +321,7 @@ input[type=range]::-moz-range-thumb{width:3px; height:13px; background:currentCo
 <div id="foot">
 <div id="licence" class="hidden">© 2026 Wanted Hacker Limited. Personal and non-commercial use is free, without limitation.<br><br>Commercial use of an image produced with this tool requires a one-time licence fee of US$1 per image, paid via <a href="https://paypal.me/wanghailei" target="_blank" rel="noopener">paypal.me/wanghailei</a>. Once paid, that image may be used commercially without limit — any medium, any duration, no attribution required. Your PayPal receipt is your proof of licence.<br><br>The source is visible but remains copyrighted: do not copy, modify, redistribute or rehost it without written permission.<br><br>Contact: <a href="mailto:wanghailei@gmail.com">wanghailei@gmail.com</a></div>
 <div id="terms">Free for personal use · Commercial use US$1 per image</div>
-<div id="copy">© 2026 Wanted Hacker Limited · whl.ltd</div>
+<div id="copy">© 2026 Wanted Hacker Limited · <a href="https://whl.ltd" target="_blank" rel="noopener">whl.ltd</a></div>
 </div>
 
 <div id="toolbar">
@@ -636,7 +641,7 @@ const state = {
 	 (init writes the title — it cannot live here, the regress harness pulls
 	 this section into Node where there is no document). major.minor.patch —
 	 major bumps on Hailei's instruction; minor and patch on judgement. */
-const VERSION = "0.49.0"
+const VERSION = "0.50.0"
 const element = function( id ){ return document.getElementById( id ) }
 
 /* The output is a pixel width and a proportion; the height follows. Nothing
@@ -1271,6 +1276,7 @@ function tuneHud(){
 	tuneInk( element( "hud" ), "hud" )
 	tuneInk( element( "copy" ), "copy" )
 	tuneInk( element( "terms" ), "terms" )
+	tuneInk( element( "licence" ), "licence" )
 	tuneInk( element( "lang" ), "lang" )
 	/* each toolbar section judges its own stretch of the gradient — on a
 		 light-top artwork the upper panels turn black while the lower stay
@@ -1737,9 +1743,11 @@ function syncSize(){
 function init(){
 	document.title = "WHL Colours Gradient " + VERSION
 	/* the toggle sits five characters after the version on the title line */
-	element( "lang" ).style.marginLeft = "calc(15px + " + ( "WHL COLOURS GRADIENT ".length + VERSION.length + 5 ) + "ch)"
+	element( "lang" ).style.marginLeft = "calc(var(--page-margin) - var(--base-edge-gap) + " + ( "WHL COLOURS GRADIENT ".length + VERSION.length + 5 ) + "ch)"
 	element( "lang" ).addEventListener( "click", function(){ lang = lang === "en" ? "cn" : "en"; applyLang() } )
-	element( "terms" ).addEventListener( "click", function(){ element( "licence" ).classList.toggle( "hidden" ) } )
+	/* The sheet appears with no ground, so it must be judged the moment it
+		 unfolds — a hidden element has no rect and skips the earlier pass. */
+	element( "terms" ).addEventListener( "click", function(){ element( "licence" ).classList.toggle( "hidden" ); tuneHud() } )
 	element( "randomAll" ).addEventListener( "click", randomAll )
 	/* 1 Colours */
 	element( "randColours" ).addEventListener( "click", function(){

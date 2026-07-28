@@ -2,13 +2,17 @@
 <!--
 	whl.ltd — the front door of Wanted Hacker Limited.
 
-	One page, no build step, no dependencies. The background is a random SVG
-	gradient, rolled fresh on every load — the house question, IS LIFE A RANDOM
-	GRADIENT?, answered by the front door itself. The layout borrows the WHL
-	Colours Gradient tool: readout top-left showing the gradient's true
-	parameters, the works listed down the right, one line of copyright at the
-	bottom. Ink flips black or white per region, judged against the gradient
-	behind it, the way the tool judges its own paper.
+	One page, no build step, no dependencies. The background is a fresh roll of
+	the WHL Colours Gradient engine on every visit — the house question, IS
+	LIFE A RANDOM GRADIENT?, answered by the front door itself. There is no
+	second gradient algorithm here: the tool itself runs in a hidden
+	same-origin iframe, the page asks it to roll (randomAll), lifts the drawn
+	SVG straight out of its canvas, reads the true parameters from its readout,
+	and judges ink with the tool's own colour sampler. One engine, no copies.
+
+	The layout borrows the tool: readout top-left, the works down the right,
+	one line of copyright at the bottom. Content meets every window edge at
+	50px — Hailei's rule for all WHL sites — narrowing on phones.
 -->
 <html lang="en-GB">
 <head>
@@ -36,9 +40,11 @@ body{
 	display:grid;
 	grid-template-columns:1fr 252px;
 	grid-template-rows:1fr auto;
-	padding:15px;
+	padding:50px;
 }
-/* The render is the page. The SVG sits behind everything, full bleed. */
+/* The render is the page. The engine draws in a hidden viewport-sized iframe;
+	 its SVG is lifted into #canvas, full bleed behind everything. */
+#engine{position:fixed; inset:0; width:100%; height:100%; border:0; visibility:hidden; pointer-events:none; z-index:-2}
 #canvas{position:fixed; inset:0; z-index:-1}
 #canvas svg{width:100%; height:100%; display:block}
 #hud{grid-column:1; grid-row:1; white-space:pre; user-select:text}
@@ -50,10 +56,10 @@ a{color:inherit; text-decoration:none}
 a:hover{text-decoration:underline}
 .quiet{opacity:.55}
 .ink-dark{color:#111}
-/* On a phone the columns give way to a stack: readout, then the works, the
-	 copyright holding the floor. */
+/* On a phone the columns give way to a stack — readout, then the works, the
+	 copyright holding the floor — and the page margin narrows. */
 @media (max-width:720px){
-	body{grid-template-columns:1fr; grid-template-rows:auto auto 1fr}
+	body{padding:15px; grid-template-columns:1fr; grid-template-rows:auto auto 1fr}
 	#list{grid-column:1; grid-row:2; justify-self:start; margin-top:36px}
 	#copy{grid-row:3}
 }
@@ -61,96 +67,77 @@ a:hover{text-decoration:underline}
 </head>
 <body>
 
+<iframe id="engine" src="colours/gradient/" title="WHL Colours Gradient engine"></iframe>
 <div id="canvas"></div>
 
-<div id="hud"></div>
+<div id="hud">WHL · WANTED HACKER LIMITED</div>
 
 <nav id="list">
-	<p><a href="colours/gradient/">WHL COLOURS GRADIENT</a></p>
+	<p><a href="colours/gradient/" target="_blank" rel="noopener">WHL COLOURS GRADIENT</a></p>
 	<p class="quiet">WHL COLOURS PALETTE</p>
-	<p><a href="https://imightfeel.ai">I MIGHT FEEL . AI</a></p>
+	<p><a href="https://imightfeel.ai" target="_blank" rel="noopener">I MIGHT FEEL . AI</a></p>
 </nav>
 
-<div id="copy">© 2026 Wanted Hacker Limited · whl.ltd</div>
+<div id="copy">© 2026 Wanted Hacker Limited · <a href="https://whl.ltd">whl.ltd</a></div>
 
 <script>
 "use strict"
-/* One random gradient per visit. Hues stay adjacent, lightness climbs dark to
-	 light — the same civil ranges the Gradient tool rolls with, minus the
-	 colour-science machinery a front door does not need. */
-function rand( a, b ){ return a + Math.random() * ( b - a ) }
-function channel( v ){
-	const s = Math.round( Math.max( 0, Math.min( 255, v * 255 ) ) ).toString( 16 )
-	return s.length < 2 ? "0" + s : s
-}
-function hslToRgb( h, s, l ){
-	const f = function( n ){
-		const k = ( n + h / 30 ) % 12
-		return l - s * Math.min( l, 1 - l ) * Math.max( -1, Math.min( k - 3, 9 - k, 1 ) )
+/* The engine iframe fills the viewport, so the tool draws at exactly this
+	 window's ratio (its Window size mode). Once loaded: roll, lift, read,
+	 judge. Everything below leans on the tool's own globals — randomAll,
+	 renderDims, colourAtPoint, hexToRgb, rgbToOklab — one source of truth. */
+const frame = document.getElementById( "engine" )
+function roll(){
+	try{
+		const w = frame.contentWindow
+		const doc = frame.contentDocument
+		w.randomAll()
+		document.getElementById( "canvas" ).innerHTML = doc.getElementById( "canvas" ).innerHTML
+		/* The tool lays out at its own minimum width, so on narrow screens its
+			 render is wider than this viewport. Cover, never letterbox — the
+			 overflow crops away and the judging below maps through the crop. */
+		const svg = document.getElementById( "canvas" ).querySelector( "svg" )
+		if( svg ) svg.setAttribute( "preserveAspectRatio", "xMidYMid slice" )
+
+		/* The tool's readout, retitled. Its first line names the tool; the
+			 ratio and pixel lines describe the export, which a front door does
+			 not sell. Everything else is the truth about what is behind. */
+		const told = doc.getElementById( "hud" ).textContent.split( "\n" ).slice( 2 )
+			.filter( function( line ){ return line.indexOf( "RATIO" ) !== 0 && !/PX$/.test( line ) } )
+		document.getElementById( "hud" ).textContent = [ "WHL · WANTED HACKER LIMITED", "" ].concat( told ).join( "\n" )
+
+		/* Each region judges its own ground with the engine's sampler: nine
+			 points, OKLab lightness, dark ink on light paper. Screen points map
+			 through the cover-crop into render space. */
+		const dims = w.renderDims()
+		const cover = Math.max( window.innerWidth / dims.w, window.innerHeight / dims.h )
+		const cropX = ( dims.w - window.innerWidth / cover ) / 2
+		const cropY = ( dims.h - window.innerHeight / cover ) / 2
+		const judge = function( id ){
+			const el = document.getElementById( id )
+			const box = el.getBoundingClientRect()
+			if( !box.width ) return
+			let sum = 0
+			for( let i = 0; i <= 2; i++ ){
+				for( let j = 0; j <= 2; j++ ){
+					const x = cropX + ( box.left + box.width * ( 0.15 + 0.35 * i ) ) / cover
+					const y = cropY + ( box.top + box.height * ( 0.15 + 0.35 * j ) ) / cover
+					sum += w.rgbToOklab( w.hexToRgb( w.colourAtPoint( x, y, dims.w, dims.h ) ) || [ 0, 0, 0 ] )[0]
+				}
+			}
+			el.classList.toggle( "ink-dark", sum / 9 > 0.62 )
+		}
+		judge( "hud" ); judge( "list" ); judge( "copy" )
+	}catch( fault ){
+		/* No engine, no roll — the page stands on its dark ground in white. */
 	}
-	return [ f( 0 ), f( 8 ), f( 4 ) ]
 }
-const count = Math.random() < 0.4 ? 2 : 3
-const drift = rand( 18, 42 ) * ( Math.random() < 0.5 ? -1 : 1 )
-const hue = rand( 0, 360 )
-const dark = rand( 0.14, 0.30 ), light = rand( 0.68, 0.86 )
-const stops = []
-for( let i = 0; i < count; i++ ){
-	const t = count === 1 ? 0 : i / ( count - 1 )
-	const rgb = hslToRgb( ( hue + drift * i + 360 ) % 360, rand( 0.40, 0.72 ), dark + ( light - dark ) * t )
-	stops.push( { at: Math.round( t * 100 ), rgb: rgb, hex: "#" + channel( rgb[0] ) + channel( rgb[1] ) + channel( rgb[2] ) } )
-}
-const angle = Math.round( rand( 0, 360 ) )
-
-/* The SVG mirrors the tool's geometry: CSS angle convention, endpoints set to
-	 cover the frame, slice scaling so the gradient owns every pixel. */
-const rad = angle * Math.PI / 180
-const dx = Math.sin( rad ), dy = -Math.cos( rad )
-const half = ( Math.abs( dx ) * 100 + Math.abs( dy ) * 100 ) / 2
-const svgStops = stops.map( function( s ){
-	return '<stop offset="' + s.at + '%" stop-color="' + s.hex.toUpperCase() + '"/>'
-} ).join( "" )
-document.getElementById( "canvas" ).innerHTML =
-	'<svg viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">' +
-	'<defs><linearGradient id="g" gradientUnits="userSpaceOnUse" x1="' + ( 50 - dx * half ) + '" y1="' + ( 50 - dy * half ) +
-	'" x2="' + ( 50 + dx * half ) + '" y2="' + ( 50 + dy * half ) + '">' + svgStops +
-	'</linearGradient></defs><rect width="100" height="100" fill="url(#g)"/></svg>'
-
-/* The readout tells the truth about the gradient behind it, the way the tool
-	 does: stops, then type and angle. */
-const lines = [ "WHL · WANTED HACKER LIMITED", "" ]
-stops.forEach( function( s ){ lines.push( s.hex.toUpperCase() + " · " + s.at + "%" ) } )
-lines.push( "LINEAR · " + angle + "°" )
-document.getElementById( "hud" ).textContent = lines.join( "\n" )
-
-/* Each region judges its own ground. The point is mapped onto the gradient
-	 axis, the colour interpolated in sRGB — close enough to choose an ink —
-	 and the ink flips black when the ground is light. */
-function colourAt( px, py ){
-	const w = window.innerWidth, h = window.innerHeight
-	const cx = px * w, cy = py * h
-	const hl = ( Math.abs( dx ) * w + Math.abs( dy ) * h ) / 2
-	const t = Math.max( 0, Math.min( 1, ( ( cx - w / 2 ) * dx + ( cy - h / 2 ) * dy + hl ) / ( 2 * hl ) ) )
-	const pos = t * 100
-	let a = stops[0], b = stops[stops.length - 1]
-	for( let i = 0; i < stops.length - 1; i++ ){
-		if( pos >= stops[i].at && pos <= stops[i + 1].at ){ a = stops[i]; b = stops[i + 1]; break }
-	}
-	const span = Math.max( 1e-6, b.at - a.at )
-	const k = Math.max( 0, Math.min( 1, ( pos - a.at ) / span ) )
-	return a.rgb.map( function( v, i ){ return v + ( b.rgb[i] - v ) * k } )
-}
-function luminance( rgb ){
-	const lin = rgb.map( function( v ){ return v <= 0.04045 ? v / 12.92 : Math.pow( ( v + 0.055 ) / 1.055, 2.4 ) } )
-	return 0.2126 * lin[0] + 0.7152 * lin[1] + 0.0722 * lin[2]
-}
-function tune(){
-	[ [ "hud", 0.12, 0.12 ], [ "list", 0.88, 0.30 ], [ "copy", 0.12, 0.94 ] ].forEach( function( spot ){
-		document.getElementById( spot[0] ).classList.toggle( "ink-dark", luminance( colourAt( spot[1], spot[2] ) ) > 0.4 )
-	} )
-}
-tune()
-window.addEventListener( "resize", tune )
+frame.addEventListener( "load", roll )
+let settle
+window.addEventListener( "resize", function(){
+	clearTimeout( settle )
+	settle = setTimeout( roll, 200 )
+} )
 </script>
 
 </body>
