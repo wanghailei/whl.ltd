@@ -57,8 +57,10 @@ body{
 #canvas svg{width:100%; height:100%; display:block}
 #lead{grid-column:1; grid-row:1; user-select:text}
 /* The site title stands alone — no parameter readout on the front door —
-	 and on a phone it stays pinned to the top (Hailei's rule, 2026-07-28). */
-#title{font-weight:500}
+	 and on a phone it stays pinned to the top (Hailei's rule, 2026-07-28).
+	 Set bold, the letters held two spaces apart; white-space:pre keeps the
+	 literal spaces from collapsing. */
+#title{font-weight:700; white-space:pre}
 
 #list{grid-column:2; grid-row:1 / span 2; justify-self:end; text-align:left}
 #list p{margin-bottom:18px}
@@ -81,7 +83,7 @@ a:hover{text-decoration:underline}
 <iframe id="engine" src="colours/gradient/" title="WHL Colours Gradient engine"></iframe>
 <div id="canvas"></div>
 
-<div id="lead"><div id="title">WHL</div></div>
+<div id="lead"><div id="title">W  H  L</div></div>
 
 <nav id="list">
 	<p><a href="colours/gradient/" target="_blank" rel="noopener">WHL COLOURS GRADIENT</a></p>
