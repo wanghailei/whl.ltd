@@ -43,10 +43,10 @@ body{
 	display:grid;
 	grid-template-columns:1fr 252px;
 	grid-template-rows:1fr auto;
-	/* Content-to-edge distance follows imightfeel.ai — Hailei's reference:
-		 3ch of the page's own type, ~25 CSS px, which is the 50 device pixels
-		 his XDR ruler reads. The flat 50px CSS doubled that and read wrong. */
-	padding:calc(1.5 * 2ch);
+	/* Content-to-edge distance in the page's own type: Hailei tried the
+		 imightfeel 3ch and judged it too tight here — 4ch is his call
+		 (2026-07-28), uniform on every screen size. */
+	padding:4ch;
 }
 /* The render is the page. The engine draws in a hidden viewport-sized iframe;
 	 its SVG is lifted into #canvas, full bleed behind everything. */
@@ -70,10 +70,10 @@ a:hover{text-decoration:underline}
 	 copyright holding the floor. The page margin stays 3ch on every screen,
 	 the imightfeel.ai standard. */
 @media (max-width:720px){
-	body{padding:3ch; grid-template-columns:1fr; grid-template-rows:auto auto 1fr}
+	body{padding:4ch; grid-template-columns:1fr; grid-template-rows:auto auto 1fr}
 	#list{grid-column:1; grid-row:2; justify-self:start; margin-top:36px}
 	#copy{grid-row:3}
-	#title{position:sticky; top:3ch; z-index:30}
+	#title{position:sticky; top:4ch; z-index:30}
 }
 </style>
 </head>
