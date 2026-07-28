@@ -77,8 +77,8 @@
 	--base-min-width:960px;             /* narrowest viewport the layout is drawn for */
 	--tile-fill:rgba(0,0,0,.62);                        /* ground under #note */
 	--base-edge-gap:3px;               /* how far the bar sits off the window edge */
-	--page-margin:3ch;                 /* content-to-edge distance — Hailei's rule for every WHL site, the
-	                                      imightfeel.ai standard: 3ch of the page's own type (2026-07-28) */
+	--page-margin:4ch;                 /* content-to-edge distance — Hailei's law for every WHL site:
+	                                      4ch of the page's own type (revised 2026-07-28) */
 	--base-font-size:0.75rem;
 	--base-line-height:1.5;                 /* 18px line box at the default size */
 	--line-strong:rgba(255,255,255,.34);
@@ -651,7 +651,7 @@ const state = {
 	 (init writes the title — it cannot live here, the regress harness pulls
 	 this section into Node where there is no document). major.minor.patch —
 	 major bumps on Hailei's instruction; minor and patch on judgement. */
-const VERSION = "0.53.0"
+const VERSION = "0.53.1"
 const element = function( id ){ return document.getElementById( id ) }
 
 /* The output is a pixel width and a proportion; the height follows. Nothing

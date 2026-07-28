@@ -12,7 +12,8 @@
 
 	The layout borrows the tool: readout top-left, the works down the right,
 	one line of copyright at the bottom. Content meets every window edge at
-	50px — Hailei's rule for all WHL sites — narrowing on phones.
+	4ch of the page's own type — Hailei's rule for all WHL sites — on every
+	screen size.
 -->
 <html lang="en-GB">
 <head>
@@ -64,11 +65,9 @@ body{
 #copy{grid-column:1; grid-row:2; align-self:end}
 a{color:inherit; text-decoration:none}
 a:hover{text-decoration:underline}
-.quiet{opacity:.55}
 .ink-dark{color:#111}
 /* On a phone the columns give way to a stack — readout, then the works, the
-	 copyright holding the floor. The page margin stays 3ch on every screen,
-	 the imightfeel.ai standard. */
+	 copyright holding the floor. The page margin stays 4ch on every screen. */
 @media (max-width:720px){
 	body{padding:4ch; grid-template-columns:1fr; grid-template-rows:auto auto 1fr}
 	#list{grid-column:1; grid-row:2; justify-self:start; margin-top:36px}
@@ -82,12 +81,12 @@ a:hover{text-decoration:underline}
 <iframe id="engine" src="colours/gradient/" title="WHL Colours Gradient engine"></iframe>
 <div id="canvas"></div>
 
-<div id="lead"><div id="title">WHL · WANTED HACKER LIMITED</div><div id="hud"></div></div>
+<div id="lead"><div id="title">WHL</div><div id="hud"></div></div>
 
 <nav id="list">
 	<p><a href="colours/gradient/" target="_blank" rel="noopener">WHL COLOURS GRADIENT</a></p>
-	<p class="quiet">WHL COLOURS PALETTE</p>
-	<p><a href="https://imightfeel.ai" target="_blank" rel="noopener">I MIGHT FEEL . AI</a></p>
+	<p><a href="colours/palette/" target="_blank" rel="noopener">WHL COLOURS PALETTE</a></p>
+	<p><a href="https://imightfeel.ai" target="_blank" rel="noopener">i might feel . ai</a></p>
 </nav>
 
 <div id="copy">© 2026 Wanted Hacker Limited · <a href="https://whl.ltd">whl.ltd</a></div>
