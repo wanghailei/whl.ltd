@@ -7,10 +7,11 @@
 	LIFE A RANDOM GRADIENT?, answered by the front door itself. There is no
 	second gradient algorithm here: the tool itself runs in a hidden
 	same-origin iframe, the page asks it to roll (randomAll), lifts the drawn
-	SVG straight out of its canvas, reads the true parameters from its readout,
-	and judges ink with the tool's own colour sampler. One engine, no copies.
+	SVG straight out of its canvas, and judges ink with the tool's own colour
+	sampler. One engine, no copies. The parameters stay the tool's business —
+	the front door shows only the name.
 
-	The layout borrows the tool: readout top-left, the works down the right,
+	The layout borrows the tool: the title top-left, the works down the right,
 	one line of copyright at the bottom. Content meets every window edge at
 	4ch of the page's own type — Hailei's rule for all WHL sites — on every
 	screen size.
@@ -54,11 +55,10 @@ body{
 #engine{position:fixed; inset:0; width:100%; height:100%; border:0; visibility:hidden; pointer-events:none; z-index:-2}
 #canvas{position:fixed; inset:0; z-index:-1}
 #canvas svg{width:100%; height:100%; display:block}
-#lead{grid-column:1; grid-row:1; white-space:pre; user-select:text}
-/* The site title is its own line and element, the parameters their own
-	 block — and on a phone the title stays pinned to the top (Hailei's
-	 rule, 2026-07-28). */
-#title{font-weight:500; margin-bottom:18px}
+#lead{grid-column:1; grid-row:1; user-select:text}
+/* The site title stands alone — no parameter readout on the front door —
+	 and on a phone it stays pinned to the top (Hailei's rule, 2026-07-28). */
+#title{font-weight:500}
 
 #list{grid-column:2; grid-row:1 / span 2; justify-self:end; text-align:left}
 #list p{margin-bottom:18px}
@@ -66,7 +66,7 @@ body{
 a{color:inherit; text-decoration:none}
 a:hover{text-decoration:underline}
 .ink-dark{color:#111}
-/* On a phone the columns give way to a stack — readout, then the works, the
+/* On a phone the columns give way to a stack — title, then the works, the
 	 copyright holding the floor. The page margin stays 4ch on every screen. */
 @media (max-width:720px){
 	body{padding:4ch; grid-template-columns:1fr; grid-template-rows:auto auto 1fr}
@@ -81,7 +81,7 @@ a:hover{text-decoration:underline}
 <iframe id="engine" src="colours/gradient/" title="WHL Colours Gradient engine"></iframe>
 <div id="canvas"></div>
 
-<div id="lead"><div id="title">WHL</div><div id="hud"></div></div>
+<div id="lead"><div id="title">WHL</div></div>
 
 <nav id="list">
 	<p><a href="colours/gradient/" target="_blank" rel="noopener">WHL COLOURS GRADIENT</a></p>
@@ -94,8 +94,8 @@ a:hover{text-decoration:underline}
 <script>
 "use strict"
 /* The engine iframe fills the viewport, so the tool draws at exactly this
-	 window's ratio (its Window size mode). Once loaded: roll, lift, read,
-	 judge. Everything below leans on the tool's own globals — randomAll,
+	 window's ratio (its Window size mode). Once loaded: roll, lift, judge.
+	 Everything below leans on the tool's own globals — randomAll,
 	 renderDims, colourAtPoint, hexToRgb, rgbToOklab — one source of truth. */
 const frame = document.getElementById( "engine" )
 function roll(){
@@ -109,16 +109,6 @@ function roll(){
 			 overflow crops away and the judging below maps through the crop. */
 		const svg = document.getElementById( "canvas" ).querySelector( "svg" )
 		if( svg ) svg.setAttribute( "preserveAspectRatio", "xMidYMid slice" )
-
-		/* The tool's readout, retitled. Its first line names the tool; the
-			 ratio and pixel lines describe the export, which a front door does
-			 not sell. Everything else is the truth about what is behind. */
-		/* the tool's readout may or may not still carry its own title line —
-			 drop it if present, keep only the parameters */
-		const lines = doc.getElementById( "hud" ).textContent.split( "\n" )
-		const told = ( lines[0].indexOf( "WHL COLOURS GRADIENT" ) === 0 ? lines.slice( 2 ) : lines )
-			.filter( function( line ){ return line.indexOf( "RATIO" ) !== 0 && !/PX$/.test( line ) } )
-		document.getElementById( "hud" ).textContent = told.join( "\n" )
 
 		/* Each region judges its own ground with the engine's sampler: nine
 			 points, OKLab lightness, dark ink on light paper. Screen points map
@@ -141,7 +131,7 @@ function roll(){
 			}
 			el.classList.toggle( "ink-dark", sum / 9 > 0.62 )
 		}
-		judge( "title" ); judge( "hud" ); judge( "list" ); judge( "copy" )
+		judge( "title" ); judge( "list" ); judge( "copy" )
 	}catch( fault ){
 		/* No engine, no roll — the page stands on its dark ground in white. */
 	}
