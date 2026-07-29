@@ -299,6 +299,9 @@ select{appearance:none; padding-right:15px; cursor:pointer;
 	background-position:right 6px center, right 2px center;
 	background-size:4px 4px,4px 4px; background-repeat:no-repeat}
 select option{background:#111; color:#fff; font-size:var(--base-font-size)}
+/* Two spaces of air between the ratio menu and the number it governs —
+	 the row gap supplies 6px of it (Hailei, 2026-07-29). */
+#ratioSel{margin-right:calc( 2ch - 6px )}
 
 input[type=range]{-webkit-appearance:none; appearance:none; background:transparent;
 	height:14px; margin:0; width:clamp(72px, 8vw, 92px)}
@@ -471,13 +474,13 @@ input[type=range]::-moz-range-thumb{width:3px; height:13px; background:currentCo
 			<h2 data-cn="尺寸">Size</h2>
 			<div class="control-row">
 				<select id="ratioSel"></select>
-				<input type="number" id="ratioNum" min="1.6" max="20" step="0.01" style="width:60px">
+				<input type="number" id="ratioNum" min="1.6" max="20" step="0.01">
 				<span class="label tight">: 1</span>
 			</div>
 			<div class="control-row">
 				<span class="label tight" id="outWShown"></span>
 				<span class="label tight">×</span>
-				<input type="number" id="outH" min="200" max="8000" step="100" style="width:64px">
+				<input type="number" id="outH" min="200" max="8000" step="100">
 				<span class="label tight">px</span>
 			</div>
 		</section>
@@ -663,7 +666,7 @@ const state = {
 	 (init writes the title — it cannot live here, the regress harness pulls
 	 this section into Node where there is no document). major.minor.patch —
 	 major bumps on Hailei's instruction; minor and patch on judgement. */
-const VERSION = "0.55.0"
+const VERSION = "0.55.1"
 const element = function( id ){ return document.getElementById( id ) }
 
 /* The output is a pixel width and a proportion; the height follows. Nothing
@@ -1755,10 +1758,18 @@ function windowRatio(){
 	const stage = element( "stage" )
 	return Math.max( 1, stage.clientWidth / Math.max( 1, stage.clientHeight ) )
 }
+/* A number field is the value itself, so it takes exactly the value's width —
+	 a fixed pixel width leaves dead space that pushes the unit after it ("px",
+	 ": 1") away from the number. Mono type makes ch exact; the fraction is
+	 caret room. */
+function fitNumber( el ){
+	el.style.width = ( String( el.value ).length + 0.6 ) + "ch"
+}
 function syncSize(){
 	element( "ratioNum" ).value = Math.round( state.aspect * 1000 ) / 1000
 	element( "outH" ).value = Math.round( state.outH )
 	element( "outWShown" ).textContent = String( outSize()[0] )
+	fitNumber( element( "ratioNum" ) ); fitNumber( element( "outH" ) )
 	/* Window is a mode, not a one-off reading: pick it and the proportion keeps
 		 following the browser as it is resized. It also has r:0, which the old
 		 truthiness test skipped — so it could never match and the menu always fell
@@ -1965,11 +1976,13 @@ function init(){
 		state.followWindow = false
 		element( "ratioSel" ).value = "custom"
 		element( "outWShown" ).textContent = String( outSize()[0] )
+		fitNumber( this )
 		draw()
 	} )
 	element( "outH" ).addEventListener( "input", function(){
 		state.outH = Math.min( 8000, Math.max( 200, Number( this.value ) || 200 ) )
 		element( "outWShown" ).textContent = String( outSize()[0] )
+		fitNumber( this )
 		draw()
 	} )
 	state.followWindow = true
