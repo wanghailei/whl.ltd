@@ -32,6 +32,18 @@
 				font-display: swap;
 			}
 
+			/* The licensed Berkeley Mono web font, served from beside the Gradient
+			   tool so the file exists once in the repository. Browsers that hide
+			   user-installed fonts from web content (Safari's fingerprinting
+			   protection) never match the local() faces above — this served face
+			   sits later in the stack and keeps the page in Berkeley regardless.
+			   The URL resolves on whl.ltd; in dev the installed family answers. */
+			@font-face {
+				font-family: "Berkeley Mono";
+				src: url(../gradient/berkeley.woff2) format("woff2");
+				font-display: swap;
+			}
+
 			@layer palette;
 
 			@layer palette {
@@ -412,7 +424,7 @@
 			// ----------------------------------------------------------------
 			// State — no main colour: the whole swatch is the starting point
 			// ----------------------------------------------------------------
-			const version = "0.49.4"
+			const version = "0.49.5"
 			const storageKey = "whl-colour-palette-v3"
 			const settings = { hueStart: 25, chroma: 0.2, hueCount: 12, lightnessCount: 20 }
 			try {
