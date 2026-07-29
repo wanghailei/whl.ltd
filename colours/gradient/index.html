@@ -143,12 +143,16 @@ button,input,select{font-family:inherit; font-size:inherit; color:inherit}
 	#title{position:fixed; top:0; left:0; right:0; z-index:30; padding:15px}
 }
 /* The bottom lines span past the readout column so the terms line never
-	 folds on a desk (Hailei's rule); the licence sheet keeps its measure. */
+	 folds on a desk (Hailei's rule). The unfolded sheets take their measure
+	 from that line: the foot shrink-wraps to its widest unbreakable child —
+	 the nowrap terms line — and the sheets fill it, so popped-up text is
+	 exactly as wide as the text below it (Hailei, 2026-07-29). */
 #foot{grid-column:1 / 3; grid-row:3; align-self:end; margin:calc(var(--page-margin) - var(--base-edge-gap));
 	font-size:var(--base-font-size); line-height:var(--base-line-height);
 	-webkit-user-select:text; user-select:text}
 @media (min-width:960px){
 	#terms{white-space:nowrap}
+	#foot{width:min-content}
 }
 /* One line of terms above the copyright line; pressing it unfolds the full
 	 licence above, pressing again folds it away. The unfolded text is bare on
@@ -159,7 +163,7 @@ button,input,select{font-family:inherit; font-size:inherit; color:inherit}
 	 navigating away destroys the composition. */
 #terms{cursor:pointer}
 #helpBtn{cursor:pointer}
-#licence, #help{margin-bottom:18px; max-width:56ch}
+#licence, #help{margin-bottom:18px}
 #licence a, #copy a, #terms a{color:inherit; text-decoration:none}
 /* Each sheet opens under a ✕ — the sheet's first line, its first and only
 	 character, a block in the flow directly above the text (whl.ltd's door,
@@ -680,7 +684,7 @@ const state = {
 	 (init writes the title — it cannot live here, the regress harness pulls
 	 this section into Node where there is no document). major.minor.patch —
 	 major bumps on Hailei's instruction; minor and patch on judgement. */
-const VERSION = "0.55.8"
+const VERSION = "0.55.9"
 const element = function( id ){ return document.getElementById( id ) }
 
 /* The output is a pixel width and a proportion; the height follows. Nothing
