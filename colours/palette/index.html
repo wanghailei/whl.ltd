@@ -470,10 +470,12 @@
 				return reference
 			}
 
-			// A PT table arrives by drag-and-drop (licensed data stays on the
-			// owner's machine — localStorage, never the public server) or from
-			// an optional pantone.json sidecar on private deployments. Either
-			// way the shape is { "coated": { "<code>": "#hex" }, "uncoated": … }.
+			// The PT table ships with the site (pantone.json beside the page);
+			// dropping another table onto the page overrides it per browser.
+			// Either way the shape is { "coated": { "<code>": "#hex" }, "uncoated": … }.
+			// Only numeric codes survive parsing — the owner's rule: a PT
+			// reference without a number is not shown, and what does not
+			// correspond is not forced to correspond.
 			function parsePtTable(text) {
 				let data
 				try {
@@ -486,8 +488,11 @@
 				;["coated", "uncoated"].forEach(function (substrate) {
 					const entries = data[substrate]
 					if (!entries || typeof entries !== "object" || Array.isArray(entries)) return
-					if (!Object.values(entries).every((value) => typeof value === "string")) return
-					if (Object.keys(entries).length) table[substrate] = entries
+					const numeric = {}
+					Object.entries(entries).forEach(function ([code, value]) {
+						if (/^\d+$/.test(code) && typeof value === "string") numeric[code] = value
+					})
+					if (Object.keys(numeric).length) table[substrate] = numeric
 				})
 				return Object.keys(table).length ? table : null
 			}
@@ -496,7 +501,7 @@
 			// ----------------------------------------------------------------
 			// State — no main colour: the whole swatch is the starting point
 			// ----------------------------------------------------------------
-			const version = "0.56.1"
+			const version = "0.56.2"
 			const storageKey = "whl-colour-palette-v3"
 			// The house defaults — the same settings the companion Gradient tool's
 			// baked default swatch was generated from (swatch/default.json), so a
