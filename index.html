@@ -198,32 +198,32 @@ document.getElementById( "bioClose" ).addEventListener( "click", function(){
 
 /* ── The title drift ──
 	 Three letters on a one-dimensional track three logo-widths (21ch) long.
-	 A small physics in two acts. The flight: velocity, drag, walls at the
-	 track ends, contact between neighbours — the mover recoils, the struck
-	 letter is shoved on, which is how one letter's impulse walks through the
-	 other two. A kick always aims at company — W can only set off rightward,
-	 L only leftward, H either way — a letter running for an empty wall would
-	 be a story with nobody in it. The homecoming: once the impulse's energy
-	 is spent — drag and every bounce eat it — the letters walk back to their
-	 marks, and only with W  H  L standing as the logo again does the frame
-	 loop leave. At rest the page runs nothing; each moving frame writes
-	 three transforms and never touches layout. After a quiet random while,
-	 another letter finds the nerve. Three seconds after the page opens, the
-	 first one does. The leading semicolon is load-bearing: this file writes
+	 A small physics: velocity, drag, walls at the track ends, contact between
+	 neighbours — the mover recoils, the struck letter is shoved on, which is
+	 how an impulse walks through the trio. A performance is three kicks: each
+	 letter finds its nerve once, in a shuffled order, a second or three apart,
+	 so the later impulses land while the earlier ones still run — that is
+	 where the collisions come from. Direction is free: kicked hard enough, a
+	 letter that runs for a wall is thrown straight back into company, so
+	 every path leads to a meeting (Hailei's insight, 2026-07-29). When all
+	 the energy is spent — drag and every bounce eat it — the letters simply
+	 rest where they stopped: no walk home, the next performance starts from
+	 wherever this one ended. At rest the page runs nothing; each moving frame
+	 writes three transforms and never touches layout. After a quiet random
+	 while, the trio goes again. Three seconds after the page opens, the first
+	 performance does. The leading semicolon is load-bearing: this file writes
 	 no semicolons, and without it the opening parenthesis would swallow the
 	 addEventListener line above as a call. */
 ;( function(){
 	if( window.matchMedia && window.matchMedia( "(prefers-reduced-motion: reduce)" ).matches ) return
 	const glyphs = document.querySelectorAll( "#title span" )
-	const HOME = [ 0, 3, 6 ]          /* the logo's standing order, in ch */
 	const TRACK = 21                  /* the track, in ch — the 7ch logo three times over */
-	const DRAG = 0.7                  /* s⁻¹ — how quickly motion starves */
+	const DRAG = 0.65                 /* s⁻¹ — how quickly motion starves */
 	const WALL = 0.7                  /* speed kept when a track end throws a letter back */
 	const REV = 0.55, PUSH = 0.75     /* contact: the mover recoils, the struck moves on */
-	const EPS = 0.3, VMAX = 30        /* flight rest threshold and sanity cap, ch/s */
-	const RETURN = 2.5                /* s⁻¹ — the pace of the walk back to the marks */
-	const x = HOME.slice(), v = [ 0, 0, 0 ]
-	let ch = 7, last = null, mode = "rest"
+	const EPS = 0.3, VMAX = 30        /* rest threshold and sanity cap, ch/s */
+	const x = [ 0, 3, 6 ], v = [ 0, 0, 0 ]
+	let ch = 7, last = null, running = false, queue = []
 	function paint(){
 		for( let i = 0; i < 3; i++ ) glyphs[i].style.transform = "translateX(" + ( x[i] * ch ).toFixed( 2 ) + "px)"
 	}
@@ -240,45 +240,37 @@ document.getElementById( "bioClose" ).addEventListener( "click", function(){
 		if( last === null ) last = now
 		const dt = Math.min( ( now - last ) / 1000, 0.032 )
 		last = now
-		if( mode === "fly" ){
-			const starve = Math.exp( -DRAG * dt )
-			for( let i = 0; i < 3; i++ ){ x[i] += v[i] * dt; v[i] *= starve }
-			if( x[0] < 0 ){ x[0] = 0; v[0] = -v[0] * WALL }
-			if( x[2] > TRACK - 1 ){ x[2] = TRACK - 1; v[2] = -v[2] * WALL }
-			contact( 0, 1 ); contact( 1, 2 )
-			if( Math.abs( v[0] ) + Math.abs( v[1] ) + Math.abs( v[2] ) < EPS ){
-				v[0] = v[1] = v[2] = 0
-				mode = "home"                    /* the impulse is spent — walk back */
-			}
-		}else{
-			/* Exponential approach with one shared rate: gaps interpolate
-				 between what the flight left and the logo's own 3ch, so the
-				 letters can never cross on the way home. */
-			const pull = Math.min( 1, RETURN * dt )
-			let away = 0
-			for( let i = 0; i < 3; i++ ){
-				x[i] += ( HOME[i] - x[i] ) * pull
-				away += Math.abs( x[i] - HOME[i] )
-			}
-			if( away < 0.05 ){
-				x[0] = HOME[0]; x[1] = HOME[1]; x[2] = HOME[2]
-				paint()
-				mode = "rest"; last = null
-				setTimeout( kick, 8000 + Math.random() * 14000 )
-				return
-			}
-		}
+		const starve = Math.exp( -DRAG * dt )
+		for( let i = 0; i < 3; i++ ){ x[i] += v[i] * dt; v[i] *= starve }
+		if( x[0] < 0 ){ x[0] = 0; v[0] = -v[0] * WALL }
+		if( x[2] > TRACK - 1 ){ x[2] = TRACK - 1; v[2] = -v[2] * WALL }
+		contact( 0, 1 ); contact( 1, 2 )
 		paint()
+		if( Math.abs( v[0] ) + Math.abs( v[1] ) + Math.abs( v[2] ) < EPS ){
+			v[0] = v[1] = v[2] = 0
+			running = false; last = null
+			/* rest where they stopped; if the trio has kicks left, a pending
+				 timer will wake the loop — otherwise book the next performance */
+			if( !queue.length ) setTimeout( perform, 8000 + Math.random() * 14000 )
+			return
+		}
 		requestAnimationFrame( step )
 	}
 	function kick(){
 		ch = glyphs[0].getBoundingClientRect().width || ch
-		const i = Math.floor( Math.random() * 3 )
-		v[i] = ( i === 0 ? 1 : i === 2 ? -1 : Math.random() < 0.5 ? -1 : 1 ) * ( 14 + Math.random() * 12 )
-		mode = "fly"
-		requestAnimationFrame( step )
+		v[ queue.shift() ] = ( Math.random() < 0.5 ? -1 : 1 ) * ( 16 + Math.random() * 10 )
+		if( queue.length ) setTimeout( kick, 1000 + Math.random() * 2200 )
+		if( !running ){ running = true; requestAnimationFrame( step ) }
 	}
-	setTimeout( kick, 3000 )
+	function perform(){
+		queue = [ 0, 1, 2 ]
+		for( let i = 2; i > 0; i-- ){
+			const j = Math.floor( Math.random() * ( i + 1 ) )
+			const t = queue[i]; queue[i] = queue[j]; queue[j] = t
+		}
+		kick()
+	}
+	setTimeout( perform, 3000 )
 } )()
 </script>
 
