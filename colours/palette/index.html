@@ -344,7 +344,7 @@
 						<button class="export-button" id="exportCss" title="copy all colours as CSS variables">CSS</button>
 						<button class="export-button" id="exportJson" title="download the whole palette as JSON">JSON</button>
 						<button class="export-button" id="exportHex" title="copy a plain list of hex codes">HEX</button>
-						<button class="export-button" id="exportSvg" title="download the swatch as SVG (no text)">SVG</button>
+						<button class="export-button" id="exportSvg" title="download the swatch as SVG">SVG</button>
 					</div>
 				</div>
 			</div>
@@ -484,11 +484,12 @@
 			// ----------------------------------------------------------------
 			// State — no main colour: the whole swatch is the starting point
 			// ----------------------------------------------------------------
-			const version = "0.50.0"
+			const version = "0.51.0"
 			const storageKey = "whl-colour-palette-v3"
-			// The house defaults: chroma 0.150 sits mid-slider under the 0.32
-			// ceiling and keeps gamut clamping rare across the twelve hues.
-			const defaultSettings = { hueStart: 25, chroma: 0.15, hueCount: 12, lightnessCount: 20 }
+			// The house defaults — the same settings the companion Gradient tool's
+			// baked default swatch was generated from (swatch/default.json), so a
+			// fresh visitor to either tool starts from the one house standard.
+			const defaultSettings = { hueStart: 25, chroma: 0.12, hueCount: 28, lightnessCount: 18 }
 			const settings = { ...defaultSettings }
 			try {
 				const saved = JSON.parse(localStorage.getItem(storageKey))
@@ -735,10 +736,22 @@
 			function svgRectangles(cells) {
 				// cells laid out by grid position; every cell is square — the
 				// canonical swatch form. The fill-to-window screen is a live view.
+				// Colour cells carry their title and hex like the screen does —
+				// vector text at the screen's visual density, in the cell's own
+				// ink. Berkeley renders where the family is installed; elsewhere
+				// the stack falls through to any monospace.
 				const cellSize = 100
+				const fontStack = "Berkeley Mono, ui-monospace, Menlo, monospace"
 				let body = ""
 				cells.forEach(function (cell) {
-					body += `  <rect x="${cell.column * cellSize}" y="${cell.row * cellSize}" width="${cellSize}" height="${cellSize}" fill="${cell.hex}"/>\n`
+					const x = cell.column * cellSize
+					const y = cell.row * cellSize
+					body += `  <rect x="${x}" y="${y}" width="${cellSize}" height="${cellSize}" fill="${cell.hex}"/>\n`
+					if (cell.title) {
+						const ink = inkFor(cell.hex)
+						body += `  <text x="${x + 8}" y="${y + 19}" font-family="${fontStack}" font-size="11" fill="${ink}">${cell.title}</text>\n`
+						body += `  <text x="${x + 8}" y="${y + 33}" font-family="${fontStack}" font-size="10" fill="${ink}" opacity="0.7">${cell.hex.toUpperCase()}</text>\n`
+					}
 				})
 				const columns = Math.max(...cells.map((cell) => cell.column)) + 1
 				const rows = Math.max(...cells.map((cell) => cell.row)) + 1
@@ -765,17 +778,24 @@
 			}
 
 			function svgCells(families) {
+				// colour cells carry their title into the SVG; the black and white
+				// frame plates stay bare, mirroring the screen
 				if (selection && selection.kind === "column") {
 					const family = families[selection.index]
 					return {
-						name: exportName("svg", "hue" + Math.round(family.hue)),
-						cells: family.cells.map((cell, rowIndex) => ({ column: 0, row: rowIndex, hex: cell.hex })),
+						name: exportName("svg", "h" + Math.round(family.hue)),
+						cells: family.cells.map((cell, rowIndex) => ({ column: 0, row: rowIndex, hex: cell.hex, title: cell.title })),
 					}
 				}
 				if (selection && selection.kind === "row") {
 					return {
-						name: exportName("svg", "light" + lightnessPercentAt(selection.index)),
-						cells: families.map((family, columnIndex) => ({ column: columnIndex, row: 0, hex: family.cells[selection.index].hex })),
+						name: exportName("svg", "l" + lightnessPercentAt(selection.index)),
+						cells: families.map((family, columnIndex) => ({
+							column: columnIndex,
+							row: 0,
+							hex: family.cells[selection.index].hex,
+							title: family.cells[selection.index].title,
+						})),
 					}
 				}
 				const cells = [{ column: 0, row: 0, hex: "#000000" }, { column: 0, row: settings.lightnessCount + 1, hex: "#ffffff" }]
@@ -785,7 +805,7 @@
 						cells.push({ column: columnIndex, row: settings.lightnessCount + 1, hex: "#ffffff" })
 					}
 					family.cells.forEach(function (cell, rowIndex) {
-						cells.push({ column: columnIndex, row: rowIndex + 1, hex: cell.hex })
+						cells.push({ column: columnIndex, row: rowIndex + 1, hex: cell.hex, title: cell.title })
 					})
 				})
 				return { name: exportName("svg"), cells }
