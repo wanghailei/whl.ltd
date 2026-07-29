@@ -646,7 +646,7 @@ let pastedCount = 0   /* numbers the "pasted n" sets */
 const state = {
 	colours:[ "#e8e1d4" ],
 	positions:[ 0.5 ],
-	slots:5,
+	slots:7,
 	type:"linear", angle:160, cx:50, cy:35, radius:78, seamless:false,
 	blobSize:0.55, seed:11, blobSoft:0.30,
 	/* counts are per height-span; the old across-width defaults 24/900 at a
@@ -663,7 +663,7 @@ const state = {
 	 (init writes the title — it cannot live here, the regress harness pulls
 	 this section into Node where there is no document). major.minor.patch —
 	 major bumps on Hailei's instruction; minor and patch on judgement. */
-const VERSION = "0.54.5"
+const VERSION = "0.55.0"
 const element = function( id ){ return document.getElementById( id ) }
 
 /* The output is a pixel width and a proportion; the height follows. Nothing
@@ -1726,7 +1726,7 @@ function syncControls(){
 	 Size, ratio, blend space and seamless are production choices and stay put. */
 function randomAll(){
 	const r = Math.random
-	state.colours = randomColours( [ 2, 2, 3, 3, 3, 4, 4, 5 ][Math.floor( r() * 8 )] )
+	state.colours = randomColours( [ 2, 2, 3, 3, 3, 4, 4, 5, 6, 7 ][Math.floor( r() * 10 )] )
 	state.positions = evenPositions( state.colours.length )
 	const kind = r()
 	state.type = kind < 0.5 ? "linear" : kind < 0.75 ? "radial" : "mesh"
@@ -1990,15 +1990,34 @@ function init(){
 			.catch( function( e ){ note( String( e.message || e ) + " \u2014 try a smaller output height." ) } )
 			.then( function(){ b.disabled = false; b.textContent = "PNG" } )
 	} )
-	/* the screen render uses viewport dimensions, so redraw on resize */
+	/* The screen render uses viewport dimensions, so it must follow every
+		 change of them. The window resize event alone is not enough: iPadOS
+		 rotation and split-view can reshape the stage while starving that
+		 event, leaving a stale aspect and black bands beside the canvas
+		 (Hailei's iPad, 2026-07-29). So the stage's own box is observed
+		 directly, with rotation and visual-viewport changes funnelled into
+		 the same debounce. */
 	let t = null
-	window.addEventListener( "resize", function(){
+	const follow = function(){
 		clearTimeout( t )
 		t = setTimeout( function(){
 			if( state.followWindow ){ state.aspect = windowRatio(); syncSize() }
 			draw()
 		}, 120 )
-	} )
+	}
+	window.addEventListener( "resize", follow )
+	window.addEventListener( "orientationchange", follow )
+	if( window.visualViewport ) window.visualViewport.addEventListener( "resize", follow )
+	if( window.ResizeObserver ) new ResizeObserver( follow ).observe( element( "stage" ) )
+	/* and a slow safety poll — mobile browsers starve every one of the
+		 events above at some point in their animation politics; comparing the
+		 stage's box to the one last drawn costs nothing and misses nothing */
+	let drawnBox = ""
+	setInterval( function(){
+		const stageBox = element( "stage" ).clientWidth + "x" + element( "stage" ).clientHeight
+		if( drawnBox && stageBox !== drawnBox ) follow()
+		drawnBox = stageBox
+	}, 800 )
 
 	/* Paste a palette. Ignored while a field has focus, so typing a hex code
 		 into the picker still behaves normally. */
