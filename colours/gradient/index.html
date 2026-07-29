@@ -160,6 +160,13 @@ button,input,select{font-family:inherit; font-size:inherit; color:inherit}
 #helpBtn{cursor:pointer}
 #licence, #help{margin-bottom:18px; max-width:56ch}
 #licence a, #copy a, #terms a{color:inherit; text-decoration:none}
+/* Each sheet opens under a ✕ — the sheet's first line, its first and only
+	 character, a block in the flow directly above the text (whl.ltd's door,
+	 2026-07-29). Dressed as plain text like every control in the house, and
+	 colour:inherit lets it flip with the sheet's judged ink. */
+.sheetClose{display:block; background:none; border:0; padding:0;
+	font:inherit; color:inherit; cursor:pointer; opacity:.55}
+.sheetClose:hover{opacity:1}
 /* The language toggle sits on the readout's title line, five characters
 	 after the version — init sets the exact ch offset from the title length.
 	 One press swaps the toolbar's tongue; ink strength says which side is live. */
@@ -341,8 +348,8 @@ input[type=range]::-moz-range-thumb{width:3px; height:13px; background:currentCo
 <div id="lead"><div id="title"></div><div id="hud"></div></div>
 <button id="lang" title="Toolbar language" aria-label="Toolbar language"><span id="langEn" class="on">EN</span><span> / </span><span id="langCn">CN</span></button>
 <div id="foot">
-<div id="help" class="hidden" data-cn-html='「人生是隨機漸變嗎？」擲整幅構圖；「隨機」只擲顏色。<br><br>顏色——點色格選色；貼上任何含 hex 色碼的文本；或把色票檔拖到頁面上。單一顏色會自行衍生深淺。拖色格下方的手柄安放每個顏色的位置；雙擊色帶回到等分；兩個手柄放同一顏色即成平台。<br><br>型態——線性設角度。徑向：點畫布定中心，滑桿調半徑。多焦點散佈模糊色團，「重排」重新擲位。無縫令線性首尾閉環，兩張拼版接合不斷色。<br><br>混色——兩色之間走哪條路：VIVID 保飽和，EVEN 最平順，LEGACY 是傳統 sRGB；緩動曲線在旁。<br><br>圖紋把漸變壓平成向量色格。顆粒鋪上膠片式的紋理，以高度計數——強度、密度、咬合。<br><br>尺寸是一個比例加輸出高度，寬度隨之；WINDOW 跟隨視窗。SVG 與 PNG 所見即所得。'>IS LIFE A RANDOM GRADIENT? rolls the whole composition; RANDOMISE rolls the colours alone.<br><br>COLOURS — click a box to pick, paste any text carrying hex codes, or drop a swatch file on the page; a single colour derives its own light and dark. Drag the handles under the boxes to place each colour; double-click the ramp to reset; two handles on one colour hold a flat.<br><br>TYPE — LINEAR takes an angle. RADIAL: click the canvas to place the centre, set the radius on the slider. MULTI-POINT scatters blurred masses; RANDOMISE reshuffles them. SEAMLESS closes a linear loop so two prints butt without a break.<br><br>BLEND — the route between colours: VIVID keeps saturation, EVEN is smoothest, LEGACY is the old sRGB way; the easing curve sits beside it.<br><br>PATTERN flattens the gradient into vector tiles. GRAIN lays film-like texture counted along the height — AMOUNT, COUNT, BITE.<br><br>SIZE is a ratio and an output height, width follows; WINDOW tracks this window. SVG and PNG export exactly what is on screen.</div>
-<div id="licence" class="hidden" data-cn-html='© 2026 Wanted Hacker Limited。個人與非商業使用免費，無任何限制。<br><br>以本工具產出的圖像作商業使用，須一次性支付每圖 US$1 的授權費，經 <a href="https://paypal.me/wanghailei/1USD" target="_blank" rel="noopener">paypal.me/wanghailei</a> 支付；付訖後該圖像即可無限制商用——任何媒介、任何期限、毋須署名。你的 PayPal 收據即授權憑證。<br><br>源碼可見但版權保留：未經書面許可，不得複製、修改、再散佈或另行架設。<br><br>聯絡：<a href="mailto:wanghailei@gmail.com">wanghailei@gmail.com</a>'>© 2026 Wanted Hacker Limited. Personal and non-commercial use is free, without limitation.<br><br>Commercial use of an image produced with this tool requires a one-time licence fee of US$1 per image, paid via <a href="https://paypal.me/wanghailei/1USD" target="_blank" rel="noopener">paypal.me/wanghailei</a>. Once paid, that image may be used commercially without limit — any medium, any duration, no attribution required. Your PayPal receipt is your proof of licence.<br><br>The source is visible but remains copyrighted: do not copy, modify, redistribute or rehost it without written permission.<br><br>Contact: <a href="mailto:wanghailei@gmail.com">wanghailei@gmail.com</a></div>
+<div id="help" class="hidden"><button class="sheetClose" type="button" aria-label="close">✕</button><div data-cn-html='「人生是隨機漸變嗎？」擲整幅構圖；「隨機」只擲顏色。<br><br>顏色——點色格選色；貼上任何含 hex 色碼的文本；或把色票檔拖到頁面上。單一顏色會自行衍生深淺。拖色格下方的手柄安放每個顏色的位置；雙擊色帶回到等分；兩個手柄放同一顏色即成平台。<br><br>型態——線性設角度。徑向：點畫布定中心，滑桿調半徑。多焦點散佈模糊色團，「重排」重新擲位。無縫令線性首尾閉環，兩張拼版接合不斷色。<br><br>混色——兩色之間走哪條路：VIVID 保飽和，EVEN 最平順，LEGACY 是傳統 sRGB；緩動曲線在旁。<br><br>圖紋把漸變壓平成向量色格。顆粒鋪上膠片式的紋理，以高度計數——強度、密度、咬合。<br><br>尺寸是一個比例加輸出高度，寬度隨之；WINDOW 跟隨視窗。SVG 與 PNG 所見即所得。'>IS LIFE A RANDOM GRADIENT? rolls the whole composition; RANDOMISE rolls the colours alone.<br><br>COLOURS — click a box to pick, paste any text carrying hex codes, or drop a swatch file on the page; a single colour derives its own light and dark. Drag the handles under the boxes to place each colour; double-click the ramp to reset; two handles on one colour hold a flat.<br><br>TYPE — LINEAR takes an angle. RADIAL: click the canvas to place the centre, set the radius on the slider. MULTI-POINT scatters blurred masses; RANDOMISE reshuffles them. SEAMLESS closes a linear loop so two prints butt without a break.<br><br>BLEND — the route between colours: VIVID keeps saturation, EVEN is smoothest, LEGACY is the old sRGB way; the easing curve sits beside it.<br><br>PATTERN flattens the gradient into vector tiles. GRAIN lays film-like texture counted along the height — AMOUNT, COUNT, BITE.<br><br>SIZE is a ratio and an output height, width follows; WINDOW tracks this window. SVG and PNG export exactly what is on screen.</div></div>
+<div id="licence" class="hidden"><button class="sheetClose" type="button" aria-label="close">✕</button><div data-cn-html='© 2026 Wanted Hacker Limited。個人與非商業使用免費，無任何限制。<br><br>以本工具產出的圖像作商業使用，須一次性支付每圖 US$1 的授權費，經 <a href="https://paypal.me/wanghailei/1USD" target="_blank" rel="noopener">paypal.me/wanghailei</a> 支付；付訖後該圖像即可無限制商用——任何媒介、任何期限、毋須署名。你的 PayPal 收據即授權憑證。<br><br>源碼可見但版權保留：未經書面許可，不得複製、修改、再散佈或另行架設。<br><br>聯絡：<a href="mailto:wanghailei@gmail.com">wanghailei@gmail.com</a>'>© 2026 Wanted Hacker Limited. Personal and non-commercial use is free, without limitation.<br><br>Commercial use of an image produced with this tool requires a one-time licence fee of US$1 per image, paid via <a href="https://paypal.me/wanghailei/1USD" target="_blank" rel="noopener">paypal.me/wanghailei</a>. Once paid, that image may be used commercially without limit — any medium, any duration, no attribution required. Your PayPal receipt is your proof of licence.<br><br>The source is visible but remains copyrighted: do not copy, modify, redistribute or rehost it without written permission.<br><br>Contact: <a href="mailto:wanghailei@gmail.com">wanghailei@gmail.com</a></div></div>
 <div id="terms" data-cn-html='$ 個人使用免費 · 商業使用每圖 US$1，經 <a href="https://paypal.me/wanghailei/1USD" target="_blank" rel="noopener">paypal.me/wanghailei</a> 支付'>$ Free for personal use · Commercial use US$1 per image, paid via <a href="https://paypal.me/wanghailei/1USD" target="_blank" rel="noopener">paypal.me/wanghailei</a></div>
 <div id="copy">© 2026 Wanted Hacker Limited · <a href="https://whl.ltd" target="_blank" rel="noopener">whl.ltd</a> · <span id="helpBtn" data-cn="幫助">HELP</span></div>
 </div>
@@ -669,7 +676,7 @@ const state = {
 	 (init writes the title — it cannot live here, the regress harness pulls
 	 this section into Node where there is no document). major.minor.patch —
 	 major bumps on Hailei's instruction; minor and patch on judgement. */
-const VERSION = "0.55.3"
+const VERSION = "0.55.4"
 const element = function( id ){ return document.getElementById( id ) }
 
 /* The output is a pixel width and a proportion; the height follows. Nothing
@@ -1806,6 +1813,14 @@ function init(){
 		 payment lines; judged for ink the moment it appears, like the licence. */
 	element( "helpBtn" ).addEventListener( "click", function(){
 		element( "help" ).classList.toggle( "hidden" ); tuneHud()
+	} )
+	/* The ✕ atop each sheet is its door out — one press folds it. The button
+		 sits outside the data-cn-html block, so the language toggle's innerHTML
+		 swap can never wipe it. */
+	;[ "help", "licence" ].forEach( function( id ){
+		element( id ).querySelector( ".sheetClose" ).addEventListener( "click", function(){
+			element( id ).classList.add( "hidden" ); tuneHud()
+		} )
 	} )
 	/* The unfolded sheets are transient reading, not state: any press outside
 		 the foot — a slider, the canvas, the dice — folds them away. Presses
