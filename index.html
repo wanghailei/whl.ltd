@@ -62,9 +62,14 @@ body{
 #lead{grid-column:1; grid-row:1; user-select:text}
 /* The site title stands alone — no parameter readout on the front door —
 	 and on a phone it stays pinned to the top (Hailei's rule, 2026-07-28).
-	 Set Medium, the letters held two spaces apart; white-space:pre keeps
-	 the literal spaces from collapsing. */
-#title{font-weight:500; white-space:pre}
+	 Set Medium, the letters two spaces apart at rest. Each letter is its own
+	 span on a track three logo-widths long (the logo is 7ch, so 21ch), and
+	 the drift script below animates the same transform these rules set —
+	 before the script, and whenever the physics sleeps, this IS the title. */
+#title{font-weight:500; position:relative; width:21ch; height:1.5em}
+#title span{position:absolute; left:0; top:0; will-change:transform}
+#title span:nth-child(2){transform:translateX(3ch)}
+#title span:nth-child(3){transform:translateX(6ch)}
 
 #list{grid-column:2; grid-row:1 / span 2; justify-self:end; text-align:left}
 #list p{margin-bottom:18px}
@@ -105,7 +110,7 @@ a:hover{text-decoration:underline}
 <iframe id="engine" src="colours/gradient/" title="WHL Colours Gradient engine"></iframe>
 <div id="canvas"></div>
 
-<div id="lead"><div id="title">W  H  L</div></div>
+<div id="lead"><div id="title"><span>W</span><span>H</span><span>L</span></div></div>
 
 <nav id="list">
 	<p><a href="colours/gradient/" target="_blank" rel="noopener">WHL COLOURS GRADIENT</a></p>
@@ -190,6 +195,67 @@ document.getElementById( "bioName" ).addEventListener( "click", function(){
 document.getElementById( "bioClose" ).addEventListener( "click", function(){
 	bio.classList.add( "hidden" )
 } )
+
+/* ── The title drift ──
+	 Three letters on a one-dimensional track three logo-widths (21ch) long.
+	 A small physics: velocity, drag, walls at the track ends, contact between
+	 neighbours — the mover recoils, the struck letter is shoved on, which is
+	 how one letter's impulse walks through the other two. Three seconds after
+	 the page opens, one letter sets off at random; the motion ends only when
+	 that impulse's energy has been spent — drag and every bounce eat it —
+	 and once the total speed starves below a whisper, everything is zeroed
+	 and the frame loop leaves. At rest the page runs nothing; each moving
+	 frame writes three transforms and never touches layout. After a quiet
+	 random while, another letter finds the nerve. The leading semicolon is
+	 load-bearing: this file writes no semicolons, and without it the opening
+	 parenthesis would swallow the addEventListener line above as a call. */
+;( function(){
+	if( window.matchMedia && window.matchMedia( "(prefers-reduced-motion: reduce)" ).matches ) return
+	const glyphs = document.querySelectorAll( "#title span" )
+	const TRACK = 21                  /* the track, in ch — the 7ch logo three times over */
+	const DRAG = 1.1                  /* s⁻¹ — how quickly motion starves */
+	const WALL = 0.7                  /* speed kept when a track end throws a letter back */
+	const REV = 0.55, PUSH = 0.75     /* contact: the mover recoils, the struck moves on */
+	const EPS = 0.2, VMAX = 22        /* rest threshold and sanity cap, ch/s */
+	const x = [ 0, 3, 6 ], v = [ 0, 0, 0 ]
+	let ch = 7, last = null
+	function paint(){
+		for( let i = 0; i < 3; i++ ) glyphs[i].style.transform = "translateX(" + ( x[i] * ch ).toFixed( 2 ) + "px)"
+	}
+	function contact( i, j ){
+		if( v[i] - v[j] <= 0 ) return           /* not approaching — already parting */
+		const gap = x[j] - x[i] - 1             /* every letter is 1ch wide */
+		if( gap >= 0 ) return
+		x[i] += gap / 2; x[j] -= gap / 2
+		const a = v[i], b = v[j]
+		v[i] = Math.max( -VMAX, Math.min( VMAX, -REV * a + PUSH * b ) )
+		v[j] = Math.max( -VMAX, Math.min( VMAX, -REV * b + PUSH * a ) )
+	}
+	function step( now ){
+		if( last === null ) last = now
+		const dt = Math.min( ( now - last ) / 1000, 0.032 )
+		last = now
+		const starve = Math.exp( -DRAG * dt )
+		for( let i = 0; i < 3; i++ ){ x[i] += v[i] * dt; v[i] *= starve }
+		if( x[0] < 0 ){ x[0] = 0; v[0] = -v[0] * WALL }
+		if( x[2] > TRACK - 1 ){ x[2] = TRACK - 1; v[2] = -v[2] * WALL }
+		contact( 0, 1 ); contact( 1, 2 )
+		paint()
+		if( Math.abs( v[0] ) + Math.abs( v[1] ) + Math.abs( v[2] ) < EPS ){
+			v[0] = v[1] = v[2] = 0
+			last = null
+			setTimeout( kick, 8000 + Math.random() * 14000 )
+			return
+		}
+		requestAnimationFrame( step )
+	}
+	function kick(){
+		ch = glyphs[0].getBoundingClientRect().width || ch
+		v[ Math.floor( Math.random() * 3 ) ] = ( Math.random() < 0.5 ? -1 : 1 ) * ( 8 + Math.random() * 8 )
+		requestAnimationFrame( step )
+	}
+	setTimeout( kick, 3000 )
+} )()
 </script>
 
 </body>
