@@ -12,7 +12,8 @@
 	the front door shows only the name.
 
 	The layout borrows the tool: the title top-left, the works down the right,
-	one line of copyright at the bottom. Content meets every window edge at
+	one line of copyright at the bottom — the name on it unfolds the author's
+	card above itself, the tool's licence fold borrowed for the person. Content meets every window edge at
 	4ch of the page's own type — Hailei's rule for all WHL sites — on every
 	screen size.
 -->
@@ -68,6 +69,22 @@ body{
 #list{grid-column:2; grid-row:1 / span 2; justify-self:end; text-align:left}
 #list p{margin-bottom:18px}
 #copy{grid-column:1; grid-row:2; align-self:end}
+/* The author's card unfolds above the copyright line — the tool's licence
+	 fold, borrowed for the person behind the house. Bare on the render like
+	 everything else, its ink judged against its own stretch of the gradient.
+	 A small ✕ holds the card's top-right corner; the right padding keeps the
+	 name line clear of it. */
+#bio{position:relative; margin-bottom:18px; max-width:56ch; padding-right:4ch}
+#bio p{margin-bottom:18px}
+#bio p:last-child{margin-bottom:0}
+#bioClose{position:absolute; top:0; right:0; background:none; border:0; padding:0;
+	font:inherit; color:inherit; cursor:pointer; opacity:.55}
+#bioClose:hover{opacity:1}
+/* The name in the copyright line is the card's handle — a button dressed as
+	 plain text, as every control in the house is. */
+#bioName{background:none; border:0; padding:0; font:inherit; color:inherit; cursor:pointer}
+#bioName:hover{text-decoration:underline}
+.hidden{display:none}
 a{color:inherit; text-decoration:none}
 a:hover{text-decoration:underline}
 .ink-dark{color:#111}
@@ -94,7 +111,15 @@ a:hover{text-decoration:underline}
 	<p><a href="https://imightfeel.ai" target="_blank" rel="noopener">i might feel . ai</a></p>
 </nav>
 
-<div id="copy">© 2026 Wanted Hacker Limited · <a href="https://whl.ltd">whl.ltd</a></div>
+<div id="copy">
+	<div id="bio" class="hidden">
+		<button id="bioClose" type="button" aria-label="close">✕</button>
+		<p>WANG HAI LEI / 王海磊</p>
+		<p>a designer, programmer, artist and entrepreneur.</p>
+		<p><a href="mailto:wanghailei@gmail.com">wanghailei@gmail.com</a></p>
+	</div>
+	© 2026 Wanted Hacker Limited / <button id="bioName" type="button">WANG HAI LEI</button>
+</div>
 
 <script>
 "use strict"
@@ -103,6 +128,9 @@ a:hover{text-decoration:underline}
 	 Everything below leans on the tool's own globals — randomAll,
 	 renderDims, colourAtPoint, hexToRgb, rgbToOklab — one source of truth. */
 const frame = document.getElementById( "engine" )
+/* Each roll leaves behind a judge for the author's card, so a card opened
+	 later answers the gradient actually behind it. */
+let judgeCard = null
 function roll(){
 	try{
 		const w = frame.contentWindow
@@ -136,7 +164,8 @@ function roll(){
 			}
 			el.classList.toggle( "ink-dark", sum / 9 > 0.62 )
 		}
-		judge( "title" ); judge( "list" ); judge( "copy" )
+		judgeCard = function(){ judge( "bio" ) }
+		judge( "title" ); judge( "list" ); judge( "copy" ); judge( "bio" )
 	}catch( fault ){
 		/* No engine, no roll — the page stands on its dark ground in white. */
 	}
@@ -146,6 +175,18 @@ let settle
 window.addEventListener( "resize", function(){
 	clearTimeout( settle )
 	settle = setTimeout( roll, 200 )
+} )
+
+/* The card folds like the tool's licence: the name toggles it open, the ✕
+	 closes it. A judge only exists once the engine has rolled; before that
+	 the card simply opens in the default white. */
+const bio = document.getElementById( "bio" )
+document.getElementById( "bioName" ).addEventListener( "click", function(){
+	bio.classList.toggle( "hidden" )
+	if( !bio.classList.contains( "hidden" ) && judgeCard ) judgeCard()
+} )
+document.getElementById( "bioClose" ).addEventListener( "click", function(){
+	bio.classList.add( "hidden" )
 } )
 </script>
 
