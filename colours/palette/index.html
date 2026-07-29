@@ -426,18 +426,20 @@
 			}
 
 			// ----------------------------------------------------------------
-			// Print references — approximations for print orientation only.
-			// Device CMYK is the naive uncalibrated conversion; PT is the
-			// nearest entry of an optional sidecar table (pantone.json beside
-			// this file, a { "name": "#hex" } map the owner supplies — the
-			// table is licensed data and never ships with the source).
+			// Print references — approximations for print orientation only,
+			// in one compact house format: CMYK as "C50 M12 Y39 K19", PT as
+			// "PC7621 PU8509" (nearest coated and uncoated entries). The PT
+			// sidecar is pantone.json beside this file — the owner supplies
+			// { "coated": { "<code>": "#hex" }, "uncoated": { … } }; it is
+			// licensed data and never ships with the source. sRGB stays hex.
 			// ----------------------------------------------------------------
 			function approximateCmyk(hex) {
 				const [r, g, b] = hexToRgb(hex).map((byte) => byte / 255)
 				const k = 1 - Math.max(r, g, b)
-				if (k >= 1) return [0, 0, 0, 100]
+				if (k >= 1) return "C0 M0 Y0 K100"
 				const toPercent = (channel) => Math.round((channel / (1 - k)) * 100)
-				return [toPercent(1 - r - k), toPercent(1 - g - k), toPercent(1 - b - k), Math.round(k * 100)]
+				const [c, m, y] = [toPercent(1 - r - k), toPercent(1 - g - k), toPercent(1 - b - k)]
+				return `C${c} M${m} Y${y} K${Math.round(k * 100)}`
 			}
 
 			function hexToOklab(hex) {
@@ -456,27 +458,37 @@
 
 			let ptTable = null
 
-			function nearestPtReference(hex) {
-				if (!ptTable) return null
+			function nearestIn(table, hex) {
+				if (!table) return null
 				const target = hexToOklab(hex)
-				let bestName = null
+				let bestCode = null
 				let bestDistance = Infinity
-				Object.entries(ptTable).forEach(([name, value]) => {
+				Object.entries(table).forEach(([code, value]) => {
 					const candidate = hexToOklab(String(value))
 					if (!candidate) return
 					const distance =
 						(target.L - candidate.L) ** 2 + (target.a - candidate.a) ** 2 + (target.b - candidate.b) ** 2
 					if (distance < bestDistance) {
 						bestDistance = distance
-						bestName = name
+						bestCode = code
 					}
 				})
-				return bestName
+				return bestCode
+			}
+
+			function ptCode(hex) {
+				if (!ptTable) return null
+				const codes = []
+				const coated = nearestIn(ptTable.coated, hex)
+				if (coated) codes.push("PC" + coated)
+				const uncoated = nearestIn(ptTable.uncoated, hex)
+				if (uncoated) codes.push("PU" + uncoated)
+				return codes.length ? codes.join(" ") : null
 			}
 
 			function printReferenceFor(hex) {
 				const reference = { cmyk: approximateCmyk(hex) }
-				const pt = nearestPtReference(hex)
+				const pt = ptCode(hex)
 				if (pt) reference.pt = pt
 				return reference
 			}
@@ -484,7 +496,7 @@
 			// ----------------------------------------------------------------
 			// State — no main colour: the whole swatch is the starting point
 			// ----------------------------------------------------------------
-			const version = "0.51.0"
+			const version = "0.52.0"
 			const storageKey = "whl-colour-palette-v3"
 			// The house defaults — the same settings the companion Gradient tool's
 			// baked default swatch was generated from (swatch/default.json), so a
