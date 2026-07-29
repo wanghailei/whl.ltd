@@ -492,17 +492,11 @@
 				return Object.keys(table).length ? table : null
 			}
 
-			// The licensed woff2, fetched from the site's single copy at load
-			// time and embedded in SVG exports as a data URI — a downloaded
-			// SVG has no server to resolve fonts from, and WebKit viewers
-			// hide user-installed families. Null when the fetch cannot run
-			// (file:// dev); the export then relies on installed-family names.
-			let fontDataUri = null
 
 			// ----------------------------------------------------------------
 			// State — no main colour: the whole swatch is the starting point
 			// ----------------------------------------------------------------
-			const version = "0.55.0"
+			const version = "0.55.1"
 			const storageKey = "whl-colour-palette-v3"
 			// The house defaults — the same settings the companion Gradient tool's
 			// baked default swatch was generated from (swatch/default.json), so a
@@ -766,7 +760,7 @@
 				const cellSize = 150
 				const ascent = 10
 				const lineTops = { oklch: 12, hex: 31, cmyk: 50, pt: 69 }
-				const type = `font-family="'Berkeley Mono Variable', 'Berkeley Mono', 'TX-02', Menlo, monospace" font-size="12" font-weight="400" letter-spacing="0.01em"`
+				const type = `font-family="'Berkeley Mono Variable', 'Berkeley Mono', 'IBM Plex Mono', 'JetBrains Mono', monospace" font-size="12" font-weight="400" letter-spacing="0.01em"`
 				let plates = ""
 				const values = { oklch: "", hex: "", cmyk: "", pt: "" }
 				cells.forEach(function (cell) {
@@ -794,14 +788,7 @@
 				const width = columns * cellSize
 				const height = rows * cellSize
 				const valuesLayer = valueGroups ? `  <g id="values">\n${valueGroups}  </g>\n` : ""
-				// Embed the font itself when the page holds its bytes: browsers
-				// and QuickLook render Berkeley from the file alone, while
-				// design tools ignore the style block and match the installed
-				// family by name from each text element's own attribute.
-				const fontFace = fontDataUri
-					? `  <style>@font-face{font-family:'Berkeley Mono Variable';src:url(${fontDataUri}) format('woff2')}</style>\n`
-					: ""
-				return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">\n${fontFace}  <g id="swatch">\n${plates}  </g>\n${valuesLayer}</svg>`
+				return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">\n  <g id="swatch">\n${plates}  </g>\n${valuesLayer}</svg>`
 			}
 
 			function exportName(extension, suffix) {
@@ -931,22 +918,6 @@
 					showToast(`PT table loaded — ${count("coated")} coated, ${count("uncoated")} uncoated`)
 				})
 			})
-
-			// The font bytes for SVG embedding, from the site's single copy.
-			fetch("../gradient/berkeley.woff2")
-				.then((response) => (response.ok ? response.arrayBuffer() : null))
-				.then((buffer) => {
-					if (!buffer) return
-					const bytes = new Uint8Array(buffer)
-					let binary = ""
-					for (let offset = 0; offset < bytes.length; offset += 0x8000) {
-						binary += String.fromCharCode.apply(null, bytes.subarray(offset, offset + 0x8000))
-					}
-					fontDataUri = "data:font/woff2;base64," + btoa(binary)
-				})
-				.catch(() => {
-					/* file:// dev — exports rely on installed-family names */
-				})
 
 			render()
 		</script>
