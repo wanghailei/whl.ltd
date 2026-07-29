@@ -470,10 +470,39 @@
 				return reference
 			}
 
+			// A PT table arrives by drag-and-drop (licensed data stays on the
+			// owner's machine — localStorage, never the public server) or from
+			// an optional pantone.json sidecar on private deployments. Either
+			// way the shape is { "coated": { "<code>": "#hex" }, "uncoated": … }.
+			function parsePtTable(text) {
+				let data
+				try {
+					data = JSON.parse(text)
+				} catch (error) {
+					return null
+				}
+				if (!data || typeof data !== "object" || Array.isArray(data)) return null
+				const table = {}
+				;["coated", "uncoated"].forEach(function (substrate) {
+					const entries = data[substrate]
+					if (!entries || typeof entries !== "object" || Array.isArray(entries)) return
+					if (!Object.values(entries).every((value) => typeof value === "string")) return
+					if (Object.keys(entries).length) table[substrate] = entries
+				})
+				return Object.keys(table).length ? table : null
+			}
+
+			// The licensed woff2, fetched from the site's single copy at load
+			// time and embedded in SVG exports as a data URI — a downloaded
+			// SVG has no server to resolve fonts from, and WebKit viewers
+			// hide user-installed families. Null when the fetch cannot run
+			// (file:// dev); the export then relies on installed-family names.
+			let fontDataUri = null
+
 			// ----------------------------------------------------------------
 			// State — no main colour: the whole swatch is the starting point
 			// ----------------------------------------------------------------
-			const version = "0.54.0"
+			const version = "0.55.0"
 			const storageKey = "whl-colour-palette-v3"
 			// The house defaults — the same settings the companion Gradient tool's
 			// baked default swatch was generated from (swatch/default.json), so a
@@ -765,7 +794,14 @@
 				const width = columns * cellSize
 				const height = rows * cellSize
 				const valuesLayer = valueGroups ? `  <g id="values">\n${valueGroups}  </g>\n` : ""
-				return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">\n  <g id="swatch">\n${plates}  </g>\n${valuesLayer}</svg>`
+				// Embed the font itself when the page holds its bytes: browsers
+				// and QuickLook render Berkeley from the file alone, while
+				// design tools ignore the style block and match the installed
+				// family by name from each text element's own attribute.
+				const fontFace = fontDataUri
+					? `  <style>@font-face{font-family:'Berkeley Mono Variable';src:url(${fontDataUri}) format('woff2')}</style>\n`
+					: ""
+				return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">\n${fontFace}  <g id="swatch">\n${plates}  </g>\n${valuesLayer}</svg>`
 			}
 
 			function exportName(extension, suffix) {
@@ -852,15 +888,64 @@
 				}
 			})
 
-			// Optional PT sidecar — absent (404, file://) means no PT references,
-			// silently. The JSON export reads ptTable long after this settles.
-			fetch("pantone.json")
-				.then((response) => (response.ok ? response.json() : null))
-				.then((table) => {
+			// The PT table: a previous drop persists in localStorage; failing
+			// that, an optional pantone.json sidecar (private deployments).
+			// Absence simply means exports carry no PT line.
+			const ptStorageKey = "whl-colour-palette-pt"
+			try {
+				ptTable = parsePtTable(localStorage.getItem(ptStorageKey))
+			} catch (error) {
+				/* private mode is fine */
+			}
+			if (!ptTable) {
+				fetch("pantone.json")
+					.then((response) => (response.ok ? response.text() : null))
+					.then((text) => {
+						if (text && !ptTable) ptTable = parsePtTable(text)
+					})
+					.catch(() => {
+						/* no sidecar is the normal case */
+					})
+			}
+
+			// Drop a pantone.json anywhere on the page to load the PT table —
+			// the licensed data stays in this browser, never on the server.
+			window.addEventListener("dragover", (event) => event.preventDefault())
+			window.addEventListener("drop", function (event) {
+				event.preventDefault()
+				const file = event.dataTransfer.files && event.dataTransfer.files[0]
+				if (!file) return
+				file.text().then(function (text) {
+					const table = parsePtTable(text)
+					if (!table) {
+						showToast("not a PT table — expected coated / uncoated maps of code to hex")
+						return
+					}
 					ptTable = table
+					try {
+						localStorage.setItem(ptStorageKey, JSON.stringify(table))
+					} catch (error) {
+						/* private mode is fine */
+					}
+					const count = (substrate) => Object.keys(table[substrate] || {}).length
+					showToast(`PT table loaded — ${count("coated")} coated, ${count("uncoated")} uncoated`)
+				})
+			})
+
+			// The font bytes for SVG embedding, from the site's single copy.
+			fetch("../gradient/berkeley.woff2")
+				.then((response) => (response.ok ? response.arrayBuffer() : null))
+				.then((buffer) => {
+					if (!buffer) return
+					const bytes = new Uint8Array(buffer)
+					let binary = ""
+					for (let offset = 0; offset < bytes.length; offset += 0x8000) {
+						binary += String.fromCharCode.apply(null, bytes.subarray(offset, offset + 0x8000))
+					}
+					fontDataUri = "data:font/woff2;base64," + btoa(binary)
 				})
 				.catch(() => {
-					/* no sidecar is the normal case */
+					/* file:// dev — exports rely on installed-family names */
 				})
 
 			render()
