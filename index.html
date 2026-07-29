@@ -72,14 +72,16 @@ body{
 /* The author's card unfolds above the copyright line — the tool's licence
 	 fold, borrowed for the person behind the house. Bare on the render like
 	 everything else, its ink judged against its own stretch of the gradient.
-	 The ✕ is the card's first line — its first and only character — sitting
-	 directly above the text, as a block in the flow. */
+	 Its door is the card's first line — the Carbon close icon at 16px, as
+	 every icon in the house is — with a blank line before the text
+	 (Hailei, 2026-07-29). */
 #bio{margin-bottom:18px; max-width:56ch}
 #bio p{margin-bottom:18px}
 #bio p:last-child{margin-bottom:0}
 #bioClose{display:block; background:none; border:0; padding:0;
-	font:inherit; color:inherit; cursor:pointer; opacity:.55}
+	color:inherit; cursor:pointer; opacity:.55; margin-bottom:18px}
 #bioClose:hover{opacity:1}
+#bioClose svg{display:block; width:16px; height:16px}
 /* The name in the copyright line is the card's handle — a button dressed as
 	 plain text, as every control in the house is. */
 #bioName{background:none; border:0; padding:0; font:inherit; color:inherit; cursor:pointer}
@@ -113,7 +115,7 @@ a:hover{text-decoration:underline}
 
 <div id="copy">
 	<div id="bio" class="hidden">
-		<button id="bioClose" type="button" aria-label="close">✕</button>
+		<button id="bioClose" type="button" aria-label="close"><svg viewBox="0 0 32 32" fill="currentColor" aria-hidden="true"><path d="M24 9.4 22.6 8 16 14.6 9.4 8 8 9.4 14.6 16 8 22.6 9.4 24 16 17.4 22.6 24 24 22.6 17.4 16z"/></svg></button>
 		<p>WANG HAI LEI / 王海磊</p>
 		<p>a designer, programmer, artist and entrepreneur.</p>
 		<p><a href="mailto:wanghailei@gmail.com">wanghailei@gmail.com</a></p>
@@ -177,9 +179,9 @@ window.addEventListener( "resize", function(){
 	settle = setTimeout( roll, 200 )
 } )
 
-/* The card folds like the tool's licence: the name toggles it open, the ✕
-	 closes it. A judge only exists once the engine has rolled; before that
-	 the card simply opens in the default white. */
+/* The card folds like the tool's licence: the name toggles it open, the
+	 door closes it. A judge only exists once the engine has rolled; before
+	 that the card simply opens in the default white. */
 const bio = document.getElementById( "bio" )
 document.getElementById( "bioName" ).addEventListener( "click", function(){
 	bio.classList.toggle( "hidden" )
