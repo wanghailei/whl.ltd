@@ -329,7 +329,11 @@
 						</div>
 						<div class="control">
 							<label for="chromaRange">chroma</label><span class="control-value" id="chromaValue"></span>
-							<input type="range" id="chromaRange" min="0" max="0.37" step="0.002" />
+							<!-- Capped at the sRGB ceiling: the gamut's global maximum chroma is
+							     ≈0.313 (the blue primary), so every position past 0.32 clamps for
+							     every hue. sRGB hex is the deliverable — practical on any screen,
+							     any platform, and in print preparation. -->
+							<input type="range" id="chromaRange" min="0" max="0.32" step="0.002" />
 						</div>
 						<div class="control">
 							<label for="huesRange">hues</label><span class="control-value" id="huesValue"></span>
@@ -422,14 +426,75 @@
 			}
 
 			// ----------------------------------------------------------------
+			// Print references — approximations for print orientation only.
+			// Device CMYK is the naive uncalibrated conversion; PT is the
+			// nearest entry of an optional sidecar table (pantone.json beside
+			// this file, a { "name": "#hex" } map the owner supplies — the
+			// table is licensed data and never ships with the source).
+			// ----------------------------------------------------------------
+			function approximateCmyk(hex) {
+				const [r, g, b] = hexToRgb(hex).map((byte) => byte / 255)
+				const k = 1 - Math.max(r, g, b)
+				if (k >= 1) return [0, 0, 0, 100]
+				const toPercent = (channel) => Math.round((channel / (1 - k)) * 100)
+				return [toPercent(1 - r - k), toPercent(1 - g - k), toPercent(1 - b - k), Math.round(k * 100)]
+			}
+
+			function hexToOklab(hex) {
+				const bytes = hexToRgb(hex)
+				if (!bytes) return null
+				const [r, g, b] = bytes.map((byte) => srgbToLinear(byte / 255))
+				const l = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b)
+				const m = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b)
+				const s = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b)
+				return {
+					L: 0.2104542553 * l + 0.793617785 * m - 0.0040720468 * s,
+					a: 1.9779984951 * l - 2.428592205 * m + 0.4505937099 * s,
+					b: 0.0259040371 * l + 0.7827717662 * m - 0.808675766 * s,
+				}
+			}
+
+			let ptTable = null
+
+			function nearestPtReference(hex) {
+				if (!ptTable) return null
+				const target = hexToOklab(hex)
+				let bestName = null
+				let bestDistance = Infinity
+				Object.entries(ptTable).forEach(([name, value]) => {
+					const candidate = hexToOklab(String(value))
+					if (!candidate) return
+					const distance =
+						(target.L - candidate.L) ** 2 + (target.a - candidate.a) ** 2 + (target.b - candidate.b) ** 2
+					if (distance < bestDistance) {
+						bestDistance = distance
+						bestName = name
+					}
+				})
+				return bestName
+			}
+
+			function printReferenceFor(hex) {
+				const reference = { cmyk: approximateCmyk(hex) }
+				const pt = nearestPtReference(hex)
+				if (pt) reference.pt = pt
+				return reference
+			}
+
+			// ----------------------------------------------------------------
 			// State — no main colour: the whole swatch is the starting point
 			// ----------------------------------------------------------------
-			const version = "0.49.5"
+			const version = "0.50.0"
 			const storageKey = "whl-colour-palette-v3"
-			const settings = { hueStart: 25, chroma: 0.2, hueCount: 12, lightnessCount: 20 }
+			// The house defaults: chroma 0.150 sits mid-slider under the 0.32
+			// ceiling and keeps gamut clamping rare across the twelve hues.
+			const defaultSettings = { hueStart: 25, chroma: 0.15, hueCount: 12, lightnessCount: 20 }
+			const settings = { ...defaultSettings }
 			try {
 				const saved = JSON.parse(localStorage.getItem(storageKey))
 				if (saved && saved.chroma !== undefined) Object.assign(settings, saved)
+				// settings saved before the slider was capped may exceed the ceiling
+				settings.chroma = Math.min(settings.chroma, Number(elementById("chromaRange").max))
 			} catch (error) {
 				/* fresh start is fine */
 			}
@@ -635,6 +700,10 @@
 					families: buildFamilies().map((family) => ({
 						hue: Math.round(family.hue),
 						steps: Object.fromEntries(family.cells.map((cell) => [cell.label, cell.hex])),
+						// approximate print references beside the honest hex — device
+						// CMYK always, PT only when the sidecar table is present.
+						// The Gradient tool reads steps alone; print is a sibling.
+						print: Object.fromEntries(family.cells.map((cell) => [cell.label, printReferenceFor(cell.hex)])),
 					})),
 				}
 			}
@@ -664,24 +733,25 @@
 			}
 
 			function svgRectangles(cells) {
-				// cells laid out by grid position; every cell is 2:1, like on screen
-				const cellWidth = 200
-				const cellHeight = 100
+				// cells laid out by grid position; every cell is square — the
+				// canonical swatch form. The fill-to-window screen is a live view.
+				const cellSize = 100
 				let body = ""
 				cells.forEach(function (cell) {
-					body += `  <rect x="${cell.column * cellWidth}" y="${cell.row * cellHeight}" width="${cellWidth}" height="${cellHeight}" fill="${cell.hex}"/>\n`
+					body += `  <rect x="${cell.column * cellSize}" y="${cell.row * cellSize}" width="${cellSize}" height="${cellSize}" fill="${cell.hex}"/>\n`
 				})
 				const columns = Math.max(...cells.map((cell) => cell.column)) + 1
 				const rows = Math.max(...cells.map((cell) => cell.row)) + 1
-				const width = columns * cellWidth
-				const height = rows * cellHeight
+				const width = columns * cellSize
+				const height = rows * cellSize
 				return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">\n${body}</svg>`
 			}
 
-			function exportName(extension) {
-				// whl_colours_palette_<lightness>_<chroma>_<hues>.<extension> — the three
-				// toolbar settings, so every file states what produced it
-				return `whl_colours_palette_${settings.lightnessCount}_${settings.chroma.toFixed(3)}_${settings.hueCount}.${extension}`
+			function exportName(extension, suffix) {
+				// whl_colours_palette_<lightness>_<chroma>_<hues>[_<selection>].<extension>
+				// — the three toolbar settings plus any selection, so every file
+				// states exactly what produced it
+				return `whl_colours_palette_${settings.lightnessCount}_${settings.chroma.toFixed(3)}_${settings.hueCount}${suffix ? "_" + suffix : ""}.${extension}`
 			}
 
 			function downloadFile(name, content, type) {
@@ -698,13 +768,13 @@
 				if (selection && selection.kind === "column") {
 					const family = families[selection.index]
 					return {
-						name: exportName("svg"),
+						name: exportName("svg", "hue" + Math.round(family.hue)),
 						cells: family.cells.map((cell, rowIndex) => ({ column: 0, row: rowIndex, hex: cell.hex })),
 					}
 				}
 				if (selection && selection.kind === "row") {
 					return {
-						name: exportName("svg"),
+						name: exportName("svg", "light" + lightnessPercentAt(selection.index)),
 						cells: families.map((family, columnIndex) => ({ column: columnIndex, row: 0, hex: family.cells[selection.index].hex })),
 					}
 				}
@@ -753,6 +823,17 @@
 					render()
 				}
 			})
+
+			// Optional PT sidecar — absent (404, file://) means no PT references,
+			// silently. The JSON export reads ptTable long after this settles.
+			fetch("pantone.json")
+				.then((response) => (response.ok ? response.json() : null))
+				.then((table) => {
+					ptTable = table
+				})
+				.catch(() => {
+					/* no sidecar is the normal case */
+				})
 
 			render()
 		</script>
