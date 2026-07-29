@@ -31,8 +31,10 @@
 					--base-space: 16px;
 					--base-ink: #fff;
 					--base-ink-muted: #9a9a94;
+					/* The cell is 2:1 — the owner's layout law. Width leads; the
+					   height follows as half of it. */
 					--cell-min-width: 150px;
-					--cell-min-height: 64px;
+					--cell-min-height: 75px;
 					--footer-height: 96px;
 					--header-height: var(--footer-height);
 					--z-toolbar: 6;
@@ -471,7 +473,7 @@
 			// ----------------------------------------------------------------
 			// State — no main colour: the whole swatch is the starting point
 			// ----------------------------------------------------------------
-			const version = "0.53.1"
+			const version = "0.54.0"
 			const storageKey = "whl-colour-palette-v3"
 			// The house defaults — the same settings the companion Gradient tool's
 			// baked default swatch was generated from (swatch/default.json), so a
@@ -721,16 +723,21 @@
 			}
 
 			function svgRectangles(cells) {
-				// cells laid out by grid position; every cell is square — the
-				// canonical swatch form. The fill-to-window screen is a live view.
-				// The colour plates come first; every value text sits in a
-				// per-kind group (oklch / hex / cmyk / pt) inside one "values"
-				// layer at the very top of the stack, so a design tool can hide
-				// or delete all the numbers — or one kind — with a single click.
-				// The font list leads with the installed family name so design
-				// tools resolve it; browsers fall through to any monospace.
-				const cellSize = 100
-				const fontStack = "Berkeley Mono Variable, Berkeley Mono, TX-02, Menlo, monospace"
+				// cells laid out by grid position; the SVG cell is 1:1 at twice
+				// the UI cell's height (150 = 2 × 75), the doubled lower half
+				// carrying the CMYK and PT lines the screen does not show. The
+				// typography mirrors the UI cell exactly: 12px, weight 400,
+				// left margin 16, line tops 12/31/50/69 (19px pitch), hex and
+				// print lines at the UI's 0.78 ink. Design tools ignore
+				// attributes inherited from groups, so every text element is
+				// self-contained; the groups are pure structure — plates in a
+				// bottom "swatch" layer, every value in per-kind groups
+				// (oklch / hex / cmyk / pt) inside one "values" layer on top,
+				// so the numbers hide or delete in one click.
+				const cellSize = 150
+				const ascent = 10
+				const lineTops = { oklch: 12, hex: 31, cmyk: 50, pt: 69 }
+				const type = `font-family="'Berkeley Mono Variable', 'Berkeley Mono', 'TX-02', Menlo, monospace" font-size="12" font-weight="400" letter-spacing="0.01em"`
 				let plates = ""
 				const values = { oklch: "", hex: "", cmyk: "", pt: "" }
 				cells.forEach(function (cell) {
@@ -740,24 +747,24 @@
 					if (cell.title) {
 						const ink = inkFor(cell.hex)
 						const reference = printReferenceFor(cell.hex)
-						values.oklch += `      <text x="${x + 8}" y="${y + 19}" fill="${ink}">${cell.title}</text>\n`
-						values.hex += `      <text x="${x + 8}" y="${y + 33}" fill="${ink}">${cell.hex.toUpperCase()}</text>\n`
-						values.cmyk += `      <text x="${x + 8}" y="${y + 46}" fill="${ink}">${reference.cmyk}</text>\n`
-						if (reference.pt) values.pt += `      <text x="${x + 8}" y="${y + 59}" fill="${ink}">${reference.pt}</text>\n`
+						const line = (kind, text, dim) =>
+							`      <text x="${x + 16}" y="${y + lineTops[kind] + ascent}" ${type} fill="${ink}"${dim ? ' opacity="0.78"' : ""}>${text}</text>\n`
+						values.oklch += line("oklch", cell.title, false)
+						values.hex += line("hex", cell.hex.toUpperCase(), true)
+						values.cmyk += line("cmyk", reference.cmyk, true)
+						if (reference.pt) values.pt += line("pt", reference.pt, true)
 					}
 				})
-				const kindSizes = { oklch: 11, hex: 10, cmyk: 9, pt: 9 }
 				let valueGroups = ""
 				Object.entries(values).forEach(function ([kind, texts]) {
 					if (!texts) return
-					const dim = kind === "oklch" ? "" : ' opacity="0.7"'
-					valueGroups += `    <g id="${kind}" font-size="${kindSizes[kind]}"${dim}>\n${texts}    </g>\n`
+					valueGroups += `    <g id="${kind}">\n${texts}    </g>\n`
 				})
 				const columns = Math.max(...cells.map((cell) => cell.column)) + 1
 				const rows = Math.max(...cells.map((cell) => cell.row)) + 1
 				const width = columns * cellSize
 				const height = rows * cellSize
-				const valuesLayer = valueGroups ? `  <g id="values" font-family="${fontStack}">\n${valueGroups}  </g>\n` : ""
+				const valuesLayer = valueGroups ? `  <g id="values">\n${valueGroups}  </g>\n` : ""
 				return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">\n  <g id="swatch">\n${plates}  </g>\n${valuesLayer}</svg>`
 			}
 
