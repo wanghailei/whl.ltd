@@ -496,7 +496,7 @@
 			// ----------------------------------------------------------------
 			// State — no main colour: the whole swatch is the starting point
 			// ----------------------------------------------------------------
-			const version = "0.55.1"
+			const version = "0.56.0"
 			const storageKey = "whl-colour-palette-v3"
 			// The house defaults — the same settings the companion Gradient tool's
 			// baked default swatch was generated from (swatch/default.json), so a
@@ -760,7 +760,10 @@
 				const cellSize = 150
 				const ascent = 10
 				const lineTops = { oklch: 12, hex: 31, cmyk: 50, pt: 69 }
-				const type = `font-family="'Berkeley Mono Variable', 'Berkeley Mono', 'IBM Plex Mono', 'JetBrains Mono', monospace" font-size="12" font-weight="400" letter-spacing="0.01em"`
+				// PostScript name first — design apps (Affinity, Sketch) match
+				// it; family names after for browsers; no quotes anywhere —
+				// Affinity reads a quoted list as one literal unknown name.
+				const type = `font-family="BerkeleyMonoVariable-Regular, Berkeley Mono Variable, Berkeley Mono, IBM Plex Mono, JetBrains Mono, monospace" font-size="12" font-weight="400"`
 				let plates = ""
 				const values = { oklch: "", hex: "", cmyk: "", pt: "" }
 				cells.forEach(function (cell) {
