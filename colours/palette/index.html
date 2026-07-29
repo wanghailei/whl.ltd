@@ -496,7 +496,7 @@
 			// ----------------------------------------------------------------
 			// State — no main colour: the whole swatch is the starting point
 			// ----------------------------------------------------------------
-			const version = "0.56.0"
+			const version = "0.56.1"
 			const storageKey = "whl-colour-palette-v3"
 			// The house defaults — the same settings the companion Gradient tool's
 			// baked default swatch was generated from (swatch/default.json), so a
@@ -759,7 +759,9 @@
 				// so the numbers hide or delete in one click.
 				const cellSize = 150
 				const ascent = 10
-				const lineTops = { oklch: 12, hex: 31, cmyk: 50, pt: 69 }
+				// PC and PU sit on their own lines: named codes (PCneutral-black)
+				// would overflow the cell's right edge side by side
+				const lineTops = { oklch: 12, hex: 31, cmyk: 50, pc: 69, pu: 88 }
 				// PostScript name first — design apps (Affinity, Sketch) match
 				// it; family names after for browsers; no quotes anywhere —
 				// Affinity reads a quoted list as one literal unknown name.
@@ -778,7 +780,11 @@
 						values.oklch += line("oklch", cell.title, false)
 						values.hex += line("hex", cell.hex.toUpperCase(), true)
 						values.cmyk += line("cmyk", reference.cmyk, true)
-						if (reference.pt) values.pt += line("pt", reference.pt, true)
+						if (reference.pt) {
+							reference.pt.split(" ").forEach(function (code) {
+								values.pt += line(code.startsWith("PU") ? "pu" : "pc", code, true)
+							})
+						}
 					}
 				})
 				let valueGroups = ""
