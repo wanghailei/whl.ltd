@@ -72,7 +72,8 @@
 		 monospace cell stays whole and columns line up. This is the only dial:
 		 0.625rem=10px  0.6875rem=11px  0.75rem=12px  0.8125rem=13px  0.875rem=14px */
 	--panel-width:252px;
-	--base-row-height:36px;               /* one row of the panel = two line boxes */
+	--base-row-height:30px;               /* one row of the panel — trimmed from two
+		full line boxes (36px) at Hailei's request, 2026-07-29 */
 	--panel-width-wide:calc(var(--panel-width) * 2);  /* the left column is twice the right */
 	--base-min-width:960px;             /* narrowest viewport the layout is drawn for */
 	--tile-fill:rgba(0,0,0,.62);                        /* ground under #note */
@@ -479,7 +480,9 @@ input[type=range]::-moz-range-thumb{width:3px; height:13px; background:currentCo
 			</div>
 			<div class="control-row">
 				<span class="label tight" id="outWShown"></span>
-				<span class="label tight">×</span>
+				<!-- the letter X, not U+00D7 — the multiplication sign sits at
+					 lowercase height in this face and read as a small x (Hailei) -->
+				<span class="label tight">X</span>
 				<input type="number" id="outH" min="200" max="8000" step="100">
 				<span class="label tight">px</span>
 			</div>
@@ -666,7 +669,7 @@ const state = {
 	 (init writes the title — it cannot live here, the regress harness pulls
 	 this section into Node where there is no document). major.minor.patch —
 	 major bumps on Hailei's instruction; minor and patch on judgement. */
-const VERSION = "0.55.1"
+const VERSION = "0.55.2"
 const element = function( id ){ return document.getElementById( id ) }
 
 /* The output is a pixel width and a proportion; the height follows. Nothing
