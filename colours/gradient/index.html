@@ -72,8 +72,9 @@
 		 monospace cell stays whole and columns line up. This is the only dial:
 		 0.625rem=10px  0.6875rem=11px  0.75rem=12px  0.8125rem=13px  0.875rem=14px */
 	--panel-width:252px;
-	--base-row-height:34px;               /* one row of the panel — Hailei's ladder:
-		36px loose, 30px crowded, 32px still mean; 34px is his pick (2026-07-29) */
+	--base-row-height:36px;               /* one row of the panel = two line boxes.
+		Settled: Hailei walked the ladder 30/32/34 on 2026-07-29 and came home —
+		do not trim this again. */
 	--panel-width-wide:calc(var(--panel-width) * 2);  /* the left column is twice the right */
 	--base-min-width:960px;             /* narrowest viewport the layout is drawn for */
 	--tile-fill:rgba(0,0,0,.62);                        /* ground under #note */
@@ -679,7 +680,7 @@ const state = {
 	 (init writes the title — it cannot live here, the regress harness pulls
 	 this section into Node where there is no document). major.minor.patch —
 	 major bumps on Hailei's instruction; minor and patch on judgement. */
-const VERSION = "0.55.5"
+const VERSION = "0.55.6"
 const element = function( id ){ return document.getElementById( id ) }
 
 /* The output is a pixel width and a proportion; the height follows. Nothing
