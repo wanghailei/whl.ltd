@@ -5,39 +5,14 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<title>WHL Colours Palette</title>
 		<style>
-			/* Bind the locally installed variable font explicitly. local() forces
-			   Safari to attach the variable family across its whole weight axis,
-			   which a bare font-family stack sometimes fails to do. */
-			@font-face {
-				font-family: "WHL Mono";
-				src:
-					local("BerkeleyMonoVariable-Regular"),
-					local("Berkeley Mono Variable"),
-					local("BerkeleyMonoVariable"),
-					local("TX-02"),
-					local("BerkeleyMono-Regular"),
-					local("Berkeley Mono");
-				font-weight: 100 900;
-				font-display: swap;
-			}
-
-			/* Named Medium instance as a fallback for weight 500, in case the
-			   engine matched a static face that lacks the weight axis. */
-			@font-face {
-				font-family: "WHL Mono";
-				src:
-					local("BerkeleyMonoVariable-Regular_Medium"),
-					local("Berkeley Mono Variable Regular Medium");
-				font-weight: 500;
-				font-display: swap;
-			}
-
-			/* The licensed Berkeley Mono web font, served from beside the Gradient
-			   tool so the file exists once in the repository. Browsers that hide
-			   user-installed fonts from web content (Safari's fingerprinting
-			   protection) never match the local() faces above — this served face
-			   sits later in the stack and keeps the page in Berkeley regardless.
-			   The URL resolves on whl.ltd; in dev the installed family answers. */
+			/* The typeface is the licensed Berkeley Mono web font, served from
+			   beside the Gradient tool so the file exists once per site — the
+			   same pattern as the front door and the Gradient itself, which is
+			   the one binding that has proven reliable everywhere (local()
+			   matching was tried and retired: Safari hides user-installed
+			   fonts, and engines disagree on variable-font instance names).
+			   The served face leads the stack; the installed family names
+			   follow for file:// dev where the URL cannot resolve. */
 			@font-face {
 				font-family: "Berkeley Mono";
 				src: url(../gradient/berkeley.woff2) format("woff2");
@@ -50,7 +25,7 @@
 				/* --- Tokens --- */
 				:root {
 					--base-font:
-						"WHL Mono", "Berkeley Mono Variable", "TX-02", "Berkeley Mono", ui-monospace, "SF Mono", Menlo,
+						"Berkeley Mono", "Berkeley Mono Variable", "TX-02", "IBM Plex Mono", ui-monospace, "SF Mono", Menlo,
 						monospace;
 					--base-font-size: 12px;
 					--base-space: 16px;
@@ -496,7 +471,7 @@
 			// ----------------------------------------------------------------
 			// State — no main colour: the whole swatch is the starting point
 			// ----------------------------------------------------------------
-			const version = "0.52.0"
+			const version = "0.53.0"
 			const storageKey = "whl-colour-palette-v3"
 			// The house defaults — the same settings the companion Gradient tool's
 			// baked default swatch was generated from (swatch/default.json), so a
@@ -748,28 +723,42 @@
 			function svgRectangles(cells) {
 				// cells laid out by grid position; every cell is square — the
 				// canonical swatch form. The fill-to-window screen is a live view.
-				// Colour cells carry their title and hex like the screen does —
-				// vector text at the screen's visual density, in the cell's own
-				// ink. Berkeley renders where the family is installed; elsewhere
-				// the stack falls through to any monospace.
+				// The colour plates come first; every value text sits in a
+				// per-kind group (oklch / hex / cmyk / pt) inside one "values"
+				// layer at the very top of the stack, so a design tool can hide
+				// or delete all the numbers — or one kind — with a single click.
+				// The font list leads with the installed family name so design
+				// tools resolve it; browsers fall through to any monospace.
 				const cellSize = 100
-				const fontStack = "Berkeley Mono, ui-monospace, Menlo, monospace"
-				let body = ""
+				const fontStack = "Berkeley Mono Variable, Berkeley Mono, TX-02, Menlo, monospace"
+				let plates = ""
+				const values = { oklch: "", hex: "", cmyk: "", pt: "" }
 				cells.forEach(function (cell) {
 					const x = cell.column * cellSize
 					const y = cell.row * cellSize
-					body += `  <rect x="${x}" y="${y}" width="${cellSize}" height="${cellSize}" fill="${cell.hex}"/>\n`
+					plates += `    <rect x="${x}" y="${y}" width="${cellSize}" height="${cellSize}" fill="${cell.hex}"/>\n`
 					if (cell.title) {
 						const ink = inkFor(cell.hex)
-						body += `  <text x="${x + 8}" y="${y + 19}" font-family="${fontStack}" font-size="11" fill="${ink}">${cell.title}</text>\n`
-						body += `  <text x="${x + 8}" y="${y + 33}" font-family="${fontStack}" font-size="10" fill="${ink}" opacity="0.7">${cell.hex.toUpperCase()}</text>\n`
+						const reference = printReferenceFor(cell.hex)
+						values.oklch += `      <text x="${x + 8}" y="${y + 19}" fill="${ink}">${cell.title}</text>\n`
+						values.hex += `      <text x="${x + 8}" y="${y + 33}" fill="${ink}">${cell.hex.toUpperCase()}</text>\n`
+						values.cmyk += `      <text x="${x + 8}" y="${y + 46}" fill="${ink}">${reference.cmyk}</text>\n`
+						if (reference.pt) values.pt += `      <text x="${x + 8}" y="${y + 59}" fill="${ink}">${reference.pt}</text>\n`
 					}
+				})
+				const kindSizes = { oklch: 11, hex: 10, cmyk: 9, pt: 9 }
+				let valueGroups = ""
+				Object.entries(values).forEach(function ([kind, texts]) {
+					if (!texts) return
+					const dim = kind === "oklch" ? "" : ' opacity="0.7"'
+					valueGroups += `    <g id="${kind}" font-size="${kindSizes[kind]}"${dim}>\n${texts}    </g>\n`
 				})
 				const columns = Math.max(...cells.map((cell) => cell.column)) + 1
 				const rows = Math.max(...cells.map((cell) => cell.row)) + 1
 				const width = columns * cellSize
 				const height = rows * cellSize
-				return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">\n${body}</svg>`
+				const valuesLayer = valueGroups ? `  <g id="values" font-family="${fontStack}">\n${valueGroups}  </g>\n` : ""
+				return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">\n  <g id="swatch">\n${plates}  </g>\n${valuesLayer}</svg>`
 			}
 
 			function exportName(extension, suffix) {
