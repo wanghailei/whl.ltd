@@ -72,12 +72,12 @@ body{
 /* The author's card unfolds above the copyright line — the tool's licence
 	 fold, borrowed for the person behind the house. Bare on the render like
 	 everything else, its ink judged against its own stretch of the gradient.
-	 A small ✕ holds the card's top-right corner; the right padding keeps the
-	 name line clear of it. */
-#bio{position:relative; margin-bottom:18px; max-width:56ch; padding-right:4ch}
+	 The ✕ is the card's first line — its first and only character — sitting
+	 directly above the text, as a block in the flow. */
+#bio{margin-bottom:18px; max-width:56ch}
 #bio p{margin-bottom:18px}
 #bio p:last-child{margin-bottom:0}
-#bioClose{position:absolute; top:0; right:0; background:none; border:0; padding:0;
+#bioClose{display:block; background:none; border:0; padding:0;
 	font:inherit; color:inherit; cursor:pointer; opacity:.55}
 #bioClose:hover{opacity:1}
 /* The name in the copyright line is the card's handle — a button dressed as
