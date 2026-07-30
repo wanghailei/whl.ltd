@@ -427,7 +427,7 @@ input[type=range]::-moz-range-thumb{width:3px; height:13px; background:currentCo
 			</div>
 			<div class="control-row hidden" id="paramMesh3">
 				<span class="label" data-cn="柔邊">Soft</span>
-				<input type="range" id="blobSoft" min="4" max="70">
+				<input type="range" id="blobSoft" min="25" max="135">
 				<span class="value" id="blobSoftVal"></span>
 			</div>
 			<div class="control-row hidden" id="paramMesh4">
@@ -690,7 +690,7 @@ const state = {
 	 (init writes the title — it cannot live here, the regress harness pulls
 	 this section into Node where there is no document). major.minor.patch —
 	 major bumps on Hailei's instruction; minor and patch on judgement. */
-const VERSION = "0.55.11"
+const VERSION = "0.56.0"
 const element = function( id ){ return document.getElementById( id ) }
 
 /* The output is a pixel width and a proportion; the height follows. Nothing
@@ -862,7 +862,21 @@ function composeBlobs( n, W, H ){
 const blobBlurFactor = 0.50   /* blur sigma per unit of softness — measured, not guessed */
 function blobBlur( b ){
 	const r = b.w * 0.5
-	return Math.max( 0.5, r * Math.max( 0.02, Math.min( 0.98, b.soft ) ) * blobBlurFactor )
+	/* Only a floor now. The old 0.98 ceiling stopped soft one notch short of the
+		 point where the flat core vanishes — sensible while that core was the whole
+		 definition of the mode, but Hailei looked at 150 and wanted the dissolved
+		 end of the scale (2026-07-30), so the ceiling is the slider's business. */
+	return Math.max( 0.5, r * Math.max( 0.02, b.soft ) * blobBlurFactor )
+}
+/* The blur must have room to spread or it is silently cut off at the filter's
+	 edge — the tail simply disappears and every softness above the box's capacity
+	 renders identically. A three-box Gaussian reaches about 2.8σ, and σ is
+	 r·soft·0.50, so the margin needed on each side is 1.4·soft·r — as a
+	 percentage of the 2r bounding box, exactly 70 × soft. The old fixed 70% was
+	 therefore sized for soft = 1.00 and no further. Ten points of headroom cover
+	 the box-blur approximation's own slop. */
+function blobFilterMargin( b ){
+	return Math.max( 70, Math.ceil( 70 * Math.max( 0.02, b.soft ) ) + 10 )
 }
 function shapeSvg( b, hex ){
 	return '<circle cx="0" cy="0" r="' + ( b.w * 0.5 ).toFixed( 1 ) + '" fill="' + hex + '"/>'
@@ -873,10 +887,12 @@ function shapeSvg( b, hex ){
 function shapeAlpha( b, x, y ){
 	const r = b.w * 0.5
 	const d = Math.hypot( ( x - b.x ) / r, ( y - b.y ) / r )
-	/* soft is the fraction of the radius the falloff occupies. Below 1 there is
-		 still a flat saturated core — which is the whole point of building these
-		 out of blurred solids rather than radial gradients. */
-	const soft = Math.max( 0.02, Math.min( 0.98, b.soft ) )
+	/* soft is the fraction of the radius the falloff occupies, so the flat core
+		 measures r·(1−soft): it shrinks in a straight line and is gone at soft 1.
+		 Past that there is no plateau, only a dome — the mass reads as a breath of
+		 colour rather than a body of it. The formula stays monotonic and needs no
+		 ceiling; the slider decides how far the scale runs. */
+	const soft = Math.max( 0.02, b.soft )
 	const t = ( d - ( 1 - soft ) ) / ( 2 * soft )
 	if( t <= 0 ) return 1
 	if( t >= 1 ) return 0
@@ -1117,7 +1133,9 @@ function buildSvg( mode, W, H, pxW, pxH, crop ){
 		body += '  <rect width="' + W + '" height="' + H + '" fill="' + mesh.base + '"/>\n'
 		for( let k = 0;k < blobs.length;k++ ){
 			const b = blobs[k]
-			defs += '  <filter id="wgB' + k + '" x="-70%" y="-70%" width="240%" height="240%"'
+			const margin = blobFilterMargin( b )
+			defs += '  <filter id="wgB' + k + '" x="-' + margin + '%" y="-' + margin + '%"'
+					 + ' width="' + ( 2 * margin + 100 ) + '%" height="' + ( 2 * margin + 100 ) + '%"'
 					 + ' color-interpolation-filters="sRGB">\n'
 					 + '    <feGaussianBlur stdDeviation="' + blobBlur( b ).toFixed( 2 ) + '"/>\n  </filter>\n'
 			body += '  <g filter="url(#wgB' + k + ')" transform="translate(' + b.x.toFixed( 1 ) + " " + b.y.toFixed( 1 )
@@ -1269,7 +1287,7 @@ function hudLines(){
 		out.push( "RADIAL \u00B7 " + state.cx + "/" + state.cy + " \u00B7 R" + state.radius + "%" )
 	else
 		out.push( "MULTI-POINT \u00B7 SIZE " + Math.round( state.blobSize * 100 )
-					 + " \u00B7 SOFT " + Math.round( state.blobSoft * 100 ) )
+					 + "% \u00B7 SOFT " + Math.round( state.blobSoft * 100 ) + "%" )
 
 	if( state.grid ) out.push( "PATTERN \u00B7 " + state.gridPattern.toUpperCase() + " \u00B7 " + state.gridN )
 	const easeShort = { smooth:"SMOOTH", linear:"EVEN", start:"START", end:"END" }
@@ -1762,7 +1780,11 @@ function randomAll(){
 	state.cx = Math.round( 15 + r() * 70 ); state.cy = Math.round( 15 + r() * 70 )
 	state.radius = Math.round( 40 + r() * 80 )
 	state.blobSize = 0.35 + r() * 0.40
-	state.blobSoft = 0.10 + r() * 0.35
+	/* The dice stay inside the slider's own range — a roll the hand cannot
+		 reproduce is a roll that cannot be tuned afterwards. They also stay off
+		 the dissolved top end: 135 is there for when it is reached for, not to be
+		 landed on by accident. */
+	state.blobSoft = 0.25 + r() * 0.35
 	state.seed = Math.floor( r() * 9999 )
 	state.grid = r() < 0.5
 	if( state.grid ){
@@ -1935,8 +1957,11 @@ function init(){
 	} )
 	wireRange( "angle", "angle", { unit:"°", after:snapAngle } )
 	wireRange( "radius", "radius", { unit:"%" } )
-	wireRange( "blobSize", "blobSize", { scale:100 } )
-	wireRange( "blobSoft", "blobSoft", { scale:100 } )
+	/* Both are percentages of the mass's own width and now say so — every other
+		 slider wears its unit (°, %, ×) and these two were the bare numbers that
+		 made the reader guess (Hailei asked what SOFT was measured in, 2026-07-30). */
+	wireRange( "blobSize", "blobSize", { scale:100, unit:"%" } )
+	wireRange( "blobSoft", "blobSoft", { scale:100, unit:"%" } )
 	/* Cell size can be dragged or typed; the two stay in step */
 	const setCell = function( v, from ){
 		state.gridN = Math.max( 2, v )
