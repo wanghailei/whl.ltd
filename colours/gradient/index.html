@@ -139,6 +139,10 @@ button,input,select{font-family:inherit; font-size:inherit; color:inherit}
 	 (Hailei, 2026-07-28 — the single-buffer readout retired). On a phone
 	 the title stays pinned to the top of the screen. */
 #title{font-weight:500; margin-bottom:calc(var(--base-line-height) * var(--base-font-size))}
+/* The version shares the title's line but not its voice: normal weight
+	 against the title's 500, and a light hand of ink (Hailei, 2026-07-30).
+	 It is a stamp, not part of the name. */
+#version{font-weight:400; opacity:.4}
 @media (max-width:760px){
 	#title{position:fixed; top:0; left:0; right:0; z-index:30; padding:15px}
 }
@@ -686,7 +690,7 @@ const state = {
 	 (init writes the title — it cannot live here, the regress harness pulls
 	 this section into Node where there is no document). major.minor.patch —
 	 major bumps on Hailei's instruction; minor and patch on judgement. */
-const VERSION = "0.55.10"
+const VERSION = "0.55.11"
 const element = function( id ){ return document.getElementById( id ) }
 
 /* The output is a pixel width and a proportion; the height follows. Nothing
@@ -1807,10 +1811,15 @@ function syncSize(){
 
 
 function init(){
-	document.title = "WHL Colours Gradient " + VERSION
-	element( "title" ).textContent = "WHL COLOURS GRADIENT " + VERSION
+	/* One spelling of the name feeds the tab, the readout and the toggle's
+		 offset, so the three cannot drift apart. The version wears its own
+		 weight and ink (see #version) — it is a stamp, not part of the name. */
+	const NAME = "WHL Colours Gradient"
+	const heading = NAME + " " + VERSION
+	document.title = heading
+	element( "title" ).innerHTML = NAME + " <span id=\"version\">" + VERSION + "</span>"
 	/* the toggle sits five characters after the version on the title line */
-	element( "lang" ).style.marginLeft = "calc(var(--page-margin) - var(--base-edge-gap) + " + ( "WHL COLOURS GRADIENT ".length + VERSION.length + 5 ) + "ch)"
+	element( "lang" ).style.marginLeft = "calc(var(--page-margin) - var(--base-edge-gap) + " + ( heading.length + 5 ) + "ch)"
 	element( "lang" ).addEventListener( "click", function(){ lang = lang === "en" ? "cn" : "en"; applyLang() } )
 	/* The sheet appears with no ground, so it must be judged the moment it
 		 unfolds — a hidden element has no rect and skips the earlier pass. */
