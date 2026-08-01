@@ -132,8 +132,17 @@ a:hover{text-decoration:underline}
 "use strict"
 /* The engine iframe fills the viewport, so the tool draws at exactly this
 	 window's ratio (its Window size mode). Once loaded: roll, lift, judge.
-	 Everything below leans on the tool's own globals — randomAll,
-	 renderDims, colourAtPoint, hexToRgb, rgbToOklab — one source of truth. */
+	 Everything below leans on the tool — randomAll and renderDims are the
+	 tool's own, while the colour sampler now lives in the engine file the tool
+	 loads beside itself and answers on WHLGradient. One source of truth either
+	 way; only the doorway differs.
+
+	 Scar (2026-08-01): the sampler used to be inline in the tool, so it sat on
+	 the iframe's window and w.colourAtPoint worked. Gradient 0.59.0 moved the
+	 drawing core into gradient.js behind an IIFE, and these three calls started
+	 throwing. The catch below swallowed it, so the render kept appearing and
+	 only the ink quietly stopped judging — Hailei spotted it, no error ever
+	 surfaced. A silent catch around a hard dependency hides exactly this. */
 const frame = document.getElementById( "engine" )
 /* Each roll leaves behind a judge for the author's card, so a card opened
 	 later answers the gradient actually behind it. */
@@ -153,6 +162,7 @@ function roll(){
 		/* Each region judges its own ground with the engine's sampler: nine
 			 points, OKLab lightness, dark ink on light paper. Screen points map
 			 through the cover-crop into render space. */
+		const engine = w.WHLGradient
 		const dims = w.renderDims()
 		const cover = Math.max( window.innerWidth / dims.w, window.innerHeight / dims.h )
 		const cropX = ( dims.w - window.innerWidth / cover ) / 2
@@ -166,7 +176,7 @@ function roll(){
 				for( let j = 0; j <= 2; j++ ){
 					const x = cropX + ( box.left + box.width * ( 0.15 + 0.35 * i ) ) / cover
 					const y = cropY + ( box.top + box.height * ( 0.15 + 0.35 * j ) ) / cover
-					sum += w.rgbToOklab( w.hexToRgb( w.colourAtPoint( x, y, dims.w, dims.h ) ) || [ 0, 0, 0 ] )[0]
+					sum += engine.rgbToOklab( engine.hexToRgb( engine.colourAtPoint( x, y, dims.w, dims.h ) ) || [ 0, 0, 0 ] )[0]
 				}
 			}
 			el.classList.toggle( "ink-dark", sum / 9 > 0.62 )
@@ -174,7 +184,10 @@ function roll(){
 		judgeCard = function(){ judge( "bio" ) }
 		judge( "title" ); judge( "list" ); judge( "copy" ); judge( "bio" )
 	}catch( fault ){
-		/* No engine, no roll — the page stands on its dark ground in white. */
+		/* No engine, no roll — the page stands on its dark ground in white.
+			 Say so on the console: this catch once hid a broken sampler for a
+			 whole release, because a page that still looks fine reports nothing. */
+		console.warn( "WHL: engine unavailable, ink not judged —", fault.message )
 	}
 }
 /* On a warm cache the iframe can finish loading before this script even
