@@ -1,18 +1,16 @@
 /*
-	WHL Colours Gradient — drawing core, v0.58.0
+	WHL Colours Gradient — drawing core, v0.59.0
 
-	GENERATED FILE. Do not edit: every line below is lifted verbatim from
-	whl_colours_gradient.html, which is the single source of truth. To change
-	anything here, change the tool and run:
+	A real source file, edited by hand like any other. It holds sections 1 to 5
+	of the tool — colour maths, state, geometry, SVG, palette — plus the point
+	sampling and the dice. The tool next door, whl_colours_gradient.html, loads
+	this file and keeps only its interface: render, colour picker, helpers,
+	wiring. There is one copy of the drawing code and this is it.
 
-		ruby tools/build-gradient-js.rb
-
-	tests/regress.sh regenerates and compares, so a stale copy cannot ship.
-
-	Why this file exists: other WHL sites wanted a WHL gradient behind their
-	pages and the only way to get one was to load the whole tool — 153KB, the
-	full UI, fonts and picker included — into a hidden iframe and reach through
-	it. This is the drawing layer alone, 28% of that, and it needs no iframe.
+	Why the file exists: other WHL sites wanted a WHL gradient behind their
+	pages, and the only way to get one was to load the whole tool — the full UI,
+	fonts and picker included — into a hidden iframe and reach through it. This
+	is the drawing layer alone, and it needs no iframe.
 
 	It is a classic script, not a module: <script src="gradient.js"></script>
 	and the API arrives on window.WHLGradient —
@@ -32,12 +30,10 @@
 		                                  point, pattern included — for judging ink
 		WHLGradient.hexToRgb, .rgbToOklab the pair that turns that hex into a
 		                                  lightness you can threshold on
-		WHLGradient.stops, .meshColours, .colourAt, .outSize,
-		WHLGradient.randomColours, .evenPositions, .parseSwatch,
-		WHLGradient.DEFAULT_SWATCH, .VERSION
 
-	Everything lives inside one closure, so nothing but WHLGradient reaches the
-	page's own names.
+	The whole surface is listed at the foot of this file. Everything sits inside
+	one closure and only WHLGradient reaches the page, because a bare top-level
+	`const state` would break any host page that has a `state` of its own.
 
 	Licence: © 2026 Wanted Hacker Limited. Personal and non-commercial use is
 	free, without limitation. Commercial use of an image produced with this
@@ -52,6 +48,9 @@
 ;( function(){
 "use strict"
 
+/* ══════════════════════════════════════════════════════════
+	 1. Colour maths — sRGB / OKLab / OKLCh
+	 ══════════════════════════════════════════════════════════ */
 const clamp01 = function( x ){ return Math.min( 1, Math.max( 0, x ) ) }
 
 function hexToRgb( hex ){
@@ -192,7 +191,6 @@ const SMOOTH = 24   /* baked stops per segment — fixed, not a user knob */
 	 hand-edit; change swatch/default.json and re-bake. */
 const DEFAULT_SWATCH = [["#030000","#0f0000","#220001","#360104","#49080a","#5c1314","#6f201f","#812d2b","#933c38","#a54b46","#b55c56","#c46d67","#d27f79","#df928c","#eba6a0","#f6bab4","#ffcfca","#ffe7e5"],["#030000","#0e0100","#1f0300","#310800","#460f00","#5b1700","#6e2309","#803016","#923f25","#a34e34","#b45f45","#c37057","#d1826a","#de957e","#eaa894","#f4bcab","#fed1c2","#ffe8e1"],["#030000","#0b0200","#1b0600","#2c0f00","#3e1800","#522200","#662d00","#7b3700","#8f4408","#a0531f","#b06333","#bf7447","#cd865c","#da9873","#e6ab8a","#f1bfa3","#fbd3bc","#ffe9dc"],["#030000","#090200","#180900","#271300","#391d00","#4b2800","#5d3400","#714000","#854c00","#9a5900","#aa6921","#b97a3a","#c78b51","#d49d69","#e1af82","#ecc29c","#f7d5b7","#ffe9d6"],["#020000","#080300","#150a00","#241500","#342000","#452c00","#563900","#684600","#7b5300","#8e6000","#a16f0f","#b07f2f","#be904a","#cca263","#d9b47d","#e6c698","#f2d8b4","#fdebd1"],["#020000","#060300","#120c00","#201700","#2f2300","#3f3000","#4f3d00","#604a00","#725800","#836700","#967505","#a5862c","#b39647","#c2a761","#d0b87c","#ddca97","#ebdbb3","#f8edd0"],["#010000","#050400","#100d00","#1d1900","#2a2500","#393300","#484000","#574e00","#675d00","#786c00","#887c0f","#978c30","#a69c4a","#b5ac64","#c5bd7e","#d4ce99","#e3deb5","#f2efd1"],["#010100","#040400","#0c0e00","#181b00","#242800","#313600","#3e4400","#4c5300","#5a6200","#697200","#788222","#88913a","#97a152","#a8b16a","#b8c183","#c9d19d","#dbe1b8","#ecf1d3"],["#000100","#020500","#081000","#111d00","#1b2b00","#253900","#304800","#3c5800","#486808","#577720","#668734","#769648","#87a65e","#99b574","#abc58b","#bed4a4","#d2e4bd","#e6f3d7"],["#000100","#000600","#011200","#021f00","#052e00","#093d00","#154d09","#225c17","#316c26","#407b36","#518b46","#629a58","#75aa6c","#89b980","#9ec896","#b3d7ac","#c9e6c4","#e0f5dc"],["#000100","#000601","#001205","#001f0c","#002e14","#003d1d","#004d26","#005d30","#026e3a","#207e49","#378e59","#4d9d69","#63ac7b","#79bc8e","#91caa2","#a9d9b6","#c1e8cc","#daf6e2"],["#000100","#000603","#00110a","#001f14","#002d1f","#003c2a","#004c36","#005c43","#006d4f","#007e5d","#0c8f6a","#349f7a","#50ae8b","#6bbd9d","#85ccaf","#a0dac1","#bbe9d4","#d6f7e8"],["#000101","#000504","#00110d","#001e19","#002c25","#003b32","#004b40","#005b4e","#006b5d","#007c6c","#008e7b","#139f8b","#3faf9b","#5fbeab","#7cccbc","#99dbcc","#b5e9dd","#d2f7ee"],["#000101","#000505","#001010","#001e1d","#002c2a","#003a39","#004a48","#005a58","#006a68","#007b78","#008c89","#009e9b","#33aeaa","#57bdb9","#77ccc8","#95dad7","#b3e9e6","#d0f7f4"],["#000101","#000506","#001012","#001d20","#002b2f","#00393f","#00494f","#005860","#006971","#007983","#008a96","#009ca9","#32acb8","#56bbc6","#76cad4","#94d9e1","#b2e8ee","#d0f6fa"],["#000101","#000508","#001015","#001c24","#002a34","#003845","#004756","#005769","#00677b","#00778f","#0088a3","#0a99b6","#3ca9c4","#5cb8d1","#7ac8de","#97d7ea","#b4e6f5","#d2f5ff"],["#000102","#000509","#000f18","#001c28","#00293a","#00374c","#00465f","#005573","#006587","#00759c","#0085b2","#2e95c1","#4ba5ce","#66b5db","#81c5e6","#9dd4f1","#b8e4fb","#daf2ff"],["#000003","#00040c","#000e1c","#001a2e","#002741","#003556","#00436b","#005281","#006197","#1771aa","#3080ba","#4690c8","#5da1d5","#74b1e1","#8cc1ec","#a5d1f6","#bee1ff","#dff0ff"],["#000006","#000311","#000c24","#001739","#002350","#043065","#0f3e79","#1c4c8c","#2a5c9e","#396bae","#497bbe","#5b8bcc","#6e9cd9","#83ace5","#98bdf0","#aecef9","#c7deff","#e3efff"],["#000006","#010217","#04082a","#0a133e","#131f52","#1d2b66","#28397a","#34478d","#41569f","#4f65b0","#5e75bf","#6e86ce","#7f96db","#92a7e6","#a5b9f1","#b9cafa","#cfdcff","#e7edff"],["#010006","#030116","#0a0529","#150f3c","#201b50","#2c2764","#383478","#45428a","#53519c","#6160ad","#7070bd","#7f80cb","#8f91d9","#a0a3e4","#b1b4ef","#c3c6f8","#d6d9ff","#eaecff"],["#010005","#060014","#100427","#1d0c39","#29174d","#372360","#452f73","#533d85","#624b97","#705ba8","#7f6bb8","#8f7bc6","#9e8cd3","#ae9ee0","#beb0eb","#cec3f5","#ded6fe","#eeeaff"],["#010004","#080012","#150223","#230935","#311347","#401f5a","#502b6c","#5f387e","#6e478f","#7e56a0","#8d66af","#9c76be","#ab88cb","#ba9ad8","#c9ade4","#d8c0ef","#e6d3f9","#f4e8ff"],["#020003","#0b000e","#19011e","#28062f","#381040","#481b51","#592763","#693474","#794284","#895195","#9961a4","#a872b3","#b784c1","#c596cf","#d3a9db","#e0bde7","#eed1f3","#fae5fe"],["#020002","#0c000a","#1c0019","#2d0428","#3e0d37","#4f1847","#602458","#723068","#823f78","#934e87","#a35e97","#b26fa6","#c181b5","#ce93c3","#dca7d1","#e8bbdf","#f4cfec","#ffe4f9"],["#020001","#0e0006","#1f0013","#310220","#420a2e","#54153c","#66214b","#782e5a","#8a3c69","#9b4b79","#ab5b88","#ba6c97","#c87fa7","#d691b6","#e2a5c5","#eeb9d4","#f9cee4","#ffe5f2"],["#030000","#0e0004","#20000c","#330117","#460723","#581330","#6b1f3e","#7d2c4c","#8f3a5a","#a04969","#b05a78","#c06b88","#ce7d98","#db91a8","#e7a4b9","#f2b9ca","#fccedb","#ffe6ed"],["#030000","#0f0002","#210006","#35000e","#480718","#5b1223","#6e1e2f","#802c3c","#923a49","#a44958","#b45a67","#c36b77","#d17e88","#de919a","#eaa5ac","#f5b9bf","#ffced2","#ffe7e9"],["#000000","#ffffff"]]
 const swatches = [ { name:"default", colours:DEFAULT_SWATCH.flat(), rows:DEFAULT_SWATCH } ]
-let pastedCount = 0   /* numbers the "pasted n" sets */
 
 const state = {
 	colours:[ "#e8e1d4" ],
@@ -214,7 +212,7 @@ const state = {
 	 (init writes the title — it cannot live here, the regress harness pulls
 	 this section into Node where there is no document). major.minor.patch —
 	 major bumps on Hailei's instruction; minor and patch on judgement. */
-const VERSION = "0.58.0"
+const VERSION = "0.59.0"
 
 /* The output is a pixel width and a proportion; the height follows. Nothing
 	 here is physical — what the file becomes on paper is decided downstream. */
@@ -781,6 +779,10 @@ function parseSwatch( text ){
 	return { colours: hexesFrom( text ), rows: null }
 }
 
+/* ══════════════════════════════════════════════════════════
+	 6. Sampling and dice — the analytic half of the tool's
+	    section 6, plus the throw behind its one big button
+	 ══════════════════════════════════════════════════════════ */
 /* ── What colour is the render at this point? Used to decide black or white text. ── */
 function baseColourAt( x, y, W, H ){
 	const at = colourAt()
@@ -845,18 +847,33 @@ const host = typeof window !== "undefined" ? window : globalThis
 host.WHLGradient = {
 	VERSION: VERSION,
 	state: state,
+	swatches: swatches,
 	roll: roll,
 	buildSvg: buildSvg,
-	colourAtPoint: colourAtPoint,
-	hexToRgb: hexToRgb,
-	rgbToOklab: rgbToOklab,
 	colourAt: colourAt,
+	colourAtPoint: colourAtPoint,
 	stops: stops,
 	meshColours: meshColours,
 	outSize: outSize,
+	hexToRgb: hexToRgb,
+	rgbToOklab: rgbToOklab,
+	oklabToRgb: oklabToRgb,
+	oklchToOklab: oklchToOklab,
+	hexToLch: hexToLch,
+	lchToHex: lchToHex,
+	inGamut: inGamut,
+	clamp01: clamp01,
 	randomColours: randomColours,
+	extendColours: extendColours,
 	evenPositions: evenPositions,
+	addSwatchSet: addSwatchSet,
 	parseSwatch: parseSwatch,
+	RATIOS: RATIOS,
+	SPACES: SPACES,
+	EASES: EASES,
+	SMOOTH: SMOOTH,
+	derive: derive,
+	mixHex: mixHex,
 	DEFAULT_SWATCH: DEFAULT_SWATCH
 }
 } )()
