@@ -1,5 +1,5 @@
 /*
-	WHL Colours Gradient — drawing core, v0.57.0
+	WHL Colours Gradient — drawing core, v0.58.0
 
 	GENERATED FILE. Do not edit: every line below is lifted verbatim from
 	whl_colours_gradient.html, which is the single source of truth. To change
@@ -184,8 +184,9 @@ const SMOOTH = 24   /* baked stops per segment — fixed, not a user knob */
 	 black and white close the shelf as their own row). Seeded with the
 	 default set — a baked copy of swatch/default.json, read through
 	 parseSwatch and kept identical by the regress check through that SAME
-	 parser, because a file:// page cannot read a neighbouring file at run
-	 time (the wall that embedded the font, §4). Pasted and dropped sets
+	 parser, because a file:// page cannot fetch a neighbouring file at run
+	 time — a different wall from the one a CSS subresource walks through
+	 (§4). Pasted and dropped sets
 	 join for the session only — no browser storage, by constraint. The
 	 same name replaces its set. The constant line is generated — do not
 	 hand-edit; change swatch/default.json and re-bake. */
@@ -213,7 +214,7 @@ const state = {
 	 (init writes the title — it cannot live here, the regress harness pulls
 	 this section into Node where there is no document). major.minor.patch —
 	 major bumps on Hailei's instruction; minor and patch on judgement. */
-const VERSION = "0.57.0"
+const VERSION = "0.58.0"
 
 /* The output is a pixel width and a proportion; the height follows. Nothing
 	 here is physical — what the file becomes on paper is decided downstream. */
