@@ -196,8 +196,8 @@ const state = {
 	colours:[ "#e8e1d4" ],
 	positions:[ 0.5 ],
 	slots:7,
-	type:"linear", angle:160, cx:50, cy:35, radius:78, seamless:false,
-	blobSize:0.55, seed:11, blobSoft:0.30,
+	type:"linear", angle:160, cx:50, cy:35, radius:78, radialOval:0, seamless:false,
+	blobSize:0.55, seed:11, blobSoft:0.30, blobOval:0,
 	/* counts are per height-span; the old across-width defaults 24/900 at a
 		 ~1.7 ratio correspond to about these */
 	grid:false, gridN:14, gridPattern:"plaid",
@@ -212,7 +212,7 @@ const state = {
 	 (init writes the title — it cannot live here, the regress harness pulls
 	 this section into Node where there is no document). major.minor.patch —
 	 major bumps on Hailei's instruction; minor and patch on judgement. */
-const VERSION = "0.59.0"
+const VERSION = "0.62.1"
 
 /* The output is a pixel width and a proportion; the height follows. Nothing
 	 here is physical — what the file becomes on paper is decided downstream. */
@@ -323,27 +323,101 @@ function axisT( x, y, W, H ){
 	const vx = 2 * dx * half, vy = 2 * dy * half
 	return ( ( x - x1 ) * vx + ( y - y1 ) * vy ) / ( vx * vx + vy * vy || 1 )
 }
+/* Where the radial gradient's ellipse sits and how far it reaches.
+	 One definition for the renderer and the sampler, because this mode had the
+	 same trap the masses have: two places deciding one shape drift apart.
+
+	 The radius counts along the height, the pinned dimension, like every other
+	 texture in this file — widen the ratio and the sheet extends around the
+	 gradient instead of inflating it.
+
+	 Oval then stretches it, and the stretch is the mass's own, NOT the sheet's.
+	 Measured against the canvas it could only ever reach W/H: 1.275 on Hailei's
+	 window, so the top of the slider barely moved, and on a square sheet it
+	 would have done nothing at all. A control whose power depends on the shape
+	 you happen to be working at is not a control. It now reaches 2.2 : 1 on any
+	 sheet — the same ceiling the masses use, so both Oval sliders mean one
+	 thing (Hailei, 2026-08-06: 到100%，也沒多大變化).
+
+	 It runs 0 to 100 and nothing else. A negative half briefly existed, to reach
+	 a tall ellipse on a landscape sheet, and was rejected on sight: a percentage
+	 below zero has nothing to read (Hailei, 2026-08-06: 為什麼有負數？). Zero is
+	 round, 100 is the widest.
+
+	 The widest is 4 : 1, and deliberately NOT the masses' 2.2 : 1. Radial has
+	 one shape and no neighbours, so nothing constrains it but taste. The masses
+	 must keep clipping each other without nesting, and that guarantee measurably
+	 gives way just past 2.2 — at 3 : 1, nine masses across a 40-seed sweep
+	 touched nothing at all; at 4 : 1, two of them nested outright. Aligning the
+	 two numbers for tidiness would mean either crippling this one or breaking
+	 §4 over there. Two controls, two honest ceilings.
+
+	 The stretch always reaches OUTWARD and leaves the height at the radius
+	 Radius set — pulling the short axis in instead would make Oval a second
+	 Radius, quietly changing how far the gradient carries. */
+const radialOvalCeiling = 3.0   /* 1 + this is the widest ratio: 4 : 1 */
+function radialGeom( W, H ){
+	const oval = Math.max( 0, Math.min( 1, state.radialOval ) )
+	return {
+		cx: state.cx / 100 * W,
+		cy: state.cy / 100 * H,
+		r: Math.max( 1e-6, state.radius / 100 * H ),
+		sx: 1 + oval * radialOvalCeiling
+	}
+}
 /* Solid discs, heavily blurred — not radial falloffs.
 	 A radial gradient fades from its centre and never has a flat middle; a
 	 blurred solid disc keeps an even core and only softens at the shoulder.
 	 That difference is the whole character of the reference work. Centres may
 	 sit outside the sheet so discs crop at the edge instead of always
 	 floating clear of it. */
-/* Discs must overlap without ever sitting inside one another.
+/* Oval is the share of its own roundness a mass may give up: 0 leaves every
+	 one a true circle, 100 lets the axes reach 2.2 : 1. The stretch preserves
+	 area — w grows by the root of the ratio exactly as h shrinks by it —
+	 because Size is a separate slider and one knob must not quietly move
+	 another. The tilt runs 0–180°: an ellipse is its own image under a half
+	 turn, so the rest of the circle buys nothing.
+
+	 These come from their OWN generator, seeded off state.seed but stepping
+	 independently, so the placement stream below never shifts. That is what
+	 keeps Oval 0 the composition this tool has always drawn, byte for byte, and
+	 every sheet made before the slider existed reproducible. */
+function ovalShapes( n ){
+	const oval = Math.max( 0, Math.min( 1, state.blobOval ) )
+	if( oval <= 0 ) return null
+	const random = mulberry32( ( state.seed + 0x9e3779b9 ) >>> 0 )
+	const out = []
+	for( let i = 0; i < n; i++ )
+		out.push( { ratio:1 + oval * 1.2 * random(), rot:random() * 180 } )
+	return out
+}
+/* Masses must overlap without ever sitting inside one another.
 	 A shape nested in another reads as a bullseye; shapes that clip each other
 	 read as colour bleeding into colour, which is the thing being aimed at.
 	 Two circles are nested when the distance between centres is less than the
 	 difference of their radii, and separate when it exceeds the sum — so every
-	 placement is drawn from the band strictly between those two. */
+	 placement is drawn from the band strictly between those two.
+
+	 Ovals have no such closed form, so each mass is judged through the two
+	 circles that bound it: the inscribed one (rMin) decides overlap, the
+	 circumscribed one (rMax) decides burial. Both are conservative, so the rule
+	 holds rather than merely usually holding, and at ratio 1 the pair collapses
+	 to r and this is the arithmetic that was always here. The price falls at
+	 high Oval, where the band narrows and masses sit a little further apart
+	 than a field of circles would. */
 function composeBlobs( n, W, H ){
 	const random = mulberry32( state.seed )
 	const span = H   /* blob size pegs to the height, like every texture */
 	const base = ( 0.26 + state.blobSize * 0.52 ) * span
+	const shapes = ovalShapes( n )
 	const out = []
 	for( let i = 0; i < n; i++ ){
 		const r = base * ( 0.60 + random() * 0.85 )
+		const stretch = shapes ? Math.sqrt( shapes[i].ratio ) : 1
+		const rMax = r * stretch, rMin = r / stretch
 		if( !out.length ){
-			out.push( { x:( 0.22 + random() * 0.56 ) * W, y:( 0.22 + random() * 0.56 ) * H, r:r } )
+			out.push( { x:( 0.22 + random() * 0.56 ) * W, y:( 0.22 + random() * 0.56 ) * H,
+				rMax:rMax, rMin:rMin, rot:shapes ? shapes[i].rot : 0 } )
 			continue
 		}
 		/* Anchoring to one disc only guarantees the pair; the placement has to be
@@ -353,21 +427,21 @@ function composeBlobs( n, W, H ){
 		let best = null
 		for( let t = 0; t < 24; t++ ){
 			const a = out[Math.floor( random() * out.length )]
-			const lo = Math.abs( a.r - r ) + Math.min( a.r, r ) * 0.30
-			let hi = ( a.r + r ) * 0.86
+			const lo = Math.max( a.rMax - rMin, rMax - a.rMin, 0 ) + Math.min( a.rMin, rMin ) * 0.30
+			let hi = ( a.rMin + rMin ) * 0.86
 			if( hi <= lo ) hi = lo * 1.15
 			const dist = lo + random() * ( hi - lo )
 			const th = random() * Math.PI * 2
 			const c = {
 				x: Math.max( -0.2 * W, Math.min( 1.2 * W, a.x + Math.cos( th ) * dist ) ),
 				y: Math.max( -0.2 * H, Math.min( 1.2 * H, a.y + Math.sin( th ) * dist ) ),
-				r: r
+				rMax: rMax, rMin: rMin, rot: shapes ? shapes[i].rot : 0
 			}
 			let nested = false, touches = false
 			for( let k = 0; k < out.length; k++ ){
 				const o = out[k], dd = Math.hypot( c.x - o.x, c.y - o.y )
-				if( dd < Math.abs( o.r - c.r ) ) { nested = true; break }
-				if( dd < o.r + c.r ) touches = true
+				if( dd < Math.max( o.rMax - c.rMin, c.rMax - o.rMin ) ) { nested = true; break }
+				if( dd < o.rMin + c.rMin ) touches = true
 			}
 			if( !best ) best = c
 			if( !nested && touches ){ best = c; break }
@@ -375,19 +449,27 @@ function composeBlobs( n, W, H ){
 		out.push( best )
 	}
 	return out.map( function( o ){
-		return { x:o.x, y:o.y, w:o.r * 2, soft:state.blobSoft }
+		return { x:o.x, y:o.y, w:o.rMax * 2, h:o.rMin * 2, rot:o.rot, soft:state.blobSoft }
 	} )
 }
-/* One place decides how much blur a softness means, so the drawn disc and the
-	 sampled disc cannot drift apart. */
+/* One place decides how much blur a softness means, so the drawn mass and the
+	 sampled mass cannot drift apart. */
 const blobBlurFactor = 0.50   /* blur sigma per unit of softness — measured, not guessed */
+/* A sigma per axis, each measured against that axis alone, so Soft keeps the
+	 one meaning it has always had: the share of the half-width given over to
+	 shoulder. A single sigma would have sized the whole mass off one side,
+	 leaving a stretched mass crisp along its length and woolly across it. The
+	 filter rides on the rotated group, so these axes are the mass's own. */
 function blobBlur( b ){
-	const r = b.w * 0.5
 	/* Only a floor now. The old 0.98 ceiling stopped soft one notch short of the
 		 point where the flat core vanishes — sensible while that core was the whole
 		 definition of the mode, but Hailei looked at 150 and wanted the dissolved
 		 end of the scale (2026-07-30), so the ceiling is the slider's business. */
-	return Math.max( 0.5, r * Math.max( 0.02, b.soft ) * blobBlurFactor )
+	const soft = Math.max( 0.02, b.soft )
+	return {
+		x: Math.max( 0.5, b.w * 0.5 * soft * blobBlurFactor ),
+		y: Math.max( 0.5, b.h * 0.5 * soft * blobBlurFactor )
+	}
 }
 /* The blur must have room to spread or it is silently cut off at the filter's
 	 edge — the tail simply disappears and every softness above the box's capacity
@@ -395,19 +477,39 @@ function blobBlur( b ){
 	 r·soft·0.50, so the margin needed on each side is 1.4·soft·r — as a
 	 percentage of the 2r bounding box, exactly 70 × soft. The old fixed 70% was
 	 therefore sized for soft = 1.00 and no further. Ten points of headroom cover
-	 the box-blur approximation's own slop. */
+	 the box-blur approximation's own slop.
+	 Ovals need no separate figure: the margin is a percentage of each axis and
+	 sigma is proportional to that same axis, so the r cancels on the long side
+	 exactly as it does on the short one, and 70 × soft still covers both. */
 function blobFilterMargin( b ){
 	return Math.max( 70, Math.ceil( 70 * Math.max( 0.02, b.soft ) ) + 10 )
 }
+/* A round mass still ships as <circle>, not an <ellipse> with equal axes —
+	 Oval 0 must leave the file it always produced, down to the tag. */
 function shapeSvg( b, hex ){
-	return '<circle cx="0" cy="0" r="' + ( b.w * 0.5 ).toFixed( 1 ) + '" fill="' + hex + '"/>'
+	const rx = b.w * 0.5, ry = b.h * 0.5
+	if( rx === ry )
+		return '<circle cx="0" cy="0" r="' + rx.toFixed( 1 ) + '" fill="' + hex + '"/>'
+	return '<ellipse cx="0" cy="0" rx="' + rx.toFixed( 1 ) + '" ry="' + ry.toFixed( 1 )
+			 + '" fill="' + hex + '"/>'
 }
-/* Rough coverage of a disc at a point, used only to pick black or white ink.
+/* Rough coverage of a mass at a point, used only to pick black or white ink.
 	 A Gaussian blur of a hard edge is an error function; smoothstep is close
 	 enough for a decision that only has two outcomes. */
 function shapeAlpha( b, x, y ){
-	const r = b.w * 0.5
-	const d = Math.hypot( ( x - b.x ) / r, ( y - b.y ) / r )
+	const rx = b.w * 0.5, ry = b.h * 0.5
+	let lx = x - b.x, ly = y - b.y
+	/* Turn the point into the mass's own frame before measuring, so the sampler
+		 reads the same tilted ellipse the renderer draws. Skipped outright when the
+		 mass is upright: an identity rotation still perturbs the last bits of a
+		 float, and these samples are compared against a baseline. */
+	if( b.rot ){
+		const rad = -b.rot * Math.PI / 180, cs = Math.cos( rad ), sn = Math.sin( rad )
+		const tx = lx * cs - ly * sn
+		ly = lx * sn + ly * cs
+		lx = tx
+	}
+	const d = Math.hypot( lx / rx, ly / ry )
 	/* soft is the fraction of the radius the falloff occupies, so the flat core
 		 measures r·(1−soft): it shrinks in a straight line and is gone at soft 1.
 		 Past that there is no plateau, only a dome — the mass reads as a breath of
@@ -441,7 +543,7 @@ function gridCells( W, H ){
 function gridColour( cx, cy, W, H ){
 	if( state.gridPattern === "columns" ) return baseColourAt( cx, H / 2, W, H )
 	if( state.gridPattern === "rows" )    return baseColourAt( W / 2, cy, W, H )
-	if( state.gridPattern === "rings" || state.gridPattern === "hex" || state.gridPattern === "tri" )
+	if( state.gridPattern === "hex" || state.gridPattern === "tri" )
 		return baseColourAt( cx, cy, W, H )
 	if( state.gridPattern === "plaid" )
 		return mixHex( baseColourAt( cx, H / 2, W, H ), baseColourAt( W / 2, cy, W, H ), 0.5, state.space )
@@ -459,16 +561,16 @@ function gridShape( geometry ){
 	if( state.gridPattern === "rows" )    return { cols:1, rows:Math.max( 1, Math.round( state.gridN ) ) }
 	return { cols:geometry.cols, rows:geometry.rows }
 }
-function ringGeom( W, H ){
-	const cx = W * state.cx / 100, cy = H * state.cy / 100
-	const far = Math.max( Math.hypot( cx, cy ), Math.hypot( W - cx, cy ),
-										 Math.hypot( cx, H - cy ), Math.hypot( W - cx, H - cy ) )
-	const a = state.angle * Math.PI / 180
-	/* ring thickness pegs to the height; the count follows the reach */
-	const rings = Math.max( 1, Math.round( far / ( H / Math.max( 1, Math.round( state.gridN ) ) ) ) )
-	return { cx:cx, cy:cy, R:far, n:rings,
-					dx:Math.sin( a ), dy:-Math.cos( a ) }
-}
+/* Rings lived here. It was the only pattern whose geometry read the gradient's
+	 own parameters — centre, angle, type — where every other reads nothing but
+	 gridN, its own count. That coupling is why it broke: over a radial gradient
+	 its rings WERE the gradient's iso-colour contours, so it posterised what was
+	 already there rather than filtering it, and over a linear gradient it
+	 imposed a radial structure with no relation to anything underneath. §4 says
+	 a Pattern reads the gradient's colours and flattens them into a lattice;
+	 Rings was not a lattice. The banding it gave is reachable the tool's own
+	 way — two handles on one colour hold a flat.
+	 (Hailei, 2026-08-06, after watching Oval do nothing beneath it.) */
 function hexGeom( W, H ){
 	const n = Math.max( 2, Math.round( state.gridN ) )
 	const side = H / ( n * Math.sqrt( 3 ) )          /* n hexes per height-span; tiling covers the width */
@@ -531,16 +633,6 @@ function triAt( geometry, x, y ){
 function patternShapes( W, H ){
 	const out = []
 	let i, j
-	if( state.gridPattern === "rings" ){
-		const ringGeometry = ringGeom( W, H )
-		for( i = ringGeometry.n; i >= 1; i-- ){                    /* largest first, painted over */
-			const rOut = ringGeometry.R * i / ringGeometry.n, rMid = ringGeometry.R * ( i - 0.5 ) / ringGeometry.n
-			out.push( { svg:'<circle cx="' + ringGeometry.cx.toFixed( 2 ) + '" cy="' + ringGeometry.cy.toFixed( 2 )
-									 + '" r="' + rOut.toFixed( 2 ) + '"',
-								cx:ringGeometry.cx + ringGeometry.dx * rMid, cy:ringGeometry.cy + ringGeometry.dy * rMid } )
-		}
-		return out
-	}
 	if( state.gridPattern === "hex" ){
 		const hexGeometry = hexGeom( W, H )
 		const rows = Math.ceil( H / ( hexGeometry.s * 1.5 ) ) + 2, cols = Math.ceil( W / ( hexGeometry.s * Math.sqrt( 3 ) ) ) + 2
@@ -590,13 +682,6 @@ function patternShapes( W, H ){
 }
 /* The representative point for whatever shape holds (x,y) */
 function patternSample( x, y, W, H ){
-	if( state.gridPattern === "rings" ){
-		const ringGeometry = ringGeom( W, H )
-		const dist = Math.hypot( x - ringGeometry.cx, y - ringGeometry.cy )
-		const i = Math.min( ringGeometry.n - 1, Math.max( 0, Math.floor( dist / ringGeometry.R * ringGeometry.n ) ) )
-		const rMid = ringGeometry.R * ( i + 0.5 ) / ringGeometry.n
-		return [ ringGeometry.cx + ringGeometry.dx * rMid, ringGeometry.cy + ringGeometry.dy * rMid ]
-	}
 	if( state.gridPattern === "hex" ) return hexAt( hexGeom( W, H ), x, y )
 	if( state.gridPattern === "tri" ) return triAt( triGeom( W, H ), x, y )
 	const geometry = gridCells( W, H ), shape = gridShape( geometry )
@@ -645,8 +730,15 @@ function buildSvg( mode, W, H, pxW, pxH, crop ){
 				 + stopTags + "  </linearGradient>\n"
 		body += '  <rect width="' + W + '" height="' + H + '" fill="url(#wgG)"/>\n'
 	} else if( state.type === "radial" ){
-		defs += '  <radialGradient id="wgG" cx="' + ( state.cx / 100 ).toFixed( 4 ) + '" cy="' + ( state.cy / 100 ).toFixed( 4 )
-				 + '" r="' + ( state.radius / 100 ).toFixed( 4 ) + '">\n' + stopTags + "  </radialGradient>\n"
+		const rg = radialGeom( W, H )
+		defs += '  <radialGradient id="wgG" gradientUnits="userSpaceOnUse"'
+				 + ' cx="' + rg.cx.toFixed( 3 ) + '" cy="' + rg.cy.toFixed( 3 ) + '"'
+				 + ' r="' + rg.r.toFixed( 3 ) + '"'
+				 /* Identity is left unwritten: a scale(1 1) would claim the sheet had a
+						hand in a shape it did not touch. */
+				 + ( rg.sx === 1 ? "" : ' gradientTransform="translate(' + rg.cx.toFixed( 3 )
+						+ ' 0) scale(' + rg.sx.toFixed( 5 ) + ' 1) translate(' + ( -rg.cx ).toFixed( 3 ) + ' 0)"' )
+				 + '>\n' + stopTags + "  </radialGradient>\n"
 		body += '  <rect width="' + W + '" height="' + H + '" fill="url(#wgG)"/>\n'
 	} else if( state.type === "mesh" ){
 		const mesh = meshColours()
@@ -655,12 +747,22 @@ function buildSvg( mode, W, H, pxW, pxH, crop ){
 		for( let k = 0;k < blobs.length;k++ ){
 			const b = blobs[k]
 			const margin = blobFilterMargin( b )
+			const sigma = blobBlur( b )
+			/* One number while the mass is round, two once it is not — the second
+				 form is what carries the blur onto the mass's own axes, and writing it
+				 unconditionally would change every file the tool has ever made. */
+			const sd = sigma.x === sigma.y ? sigma.x.toFixed( 2 )
+					 : sigma.x.toFixed( 2 ) + " " + sigma.y.toFixed( 2 )
+			/* The rotation lives on the group, not the ellipse, so the filter's own
+				 axes turn with it. Omitted at zero: the 0.40.2 cleanup took identity
+				 rotate(0.0) out of these groups on purpose. */
+			const turn = b.rot ? " rotate(" + b.rot.toFixed( 1 ) + ")" : ""
 			defs += '  <filter id="wgB' + k + '" x="-' + margin + '%" y="-' + margin + '%"'
 					 + ' width="' + ( 2 * margin + 100 ) + '%" height="' + ( 2 * margin + 100 ) + '%"'
 					 + ' color-interpolation-filters="sRGB">\n'
-					 + '    <feGaussianBlur stdDeviation="' + blobBlur( b ).toFixed( 2 ) + '"/>\n  </filter>\n'
+					 + '    <feGaussianBlur stdDeviation="' + sd + '"/>\n  </filter>\n'
 			body += '  <g filter="url(#wgB' + k + ')" transform="translate(' + b.x.toFixed( 1 ) + " " + b.y.toFixed( 1 )
-					 + ')">' + shapeSvg( b, mesh.blobs[k] ) + "</g>\n"
+					 + ')' + turn + '">' + shapeSvg( b, mesh.blobs[k] ) + "</g>\n"
 		}
 
 	}
@@ -715,9 +817,17 @@ function buildSvg( mode, W, H, pxW, pxH, crop ){
 	 one to three ADJACENT hue families, n picks spread dark to light across
 	 a window that skips the crushed ends of the ramp. Black and white stay
 	 out of the pool. (Hailei, 2026-07-28.) */
+/* Black is a lightness, not a string. The pool used to exclude "#000000" by
+	 exact match, but the palette gives every family 18 steps whose darkest two
+	 are #010000, #030000, #0f0000 and the like — never literally black, and at
+	 L 0.04–0.11 indistinguishable from it. Judge what a colour looks like, not
+	 what it is spelled. The light end needs no such guard: the palette tops out
+	 at L 0.95, a pale tint rather than white. */
+const randomInkFloor = 0.20   /* below this a colour stops reading as a colour */
 function randomColours( n ){
 	const pool = DEFAULT_SWATCH
-		.map( function( row ){ return row.filter( function( h ){ return h !== "#000000" && h !== "#ffffff" } ) } )
+		.map( function( row ){ return row.filter( function( h ){
+			return h !== "#000000" && h !== "#ffffff" && hexToLch( h )[0] >= randomInkFloor } ) } )
 		.filter( function( row ){ return row.length > 0 } )
 	const random = mulberry32( Math.floor( Math.random() * 1e9 ) )
 	const span = 1 + Math.floor( random() * 3 )
@@ -725,10 +835,18 @@ function randomColours( n ){
 	const rows = []
 	for( let i = 0;i < span;i++ ) rows.push( pool[( start + i ) % pool.length] )
 	const steps = rows[0].length
+	/* The dice choose a key. The old mapping ran a fixed 0.12–0.88 of the ramp
+		 every time, so the first colour always came from the bottom step and every
+		 roll had the same tonal shape — only the hue changed. Now a window is drawn
+		 first: where it sits decides whether the set is pale, deep or mid, and how
+		 wide it is decides whether the colours sit close together or sweep. */
+	const width = 0.28 + random() * 0.62
+	const lo = random() * ( 1 - width )
+	const hi = lo + width
 	const out = []
 	for( let i = 0;i < n;i++ ){
-		const f = n === 1 ? 0.4 + random() * 0.3 : i / ( n - 1 )
-		let idx = Math.round( ( 0.12 + 0.76 * f ) * ( steps - 1 ) + ( random() - 0.5 ) * 2 )
+		const f = n === 1 ? random() : i / ( n - 1 )
+		let idx = Math.round( ( lo + ( hi - lo ) * f ) * ( steps - 1 ) + ( random() - 0.5 ) * 2 )
 		idx = Math.max( 0, Math.min( steps - 1, idx ) )
 		const row = rows[Math.floor( random() * rows.length )]
 		out.push( row[Math.min( idx, row.length - 1 )] )
@@ -787,8 +905,11 @@ function parseSwatch( text ){
 function baseColourAt( x, y, W, H ){
 	const at = colourAt()
 	if( state.type === "linear" ) return at( axisT( x, y, W, H ) )
-	if( state.type === "radial" )
-		return at( Math.hypot( x / W - state.cx / 100, y / H - state.cy / 100 ) / ( state.radius / 100 || 1e-6 ) )
+	if( state.type === "radial" ){
+		/* The same ellipse the renderer writes, read the other way round. */
+		const rg = radialGeom( W, H )
+		return at( Math.hypot( ( x - rg.cx ) / ( rg.r * rg.sx ), ( y - rg.cy ) / rg.r ) )
+	}
 	const mesh = meshColours()
 	const blobs = composeBlobs( mesh.blobs.length, W, H )
 	const acc = hexToRgb( mesh.base ) || [ 0,0,0 ]
@@ -821,16 +942,22 @@ function roll(){
 	state.seamless = false
 	state.cx = Math.round( 15 + r() * 70 ); state.cy = Math.round( 15 + r() * 70 )
 	state.radius = Math.round( 40 + r() * 80 )
+	/* Both ends are fair game: a stretched radial is what this mode drew for its
+		 entire life, so neither tall nor wide is an extreme. */
+	state.radialOval = r()
 	state.blobSize = 0.35 + r() * 0.40
 	/* The dice stay inside the slider's own range — a roll the hand cannot
 		 reproduce is a roll that cannot be tuned afterwards. They also stay off
 		 the dissolved top end: 135 is there for when it is reached for, not to be
 		 landed on by accident. */
 	state.blobSoft = 0.25 + r() * 0.35
+	/* Rolled often but never all the way: past about 70 the masses read as
+		 lozenges rather than pooled colour, and that is a reach, not an accident. */
+	state.blobOval = r() < 0.5 ? 0 : r() * 0.70
 	state.seed = Math.floor( r() * 9999 )
 	state.grid = r() < 0.5
 	if( state.grid ){
-		const kinds = [ "plaid", "cells", "columns", "rows", "rings", "hex", "tri" ]
+		const kinds = [ "plaid", "cells", "columns", "rows", "hex", "tri" ]
 		state.gridPattern = kinds[Math.floor( r() * kinds.length )]
 		state.gridN = Math.round( 5 + r() * 31 )
 	}

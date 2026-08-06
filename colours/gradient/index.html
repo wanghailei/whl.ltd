@@ -73,6 +73,8 @@
 	--base-font-size:0.75rem;
 	--base-line-height:1.5;                 /* 18px line box at the default size */
 	--line-strong:rgba(255,255,255,.34);
+	--line-mid:rgba(255,255,255,.55);
+	--line-soft:rgba(255,255,255,.28);
 }
 *{box-sizing:border-box; border-radius:0 !important}
 /* No Safari rubber-band bounce at any scroll end — here and on every inner
@@ -194,9 +196,13 @@ button,input,select{font-family:inherit; font-size:inherit; color:inherit}
 	 way the readout does. #note keeps a ground because it is a transient alert
 	 that has to stay readable whatever is behind it. */
 .panel{background:none; border:0; backdrop-filter:none; -webkit-backdrop-filter:none}
-/* When a panel's ink turns dark, its line-work follows: swatch frames and
-	 slider tracks read the panel-scoped variable. */
-.ink-dark{--line-strong:rgba(0,0,0,.42)}
+/* When a panel's ink turns dark, every line it owns follows: swatch frames,
+	 slider tracks, ramp handles, the dashed empty holders. Three weights, each
+	 a touch heavier in black — black on a light ground reads lighter than
+	 white on a dark one at the same alpha. Anything drawn with a fixed colour
+	 instead of these cannot flip, and simply disappears on one side or the
+	 other; that is what happened to the select arrows (Hailei, 2026-08-06). */
+.ink-dark{--line-strong:rgba(0,0,0,.42); --line-mid:rgba(0,0,0,.62); --line-soft:rgba(0,0,0,.34)}
 #note{background:var(--tile-fill); backdrop-filter:blur(16px) saturate(1.2);
 	-webkit-backdrop-filter:blur(16px) saturate(1.2)}
 #note{padding:8px 18px; font-size:var(--base-font-size); color:#fff}
@@ -236,9 +242,10 @@ button:disabled{opacity:.35; cursor:default}
 
 .swatch{position:relative; width:26px; height:26px; border:1px solid var(--line-strong); cursor:pointer;
 	display:block; padding:0; flex:0 0 auto}
-.swatch.sel{outline:1px solid #fff; outline-offset:2px}
+/* Selection is shown in the panel's own ink, so it survives a light ground. */
+.swatch.sel{outline:1px solid currentColor; outline-offset:2px}
 /* an empty holder reads as an empty box, not as a black colour */
-.swatch.empty{background:transparent; border-style:dashed; border-color:rgba(255,255,255,.28)}
+.swatch.empty{background:transparent; border-style:dashed; border-color:var(--line-soft)}
 #swatches{display:flex; gap:5px}
 
 /* Proportion ramp: one handle per colour, each wearing its own colour so it
@@ -251,7 +258,7 @@ button:disabled{opacity:.35; cursor:default}
 	border:0; touch-action:none; cursor:pointer}
 #rampFill{position:absolute; left:0; right:0; top:50%; height:2px; margin-top:-1px}
 .handle{position:absolute; top:50%; width:10px; height:10px; margin:-5px 0 0 -5px;
-	border:1px solid rgba(255,255,255,.55); border-radius:50% !important;
+	border:1px solid var(--line-mid); border-radius:50% !important;
 	cursor:ew-resize}
 
 /* ── Colour picker: a hue strip over a rectangular field.
@@ -260,6 +267,7 @@ button:disabled{opacity:.35; cursor:default}
 			colour sRGB can actually hold — no dead corners. ── */
 #picker{position:fixed; z-index:20; background:rgba(0,0,0,.78); color:#fff;
 	--line-strong:rgba(255,255,255,.34);
+	--line-mid:rgba(255,255,255,.55); --line-soft:rgba(255,255,255,.28);
 	backdrop-filter:blur(18px) saturate(1.2); -webkit-backdrop-filter:blur(18px) saturate(1.2);
 	border:1px solid var(--line-strong); padding:14px}
 #hueWrap{position:relative; width:176px; height:14px; margin-bottom:8px}
@@ -304,9 +312,12 @@ input[type=number]::-webkit-outer-spin-button,
 input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none; margin:0}
 /* The mark sits on the vertical centre of the control, not a fixed distance
 	 from its top — that was what left it riding high against the label. */
+/* The arrow is drawn in currentColor, not a fixed white. Baked white, it
+	 vanished the moment a panel judged its ground light and turned its ink
+	 black — the one mark in the row that could not follow (Hailei, 2026-08-06). */
 select{appearance:none; padding-right:15px; cursor:pointer;
-	background-image:linear-gradient(45deg,transparent 50%,rgba(255,255,255,.7) 50%),
-									 linear-gradient(135deg,rgba(255,255,255,.7) 50%,transparent 50%);
+	background-image:linear-gradient(45deg,transparent 50%,currentColor 50%),
+									 linear-gradient(135deg,currentColor 50%,transparent 50%);
 	background-position:right 6px center, right 2px center;
 	background-size:4px 4px,4px 4px; background-repeat:no-repeat}
 select option{background:#111; color:#fff; font-size:var(--base-font-size)}
@@ -351,7 +362,7 @@ input[type=range]::-moz-range-thumb{width:3px; height:13px; background:currentCo
 <div id="lead"><div id="title"></div><div id="hud"></div></div>
 <button id="lang" title="Toolbar language" aria-label="Toolbar language"><span id="langEn" class="on">EN</span><span>/</span><span id="langCn">CN</span></button>
 <div id="foot">
-<div id="help" class="hidden"><button class="sheetClose" type="button" aria-label="close"><svg viewBox="0 0 32 32" fill="currentColor" aria-hidden="true"><path d="M24 9.4 22.6 8 16 14.6 9.4 8 8 9.4 14.6 16 8 22.6 9.4 24 16 17.4 22.6 24 24 22.6 17.4 16z"/></svg></button><div data-cn-html='「人生是隨機漸變嗎？」擲整幅構圖；「隨機顏色」只擲色組。<br><br>顏色——點色格選色；貼上任何含 hex 色碼的文本；或把色票檔拖到頁面上。單一顏色會自行衍生深淺。拖色格下方的手柄安放每個顏色的位置；雙擊色帶回到等分；兩個手柄放同一顏色即成平台。<br><br>型態——線性設角度。徑向：點畫布定中心，滑桿調半徑。多焦點散佈模糊色團，「重排焦點」重新擲位。無縫令線性首尾閉環，兩張拼版接合不斷色。<br><br>混色——兩色之間走哪條路：VIVID 保飽和，EVEN 最平順，LEGACY 是傳統 sRGB；緩動曲線在旁。<br><br>圖紋把漸變壓平成向量色格。顆粒鋪上膠片式的紋理，以高度計數——強度、密度、咬合。<br><br>尺寸是一個比例加輸出高度，寬度隨之；WINDOW 跟隨視窗。SVG 與 PNG 所見即所得。'>“Is life a random gradient?” rolls the whole composition; RANDOMISE COLOURS rolls the colours alone.<br><br>COLOURS — click a box to pick, paste any text carrying hex codes, or drop a swatch file on the page; a single colour derives its own light and dark. Drag the handles under the boxes to place each colour; double-click the ramp to reset; two handles on one colour hold a flat.<br><br>TYPE — LINEAR takes an angle. RADIAL: click the canvas to place the centre, set the radius on the slider. MULTI-POINT scatters blurred masses; RANDOMISE POINTS reshuffles them. SEAMLESS closes a linear loop so two prints butt without a break.<br><br>BLEND — the route between colours: VIVID keeps saturation, EVEN is smoothest, LEGACY is the old sRGB way; the easing curve sits beside it.<br><br>PATTERN flattens the gradient into vector tiles. GRAIN lays film-like texture counted along the height — AMOUNT, COUNT, BITE.<br><br>SIZE is a ratio and an output height, width follows; WINDOW tracks this window. SVG and PNG export exactly what is on screen.</div></div>
+<div id="help" class="hidden"><button class="sheetClose" type="button" aria-label="close"><svg viewBox="0 0 32 32" fill="currentColor" aria-hidden="true"><path d="M24 9.4 22.6 8 16 14.6 9.4 8 8 9.4 14.6 16 8 22.6 9.4 24 16 17.4 22.6 24 24 22.6 17.4 16z"/></svg></button><div data-cn-html='「人生是隨機漸變嗎？」擲整幅構圖；「隨機顏色」只擲色組。<br><br>顏色——點色格選色；貼上任何含 hex 色碼的文本；或把色票檔拖到頁面上。單一顏色會自行衍生深淺。拖色格下方的手柄安放每個顏色的位置；雙擊色帶回到等分；兩個手柄放同一顏色即成平台。<br><br>型態——線性設角度。徑向：點畫布定中心，滑桿調半徑。多焦點散佈模糊色團，「橢圓」令色團由正圓拉成橢圓，「重排焦點」重新擲位。無縫令線性首尾閉環，兩張拼版接合不斷色。<br><br>混色——兩色之間走哪條路：VIVID 保飽和，EVEN 最平順，LEGACY 是傳統 sRGB；緩動曲線在旁。<br><br>圖紋把漸變壓平成向量色格。顆粒鋪上膠片式的紋理，以高度計數——強度、密度、咬合。<br><br>尺寸是一個比例加輸出高度，寬度隨之；WINDOW 跟隨視窗。SVG 與 PNG 所見即所得。'>“Is life a random gradient?” rolls the whole composition; RANDOMISE COLOURS rolls the colours alone.<br><br>COLOURS — click a box to pick, paste any text carrying hex codes, or drop a swatch file on the page; a single colour derives its own light and dark. Drag the handles under the boxes to place each colour; double-click the ramp to reset; two handles on one colour hold a flat.<br><br>TYPE — LINEAR takes an angle. RADIAL: click the canvas to place the centre, set the radius on the slider. MULTI-POINT scatters blurred masses; OVAL takes them off round, RANDOMISE POINTS reshuffles them. SEAMLESS closes a linear loop so two prints butt without a break.<br><br>BLEND — the route between colours: VIVID keeps saturation, EVEN is smoothest, LEGACY is the old sRGB way; the easing curve sits beside it.<br><br>PATTERN flattens the gradient into vector tiles. GRAIN lays film-like texture counted along the height — AMOUNT, COUNT, BITE.<br><br>SIZE is a ratio and an output height, width follows; WINDOW tracks this window. SVG and PNG export exactly what is on screen.</div></div>
 <div id="licence" class="hidden"><button class="sheetClose" type="button" aria-label="close"><svg viewBox="0 0 32 32" fill="currentColor" aria-hidden="true"><path d="M24 9.4 22.6 8 16 14.6 9.4 8 8 9.4 14.6 16 8 22.6 9.4 24 16 17.4 22.6 24 24 22.6 17.4 16z"/></svg></button><div data-cn-html='個人與非商業使用免費，無任何限制。<br><br>以本工具產出的圖像作商業使用，須一次性支付每圖 US$1 的授權費，經 <a href="https://paypal.me/wanghailei/1USD" target="_blank" rel="noopener">paypal.me/wanghailei</a> 支付；付訖後該圖像即可無限制商用——任何媒介、任何期限、毋須署名。你的 PayPal 收據即授權憑證。<br><br>源碼可見但版權保留：未經書面許可，不得複製、修改、再散佈或另行架設。<br><br>聯絡：<a href="mailto:wanghailei@gmail.com">wanghailei@gmail.com</a>'>Personal and non-commercial use is free, without limitation.<br><br>Commercial use of an image produced with this tool requires a one-time licence fee of US$1 per image, paid via <a href="https://paypal.me/wanghailei/1USD" target="_blank" rel="noopener">paypal.me/wanghailei</a>. Once paid, that image may be used commercially without limit — any medium, any duration, no attribution required. Your PayPal receipt is your proof of licence.<br><br>The source is visible but remains copyrighted: do not copy, modify, redistribute or rehost it without written permission.<br><br>Contact: <a href="mailto:wanghailei@gmail.com">wanghailei@gmail.com</a></div></div>
 <div id="terms" data-cn-html='$ 個人使用免費 · 商業使用每圖 US$1，經 <a href="https://paypal.me/wanghailei/1USD" target="_blank" rel="noopener">paypal.me/wanghailei</a> 支付'>$ Free for personal use · Commercial use US$1 per image, paid via <a href="https://paypal.me/wanghailei/1USD" target="_blank" rel="noopener">paypal.me/wanghailei</a></div>
 <div id="copy">© 2026 Wanted Hacker Limited · <a href="https://whl.ltd" target="_blank" rel="noopener">whl.ltd</a> · <span id="helpBtn" data-cn="幫助">HELP</span></div>
@@ -411,11 +422,30 @@ input[type=range]::-moz-range-thumb{width:3px; height:13px; background:currentCo
 				<input type="range" id="radius" min="10" max="180">
 				<span class="value" id="radiusVal"></span>
 			</div>
+			<!-- Radial could only ever draw the canvas's own shape: objectBoundingBox
+				 units with no transform, so a 16:10 sheet forced a 16:10 ellipse and a
+				 true circle was unreachable. Zero is now round; the ends reach 2.2 : 1,
+				 the masses' own ceiling, measured against the gradient rather than the
+				 sheet — tied to the sheet it reached only W/H, which on a near-square
+				 window was almost nothing and on a square one was nothing at all.
+				 Negative is taller, positive wider. (Hailei, 2026-08-06.) -->
+			<div class="control-row hidden" id="paramRadial2">
+				<span class="label" data-cn="橢圓">Oval</span>
+				<input type="range" id="radialOval" min="0" max="100">
+				<span class="value" id="radialOvalVal"></span>
+			</div>
 
 			<div class="control-row hidden" id="paramMesh">
 				<span class="label" data-cn="團徑">Size</span>
 				<input type="range" id="blobSize" min="10" max="100">
 				<span class="value" id="blobSizeVal"></span>
+			</div>
+			<!-- Between Size and Soft because that is the order the eye asks in:
+				 how big is the mass, what shape is it, how soft is its edge. -->
+			<div class="control-row hidden" id="paramMesh2">
+				<span class="label" data-cn="橢圓">Oval</span>
+				<input type="range" id="blobOval" min="0" max="100">
+				<span class="value" id="blobOvalVal"></span>
 			</div>
 			<div class="control-row hidden" id="paramMesh3">
 				<span class="label" data-cn="柔邊">Soft</span>
@@ -456,7 +486,6 @@ input[type=range]::-moz-range-thumb{width:3px; height:13px; background:currentCo
 					<option value="cells" data-cn="方格">Cells</option>
 					<option value="columns" data-cn="直條">Columns</option>
 					<option value="rows" data-cn="橫條">Rows</option>
-					<option value="rings" data-cn="環紋">Rings</option>
 					<option value="hex" data-cn="蜂窩">Hexagons</option>
 					<option value="tri" data-cn="三角">Triangles</option>
 				</select>
@@ -568,9 +597,11 @@ function hudLines(){
 	if( state.type === "linear" )
 		out.push( "LINEAR \u00B7 " + state.angle + "\u00B0" + ( state.seamless ? " \u00B7 SEAMLESS" : "" ) )
 	else if( state.type === "radial" )
-		out.push( "RADIAL \u00B7 " + state.cx + "/" + state.cy + " \u00B7 R" + state.radius + "%" )
+		out.push( "RADIAL \u00B7 " + state.cx + "/" + state.cy + " \u00B7 R" + state.radius
+					 + "% \u00B7 OVAL " + Math.round( state.radialOval * 100 ) + "%" )
 	else
 		out.push( "MULTI-POINT \u00B7 SIZE " + Math.round( state.blobSize * 100 )
+					 + "% \u00B7 OVAL " + Math.round( state.blobOval * 100 )
 					 + "% \u00B7 SOFT " + Math.round( state.blobSoft * 100 ) + "%" )
 
 	if( state.grid ) out.push( "PATTERN \u00B7 " + state.gridPattern.toUpperCase() + " \u00B7 " + state.gridN )
@@ -1014,9 +1045,9 @@ function syncControls(){
 		b.classList.toggle( "on", b.dataset.type === state.type )
 	} );
 	[ "paramLinear","paramLinear2" ].forEach( function( id ){
-		element( id ).classList.toggle( "hidden", state.type !== "linear" ) } )
-	element( "paramRadial" ).classList.toggle( "hidden", state.type !== "radial" );
-	[ "paramMesh","paramMesh3","paramMesh4" ].forEach( function( id ){
+		element( id ).classList.toggle( "hidden", state.type !== "linear" ) } );
+	[ "paramRadial","paramRadial2" ].forEach( function( id ){ element( id ).classList.toggle( "hidden", state.type !== "radial" ) } );
+	[ "paramMesh","paramMesh2","paramMesh3","paramMesh4" ].forEach( function( id ){
 		element( id ).classList.toggle( "hidden", state.type !== "mesh" ) } )
 	rangeSync.forEach( function( f ){ f() } )
 	element( "gridN" ).value = Math.round( state.gridN )
@@ -1183,9 +1214,9 @@ function init(){
 				x.classList.toggle( "on", x === b )
 			} );
 			[ "paramLinear","paramLinear2" ].forEach( function( id ){
-				element( id ).classList.toggle( "hidden", state.type !== "linear" ) } )
-			element( "paramRadial" ).classList.toggle( "hidden", state.type !== "radial" );
-			[ "paramMesh","paramMesh3","paramMesh4" ].forEach( function( id ){
+				element( id ).classList.toggle( "hidden", state.type !== "linear" ) } );
+			[ "paramRadial","paramRadial2" ].forEach( function( id ){ element( id ).classList.toggle( "hidden", state.type !== "radial" ) } );
+			[ "paramMesh","paramMesh2","paramMesh3","paramMesh4" ].forEach( function( id ){
 				element( id ).classList.toggle( "hidden", state.type !== "mesh" ) } )
 			draw()
 		} )
@@ -1196,6 +1227,8 @@ function init(){
 		 slider wears its unit (°, %, ×) and these two were the bare numbers that
 		 made the reader guess (Hailei asked what SOFT was measured in, 2026-07-30). */
 	wireRange( "blobSize", "blobSize", { scale:100, unit:"%" } )
+	wireRange( "radialOval", "radialOval", { scale:100, unit:"%" } )
+	wireRange( "blobOval", "blobOval", { scale:100, unit:"%" } )
 	wireRange( "blobSoft", "blobSoft", { scale:100, unit:"%" } )
 	/* Cell size can be dragged or typed; the two stay in step */
 	const setCell = function( v, from ){
