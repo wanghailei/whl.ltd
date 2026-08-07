@@ -212,7 +212,7 @@ const state = {
 	 (init writes the title — it cannot live here, the regress harness pulls
 	 this section into Node where there is no document). major.minor.patch —
 	 major bumps on Hailei's instruction; minor and patch on judgement. */
-const VERSION = "0.62.1"
+const VERSION = "0.62.2"
 
 /* The output is a pixel width and a proportion; the height follows. Nothing
 	 here is physical — what the file becomes on paper is decided downstream. */

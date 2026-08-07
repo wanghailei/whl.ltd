@@ -1098,7 +1098,35 @@ function syncSize(){
 }
 
 
+/* A browser serves a stale page because the URL has not changed. So ask what
+	 version is actually deployed — a request no cache is allowed to answer —
+	 and if this is not it, come back at a URL nothing has ever cached.
+
+	 The v= in the URL is also the record that we have already tried once. If
+	 it is there and the engine is still not current, stop. Normally the second
+	 load is clean: the new URL fetches a new shell, and an engine cached long
+	 enough to be stale is well past its ten-minute max-age, so the browser
+	 revalidates it. But the two can disagree — an engine cached only minutes
+	 ago is still fresh to the browser and stale to us — and without this guard
+	 that disagreement redirects forever. It hung a browser during
+	 verification. A stale page is a disappointment; a reload loop is a
+	 broken tool.
+
+	 It lives in the page, not in gradient.js: other sites load that engine for
+	 their own backgrounds and none of them should be reloaded by ours. */
+function ensureCurrent(){
+	fetch( "gradient.js?fresh", { cache:"no-store" } )
+		.then( function( r ){ return r.text() } )
+		.then( function( t ){
+			const live = ( t.match( /const VERSION = "([^"]+)"/ ) || [] )[1]
+			if( !live || live === VERSION ) return
+			if( location.search.indexOf( "v=" + live ) !== -1 ) return
+			location.replace( location.pathname + "?v=" + live )
+		} )
+		.catch( function(){} )
+}
 function init(){
+	ensureCurrent()
 	/* One spelling of the name feeds the tab, the readout and the toggle's
 		 offset, so the three cannot drift apart. The version wears its own
 		 weight and ink (see #version) — it is a stamp, not part of the name. */
