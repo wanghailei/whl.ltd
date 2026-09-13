@@ -6,7 +6,7 @@
 	 alone, major on Hailei's word. It sat at 0.1.0 through the twenty
 	 deliveries from 2026-09-11 to 2026-09-13 (Hailei: "bump version
 	 properly"), so it starts here at what they add up to. */
-const VERSION = "0.28.0"
+const VERSION = "0.29.0"
 /* Where the tool lives once published. A saved link points here whatever
 	 the page was opened from — a file on disk, a local server — since only
 	 the settings after the ? matter to it (Hailei, 2026-09-13). */
@@ -1167,7 +1167,7 @@ function tuneHud(){
 /* ══════════════════════════════════════════════════════════
 	 8. Helpers
 	 ══════════════════════════════════════════════════════════ */
-/* The link carries the sheet. After every draw, each setting that differs
+/* The link carries the sheet. After every draw, the seed and each setting that differs
 	 from the tool's defaults is written into the page's query — the part
 	 after the ? — so a link is a preset: keep it to keep a sheet, open it to
 	 get the sheet back. The seed alone cannot do that — thirty dials decide a
@@ -1180,7 +1180,10 @@ function sheetParams(){
 	const pairs = []
 	Object.keys( DEFAULTS ).forEach( function( key ){
 		if( key === "zoom" ) return
-		if( JSON.stringify( state[key] ) === JSON.stringify( DEFAULTS[key] ) ) return
+		/* The seed always rides, default or not: a bare open rolls, so a URL
+			 left bare after a draw would reload as a roll, not as this sheet
+			 (seen live, 2026-09-13: ?seed=4271 reloaded onto a fresh seed). */
+		if( key !== "seed" && JSON.stringify( state[key] ) === JSON.stringify( DEFAULTS[key] ) ) return
 		const text = Array.isArray( state[key] ) ? state[key].join( "," ) : String( state[key] )
 		pairs.push( key + "=" + encodeURIComponent( text ).replace( /%20/g, "+" ).replace( /%2C/g, "," ) )
 	} )
