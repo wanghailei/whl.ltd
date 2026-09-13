@@ -6,7 +6,7 @@
 	 alone, major on Hailei's word. It sat at 0.1.0 through the twenty
 	 deliveries from 2026-09-11 to 2026-09-13 (Hailei: "bump version
 	 properly"), so it starts here at what they add up to. */
-const VERSION = "0.26.0"
+const VERSION = "0.27.0"
 /* Where the tool lives once published. A saved link points here whatever
 	 the page was opened from — a file on disk, a local server — since only
 	 the settings after the ? matter to it (Hailei, 2026-09-13). */
@@ -2394,6 +2394,7 @@ function init(){
 		element( "shell" ).className = "show-canvas" + ( view.help ? "-help" : "" ) + ( view.panel ? "-panel" : "" )
 		element( "viewFull" ).classList.toggle( "on", !view.panel )
 		element( "viewPanel" ).classList.toggle( "on", view.panel )
+		element( "helpBtn" ).classList.toggle( "on", view.help )
 	}
 	shellSync()
 	element( "helpBtn" ).addEventListener( "click", function(){ view.help = !view.help; shellSync() } )

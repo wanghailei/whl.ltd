@@ -98,15 +98,15 @@ button,input,select{font-family:inherit; font-size:inherit; color:inherit}
 #version{font-weight:400; opacity:.4}
 #hud{opacity:.72}
 
-/* The language toggle and, five characters on, the view toggle sit on the
-	 title line, five characters after the version — flex gaps, nothing
-	 measured. Each is two words with a slash between, the live one in full
-	 ink. */
+/* The language toggle, the view toggle and HELP sit on the title line, five
+	 characters after the version and five apart — flex gaps, nothing
+	 measured. The toggles are two words with a slash between, the live one in
+	 full ink; HELP is one word, in full ink while the help column is open. */
 #tools{display:flex; gap:5ch}
-#lang,#view{line-height:var(--base-line-height);
+#lang,#view,#helpBtn{line-height:var(--base-line-height);
 	background:none; border:0; padding:0; cursor:pointer; white-space:pre}
-#lang span,#view span{opacity:.42}
-#lang span.on,#view span.on{opacity:1}
+#lang span,#view span,#helpBtn{opacity:.42}
+#lang span.on,#view span.on,#helpBtn.on{opacity:1}
 
 #foot{grid-column:1 / 3; grid-row:3; align-self:end; margin:calc(var(--page-margin) - var(--base-edge-gap));
 	-webkit-user-select:text; user-select:text}
@@ -115,7 +115,6 @@ button,input,select{font-family:inherit; font-size:inherit; color:inherit}
 	#foot{width:min-content}
 }
 #terms{cursor:pointer}
-#helpBtn{cursor:pointer}
 #licence{margin-bottom:18px}
 #licence a, #copy a, #terms a{color:inherit; text-decoration:none}
 

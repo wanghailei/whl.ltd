@@ -12,9 +12,9 @@
 
 <!-- The shell, the nexus pattern: one grid of three columns — the canvas,
 	 the help panel, the control panel — whose column template is a class on
-	 the shell. A hidden column is 0px wide and the change slides. HELP in the
-	 foot toggles the help column; FULLSCREEN / PANEL on the title line
-	 toggles the control column (Hailei, 2026-09-13). -->
+	 the shell. A hidden column is 0px wide and the change slides. On the
+	 title line, after EN/CN: FULLSCREEN / PANEL toggles the control column,
+	 HELP toggles the help column (Hailei, 2026-09-13). -->
 <div id="shell" class="show-canvas-panel">
 
 <main id="main">
@@ -29,6 +29,7 @@
 <div id="titleLine"><div id="title"></div><div id="tools">
 <button id="lang" title="Toolbar language" aria-label="Toolbar language"><span id="langEn" class="on">EN</span><span>/</span><span id="langCn">CN</span></button>
 <button id="view" title="Show or hide the control panel" aria-label="Show or hide the control panel"><span id="viewFull" data-cn="全螢幕">FULLSCREEN</span><span>/</span><span id="viewPanel" class="on" data-cn="面板">PANEL</span></button>
+<button id="helpBtn" title="Open or fold the help" aria-label="Open or fold the help" data-cn="幫助">HELP</button>
 </div></div>
 <div id="hud"></div>
 </div>
@@ -36,7 +37,7 @@
 <div id="foot">
 <div id="licence" class="hidden"><button class="sheetClose" type="button" aria-label="close"><svg viewBox="0 0 32 32" fill="currentColor" aria-hidden="true"><path d="M24 9.4 22.6 8 16 14.6 9.4 8 8 9.4 14.6 16 8 22.6 9.4 24 16 17.4 22.6 24 24 22.6 17.4 16z"/></svg></button><div data-cn-html='個人與非商業使用免費，無任何限制。<br><br>以本工具產出的圖像作商業使用，須一次性支付每圖 US$1 的授權費，經 <a href="https://paypal.me/wanghailei/1USD" target="_blank" rel="noopener">paypal.me/wanghailei</a> 支付；付訖後該圖像即可無限制商用——任何媒介、任何期限、毋須署名。你的 PayPal 收據即授權憑證。<br><br>源碼可見但版權保留：未經書面許可，不得複製、修改、再散佈或另行架設。<br><br>聯絡：<a href="mailto:wanghailei@gmail.com">wanghailei@gmail.com</a>'>Personal and non-commercial use is free, without limitation.<br><br>Commercial use of an image produced with this tool requires a one-time licence fee of US$1 per image, paid via <a href="https://paypal.me/wanghailei/1USD" target="_blank" rel="noopener">paypal.me/wanghailei</a>. Once paid, that image may be used commercially without limit — any medium, any duration, no attribution required. Your PayPal receipt is your proof of licence.<br><br>The source is visible but remains copyrighted: do not copy, modify, redistribute or rehost it without written permission.<br><br>Contact: <a href="mailto:wanghailei@gmail.com">wanghailei@gmail.com</a></div></div>
 <div id="terms" data-cn-html='$ 個人使用免費 · 商業使用每圖 US$1，經 <a href="https://paypal.me/wanghailei/1USD" target="_blank" rel="noopener">paypal.me/wanghailei</a> 支付'>$ Free for personal use · Commercial use US$1 per image, paid via <a href="https://paypal.me/wanghailei/1USD" target="_blank" rel="noopener">paypal.me/wanghailei</a></div>
-<div id="copy">© 2026 Wanted Hacker Limited · <a href="https://whl.ltd" target="_blank" rel="noopener">whl.ltd</a> · <span id="helpBtn" data-cn="幫助">HELP</span></div>
+<div id="copy">© 2026 Wanted Hacker Limited · <a href="https://whl.ltd" target="_blank" rel="noopener">whl.ltd</a></div>
 </div>
 </div>
 </main>
