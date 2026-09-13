@@ -6,7 +6,7 @@
 	 alone, major on Hailei's word. It sat at 0.1.0 through the twenty
 	 deliveries from 2026-09-11 to 2026-09-13 (Hailei: "bump version
 	 properly"), so it starts here at what they add up to. */
-const VERSION = "0.24.0"
+const VERSION = "0.25.0"
 /* Where the tool lives once published. A saved link points here whatever
 	 the page was opened from — a file on disk, a local server — since only
 	 the settings after the ? matter to it (Hailei, 2026-09-13). */
@@ -1198,7 +1198,8 @@ function writeParams(){
 const accept = {}
 function readParams(){
 	const raw = location.search.replace( /^\?/, "" )
-	if( !raw ) return
+	let took = 0
+	if( !raw ) return took
 	/* The ratio is read first: bar widths are judged against half the sheet,
 		 and the sheet is the ratio. */
 	const pairs = raw.split( "&" )
@@ -1211,8 +1212,11 @@ function readParams(){
 		let text
 		try{ text = decodeURIComponent( pair.slice( at + 1 ).replace( /\+/g, " " ) ) } catch( e ){ return }
 		const ok = accept[key]( text )
-		if( ok !== null && ok !== undefined ) state[key] = ok
+		if( ok !== null && ok !== undefined ){ state[key] = ok; took++ }
 	} )
+	/* How many settings the link carried — none means the page was opened
+		 bare, and rolls. */
+	return took
 }
 /* A number held to a range, or null. */
 function bounded( lo, hi ){
@@ -1260,6 +1264,69 @@ function rasterise( mime, quality ){
 		img.onerror = function(){ reject( new Error( "svg failed" ) ) }
 		img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent( made.svg )
 	} )
+}
+/* THE ROLL. What RANDOM composes, learnt from Hailei's own sheet (2026-09-13:
+	 the first roll "generated ugly images" — thin bars everywhere, nodes by the
+	 dozen, a tangled deal): a few columns, near-even; every bar full height
+	 and hairline-thin but for one inner waist, three rolls in four — short,
+	 wide, and wearing whatever ink stands out among the bars, which moves with
+	 it; nodes in the tens; a tidy deal cut a few ways; a middling curve; bands
+	 heavy and translucent. Only the composition moves: the line colours, the
+	 accent, the ground, the canvas and the stacking are the designer's and
+	 survive every roll. Takes its dice, so the self-test can roll a sheet
+	 twice and the page can roll one on opening. */
+function rollSheet( rand ){
+	const between = function( lo, hi ){ return lo + rand() * ( hi - lo ) }
+	const whole = function( lo, hi ){ return Math.round( between( lo, hi ) ) }
+	state.seed = Math.floor( rand() * 1e6 )
+	state.columns = whole( 2, 4 )
+	const S = state.columns + 1
+	state.lines = whole( 160, 320 )
+	const nodes = []
+	for( let k = 0; k < S; k++ ) nodes.push( whole( 7, 12 ) )
+	state.nodes = nodes.join( " " )
+	state.skew = whole( 20, 40 )
+	state.split = whole( 2, 5 )
+	state.tangle = String( whole( 12, 40 ) )
+	state.tension = whole( 40, 65 )
+	state.weight = Math.round( between( 2, 3.5 ) * 10 ) / 10
+	state.bandWidth = whole( 60, 85 )
+	state.bandAlpha = whole( 40, 60 )
+	/* No scatter: an aligned last bar is the family's; a scattered one is the
+		 designer's own choice (a rolled scatter read as the old mess). */
+	state.scatter = 0
+	/* Shares near even, none under a fifth: every column is given its fifth
+		 first and the rest of the hundred is dealt by rolled weight, so the
+		 floor survives the normalising. */
+	const weights = []
+	for( let k = 0; k < state.columns; k++ ) weights.push( rand() )
+	let total = 0
+	weights.forEach( function( w ){ total += w } )
+	const rest = 100 - 20 * state.columns
+	state.width = weights.map( function( w ){ return Math.round( 20 + rest * w / total ) } ).join( " " )
+	/* The waist: one inner bar, or none. */
+	const waist = rand() < 0.75 ? 1 + Math.floor( rand() * ( S - 2 ) ) : -1
+	const spread = [], bar = [], place = []
+	for( let k = 0; k < S; k++ ){
+		spread.push( k === waist ? whole( 10, 30 ) : 100 )
+		bar.push( k === waist ? whole( 40, 90 ) : whole( 3, 6 ) )
+		place.push( k === waist && rand() < 0.2 ? ( rand() < 0.5 ? 0 : 100 ) : 50 )
+	}
+	state.spread = spread.join( " " ); state.bar = bar.join( " " ); state.place = place.join( " " )
+	/* The bars' inks are the designer's: the one most bars wear, and the odd
+		 one out, which the waist takes with it. A roll without a waist leaves
+		 them where they are, so the odd ink is never lost to a later roll. */
+	const inks = hexes( state.barColour )
+	if( inks.length && waist >= 0 ){
+		const tally = {}
+		inks.forEach( function( h ){ tally[h] = ( tally[h] || 0 ) + 1 } )
+		const common = Object.keys( tally ).sort( function( a, b ){ return tally[b] - tally[a] } )[0]
+		const odd = inks.filter( function( h ){ return h !== common } )[0]
+		const worn = []
+		for( let k = 0; k < S; k++ ) worn.push( k === waist && odd ? odd : common )
+		while( worn.length > 1 && worn[ worn.length - 1 ] === worn[ worn.length - 2 ] ) worn.pop()
+		state.barColour = worn.join( " " )
+	}
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -2101,33 +2168,9 @@ const RATIOS = [
 	[ "3 : 2", 1.5 ], [ "4 : 3", 4 / 3 ], [ "1 : 1", 1 ], [ "3 : 4", 0.75 ], [ "9 : 16", 9 / 16 ]
 ]
 
-/* ROLL AGAIN. Only the seed and the handful of figures that decide a
-	 composition move — ground, ink, bars and size are the designer's settings
-	 and survive every roll. A dice that resets the sheet size is not a dice,
-	 it is a reset button wearing a costume. */
+/* RANDOM. A fresh dice each press; the composition it rolls is rollSheet's. */
 function randomAll(){
-	const rand = mulberry( ( Math.random() * 1e6 ) | 0 )
-	state.seed = Math.floor( rand() * 1e6 )
-	state.lines = Math.round( 80 + rand() * 360 )
-	state.columns = 2 + Math.floor( rand() * 4 )
-	state.nodes = String( 3 + Math.floor( rand() * 12 ) )
-	state.skew = Math.round( 10 + rand() * 60 )
-	state.tangle = String( Math.round( 10 + rand() * 60 ) )
-	state.scatter = rand() < 0.3 ? Math.round( 40 + rand() * 60 ) : 0
-	/* Rolls stay inside the frame. Bleeding past 100 is a deliberate act, not
-		 something the dice should do to a composition behind the designer's back. */
-	state.spread = Math.round( 62 + rand() * 38 ) + " " + Math.round( 62 + rand() * 38 )
-	state.tension = Math.round( 35 + rand() * 55 )
-	/* The columns' shares are rolled too, uneven but none under a tenth: every
-		 column is given its tenth first and the rest of the hundred is dealt by
-		 rolled weight, so the floor survives the normalising (a floor applied
-		 before normalising did not — a share came out at 6). */
-	const weights = []
-	for( let k = 0; k < state.columns; k++ ) weights.push( rand() )
-	let total = 0
-	weights.forEach( function( w ){ total += w } )
-	const rest = 100 - 10 * state.columns
-	state.width = weights.map( function( w ){ return Math.round( 10 + rest * w / total ) } ).join( " " )
+	rollSheet( mulberry( ( Math.random() * 1e6 ) | 0 ) )
 	rangeSync.forEach( function( s ){ s() } )
 	draw()
 }
@@ -2408,7 +2451,10 @@ function init(){
 		 ?selftest flag is read now too: the first draw rewrites the query with
 		 the sheet's own settings, and the flag would be gone. */
 	const proving = location.search.indexOf( "selftest" ) >= 0
-	readParams()
+	/* Opened bare, with no setting in the link, the page rolls a fresh sheet
+		 — there is no default one to open on (Hailei, 2026-09-13). Opened from
+		 a link, it draws that link. */
+	if( !readParams() ) rollSheet( mulberry( ( Math.random() * 1e6 ) | 0 ) )
 	rangeSync.forEach( function( s ){ s() } )
 
 	/* Open fitted. A sheet whose last column is hidden under the bar is not a
