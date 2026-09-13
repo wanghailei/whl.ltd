@@ -6,7 +6,7 @@
 	 alone, major on Hailei's word. It sat at 0.1.0 through the twenty
 	 deliveries from 2026-09-11 to 2026-09-13 (Hailei: "bump version
 	 properly"), so it starts here at what they add up to. */
-const VERSION = "0.29.0"
+const VERSION = "0.30.0"
 /* Where the tool lives once published. A saved link points here whatever
 	 the page was opened from — a file on disk, a local server — since only
 	 the settings after the ? matter to it (Hailei, 2026-09-13). */
@@ -287,24 +287,64 @@ function hexToLch( hex ){
 	const rgb = hexToRgb( hex ) || [ 0, 0, 0 ]
 	return oklabToOklch( rgbToOklab( [ rgb[0] / 255, rgb[1] / 255, rgb[2] / 255 ] ) )
 }
-/* A rolled shelf: eight colours off one base hue (Hailei, 2026-09-12: "a
-	 randomise button for colours"). The hues step round the wheel by the golden
-	 angle from the base, each jittered a little, so the eight are spread and
-	 never alike; chroma stays muted, the way the house shelf is, with one slot
-	 in three allowed a little more voice but none past 0.13 — a first roll at
-	 0.18 came up neon cyan; lightness sits between 0.55 and 0.88, where a
-	 line reads on a dark ground and still on a pale one. Chroma past the
-	 gamut edge is fitted, not clipped. */
-function rollPalette( rand ){
-	const base = rand() * 360
-	const out = []
-	for( let i = 0; i < 8; i++ ){
-		const hue = ( base + i * 137.508 + ( rand() - 0.5 ) * 24 + 360 ) % 360
-		const chroma = i % 3 === 0 ? 0.08 + rand() * 0.05 : 0.03 + rand() * 0.06
-		const light = 0.55 + rand() * 0.33
-		out.push( lchToHex( [ light, chroma, hue ] ) )
+/* The house palette: the default swatch of the WHL Colours Palette tool,
+	 built here by that tool's own arithmetic so that a cell is the same hex in
+	 both — 28 hue families stepping round the wheel from 25°, 18 lightness
+	 rungs evenly between black and white, chroma 0.12 breathing with
+	 lightness (full at the mid-tones, a fifth at the ends) and, where the
+	 sRGB edge is nearer, bisected down to it. Hailei, 2026-09-13: "use the
+	 default colour palette on WHL Colours Palette for random colour on
+	 Alluvial". Kept apart from the picker's OKLCH helpers above on purpose:
+	 those fit chroma by their own edge-finder and could land a digit off the
+	 swatch's hex, and a colour of the house must be the swatch's cell exactly. */
+const HOUSE = { hueStart: 25, chroma: 0.12, hues: 28, rungs: 18 }
+function houseCell( column, rung ){
+	const light = ( rung + 1 ) / ( HOUSE.rungs + 1 )
+	const hue = ( HOUSE.hueStart + column * 360 / HOUSE.hues ) % 360
+	const wanted = HOUSE.chroma * ( 0.2 + 0.8 * Math.sin( Math.PI * light ) )
+	const linear = function( chroma ){
+		const a = chroma * Math.cos( hue * Math.PI / 180 ), b = chroma * Math.sin( hue * Math.PI / 180 )
+		const l = Math.pow( light + 0.3963377774 * a + 0.2158037573 * b, 3 )
+		const m = Math.pow( light - 0.1055613458 * a - 0.0638541728 * b, 3 )
+		const s = Math.pow( light - 0.0894841775 * a - 1.291485548 * b, 3 )
+		return [ 4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s,
+			-1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s,
+			-0.0041960863 * l - 0.7034186147 * m + 1.707614701 * s ]
 	}
-	return out
+	const inside = function( rgb ){ return rgb.every( function( c ){ return c >= -0.0001 && c <= 1.0001 } ) }
+	let chroma = wanted
+	if( !inside( linear( wanted ) ) ){
+		let low = 0, high = wanted
+		for( let i = 0; i < 22; i++ ){
+			const mid = ( low + high ) / 2
+			if( inside( linear( mid ) ) ) low = mid
+			else high = mid
+		}
+		chroma = low
+	}
+	const rgb = linear( chroma ).map( function( c ){ return clamp01( linearToSrgb( clamp01( c ) ) ) * 255 } )
+	return rgbToHex( rgb[0], rgb[1], rgb[2] )
+}
+/* A rolled shelf is eight cells of the house palette (Hailei, 2026-09-13), in
+	 place of the golden-angle roll before it. Eight hue families spread round
+	 the wheel — a random start, a step of three or four families, each nudged
+	 a family either way so no two rolls share a set — every one at a rung
+	 between 0.58 and 0.84 lightness, where a line reads on the dark ground and
+	 still on a pale one. The eight are then laid on the shelf in a stride round
+	 the ring, so the two to four in play sit far apart on the wheel. Chroma never passes 0.12, the
+	 swatch's own ceiling. Everything is the seed's: the same seed rolls the
+	 same shelf. */
+function rollPalette( rand ){
+	const start = Math.floor( rand() * HOUSE.hues )
+	const columns = []
+	for( let i = 0; i < 8; i++ ){
+		const nudge = Math.floor( rand() * 3 ) - 1
+		columns.push( ( start + Math.round( i * HOUSE.hues / 8 ) + nudge + HOUSE.hues ) % HOUSE.hues )
+	}
+	/* Slots in the order 0 4 2 6 1 5 3 7 of the ring, so neighbouring slots
+		 sit far apart on the wheel: the two to four in play are the first two
+		 to four, and they contrast rather than shade into one another. */
+	return [ 0, 4, 2, 6, 1, 5, 3, 7 ].map( function( k ){ return houseCell( columns[k], 10 + Math.floor( rand() * 6 ) ) } )
 }
 /* Relative luminance, the plain sRGB-weighted kind. Used for one decision only:
 	 whether the toolbar writes in black or in white over the ground. */
@@ -1179,7 +1219,10 @@ function tuneHud(){
 function sheetParams(){
 	const pairs = []
 	Object.keys( DEFAULTS ).forEach( function( key ){
-		if( key === "zoom" ) return
+		/* ZOOM is a view and MODE is which controls are shown; neither draws
+			 the sheet, so neither rides (Hailei, 2026-09-13: the link carries
+			 only what controls the visualisation). */
+		if( key === "zoom" || key === "mode" ) return
 		/* The seed always rides, default or not: a bare open rolls, so a URL
 			 left bare after a draw would reload as a roll, not as this sheet
 			 (seen live, 2026-09-13: ?seed=4271 reloaded onto a fresh seed). */
