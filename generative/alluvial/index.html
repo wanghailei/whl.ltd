@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<!-- WHL Generative Alluvial. What it is, how it is built and how it is
+     proven: README.md beside this file. -->
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>WHL Generative Alluvial</title>
+<link rel="stylesheet" href="alluvial.css">
+</head>
+<body>
+
+<!-- The shell, the nexus pattern: one grid of three columns — the canvas,
+	 the help panel, the control panel — whose column template is a class on
+	 the shell. A hidden column is 0px wide and the change slides. HELP in the
+	 foot toggles the help column; FULLSCREEN / PANEL on the title line
+	 toggles the control column (Hailei, 2026-09-13). -->
+<div id="shell" class="show-canvas-panel">
+
+<main id="main">
+<div id="stage"><div id="canvas"></div></div>
+<!-- The readout, the toggles and the foot lie over the canvas. The layer
+	 takes no pointer events, so clicks fall through to the canvas; its
+	 children take them back, which is also what makes their text selectable. -->
+<div id="fg">
+<!-- The title line carries the name and version, then the two toggles five
+	 characters on: a flex row, so nothing is measured. -->
+<div id="lead">
+<div id="titleLine"><div id="title"></div><div id="tools">
+<button id="lang" title="Toolbar language" aria-label="Toolbar language"><span id="langEn" class="on">EN</span><span>/</span><span id="langCn">CN</span></button>
+<button id="view" title="Show or hide the control panel" aria-label="Show or hide the control panel"><span id="viewFull" data-cn="全螢幕">FULLSCREEN</span><span>/</span><span id="viewPanel" class="on" data-cn="面板">PANEL</span></button>
+</div></div>
+<div id="hud"></div>
+</div>
+
+<div id="foot">
+<div id="licence" class="hidden"><button class="sheetClose" type="button" aria-label="close"><svg viewBox="0 0 32 32" fill="currentColor" aria-hidden="true"><path d="M24 9.4 22.6 8 16 14.6 9.4 8 8 9.4 14.6 16 8 22.6 9.4 24 16 17.4 22.6 24 24 22.6 17.4 16z"/></svg></button><div data-cn-html='個人與非商業使用免費，無任何限制。<br><br>以本工具產出的圖像作商業使用，須一次性支付每圖 US$1 的授權費，經 <a href="https://paypal.me/wanghailei/1USD" target="_blank" rel="noopener">paypal.me/wanghailei</a> 支付；付訖後該圖像即可無限制商用——任何媒介、任何期限、毋須署名。你的 PayPal 收據即授權憑證。<br><br>源碼可見但版權保留：未經書面許可，不得複製、修改、再散佈或另行架設。<br><br>聯絡：<a href="mailto:wanghailei@gmail.com">wanghailei@gmail.com</a>'>Personal and non-commercial use is free, without limitation.<br><br>Commercial use of an image produced with this tool requires a one-time licence fee of US$1 per image, paid via <a href="https://paypal.me/wanghailei/1USD" target="_blank" rel="noopener">paypal.me/wanghailei</a>. Once paid, that image may be used commercially without limit — any medium, any duration, no attribution required. Your PayPal receipt is your proof of licence.<br><br>The source is visible but remains copyrighted: do not copy, modify, redistribute or rehost it without written permission.<br><br>Contact: <a href="mailto:wanghailei@gmail.com">wanghailei@gmail.com</a></div></div>
+<div id="terms" data-cn-html='$ 個人使用免費 · 商業使用每圖 US$1，經 <a href="https://paypal.me/wanghailei/1USD" target="_blank" rel="noopener">paypal.me/wanghailei</a> 支付'>$ Free for personal use · Commercial use US$1 per image, paid via <a href="https://paypal.me/wanghailei/1USD" target="_blank" rel="noopener">paypal.me/wanghailei</a></div>
+<div id="copy">© 2026 Wanted Hacker Limited · <a href="https://whl.ltd" target="_blank" rel="noopener">whl.ltd</a> · <span id="helpBtn" data-cn="幫助">HELP</span></div>
+</div>
+</div>
+</main>
+
+<!-- The help panel: twice the control panel's width, folded until HELP. Its
+	 body is as wide as the open column, so the text holds still while the
+	 column slides. -->
+<aside id="help">
+<div class="body"><button class="sheetClose" type="button" aria-label="close"><svg viewBox="0 0 32 32" fill="currentColor" aria-hidden="true"><path d="M24 9.4 22.6 8 16 14.6 9.4 8 8 9.4 14.6 16 8 22.6 9.4 24 16 17.4 22.6 24 24 22.6 17.4 16z"/></svg></button><div id="helpText"></div></div>
+</aside>
+
+<aside id="toolbar">
+	<div id="note" class="hidden"></div>
+	<!-- The rail the panels stand in. Not "bar": that id belongs to the bar
+		 WIDTH field, and a wrapper of the same name once caught its wiring and
+		 every change that bubbled up from the panels (2026-09-11). -->
+	<div id="rail">
+		<div id="blocks">
+
+		<!-- 0 ── The top line (Hailei, 2026-09-12): CONTROL and DATA are the two
+			 ways a sheet is driven — by hand, or by records — and one of them is
+			 lit; DATA is disabled until the feature comes, the word standing for
+			 it, no records field beneath. RANDOM is a button, one press rolls
+			 the whole composition. The mode decides which controls are shown; it
+			 never changes the sheet itself. The seed the roll lands on shows in
+			 the readout on the left and rides in the address; it has no field. -->
+		<section class="panel">
+			<div class="control-row group" id="modeRow">
+				<button class="btn on" data-mode="control" data-cn="控制">Control</button>
+				<button class="btn" data-mode="data" data-cn="資料" disabled>Data</button>
+				<button class="btn" id="randomAll" data-cn="隨機">Random</button>
+			</div>
+		</section>
+
+		<!-- 1 ── Lines: how many, and what a flow is drawn as — threads, bands
+			 or both — with the bands' own ink (Hailei, 2026-09-12: threads and
+			 bands are both lines, so the panel is LINES and the count AMOUNT). -->
+		<section class="panel">
+			<h2 data-cn="線">Lines</h2>
+			<div class="control-row">
+				<span class="label" data-cn="數量">Amount</span>
+				<input type="range" id="linesR" min="2" max="600">
+				<input type="number" id="lines" min="2" max="600" step="1">
+			</div>
+			<div class="control-row group" id="bodyRow">
+				<button class="btn" data-body="threads" data-cn="線">Threads</button>
+				<button class="btn" data-body="bands" data-cn="帶">Bands</button>
+				<button class="btn on" data-body="both" data-cn="兼">Both</button>
+			</div>
+			<div class="control-row">
+				<span class="label" data-cn="寬度">Width</span>
+				<input type="range" id="bandWidth" min="5" max="100">
+				<span class="value" id="bandWidthVal"></span>
+			</div>
+			<div class="control-row">
+				<span class="label" data-cn="濃度">Alpha</span>
+				<input type="range" id="bandAlpha" min="2" max="100">
+				<span class="value" id="bandAlphaVal"></span>
+			</div>
+			<div class="control-row">
+				<span class="label" data-cn="變化">Vary</span>
+				<input type="range" id="bandVary" min="0" max="100">
+				<span class="value" id="bandVaryVal"></span>
+			</div>
+			<!-- The lines' colours — how many, the shelf, what a colour is
+				 attached to — and the threads' own ink (Hailei, 2026-09-12:
+				 colours belong with the lines). -->
+			<!-- How many colours are in play, the shelf of them, and the hex of
+				 whichever is selected. -->
+			<div class="control-row">
+				<span class="label" data-cn="色數">Colours</span>
+				<input type="range" id="colours" min="1" max="8">
+				<span class="value" id="coloursVal"></span>
+			</div>
+			<!-- A swatch picks its slot and opens the picker on it; the shelf's
+				 hex field went when the picker came (Hailei, 2026-09-12). RANDOM
+				 beneath rolls all eight slots. -->
+			<div class="control-row">
+				<div id="swatches"></div>
+			</div>
+			<div class="control-row group">
+				<button class="btn" id="randomColours" data-cn="隨機">Random</button>
+			</div>
+			<!-- What a colour is attached to: a thread keeps its first node's
+				 colour to the end, or every span takes its column's colour. -->
+			<div class="control-row group" id="byRow">
+				<button class="btn on" data-by="origin" data-cn="依源">Origin</button>
+				<button class="btn" data-by="section" data-cn="依段">Section</button>
+				<button class="btn" data-by="node" data-cn="依節">Node</button>
+				<button class="btn" data-by="tail" data-cn="末散">Tail</button>
+			</div>
+			<div class="control-row">
+				<span class="label" data-cn="重點">Accent</span>
+				<button type="button" class="chip" id="accentChip" title="Pick" aria-label="Pick the accent"></button>
+				<input type="text" class="hex" id="accent" spellcheck="false">
+			</div>
+			<div class="control-row">
+				<span class="label" data-cn="線寬">Weight</span>
+				<input type="range" id="weight" min="2" max="400">
+				<span class="value" id="weightVal"></span>
+			</div>
+			<div class="control-row">
+				<span class="label" data-cn="變化">Vary</span>
+				<input type="range" id="weightVary" min="0" max="100">
+				<span class="value" id="weightVaryVal"></span>
+			</div>
+			<div class="control-row">
+				<span class="label" data-cn="濃度">Alpha</span>
+				<input type="range" id="alpha" min="2" max="100">
+				<span class="value" id="alphaVal"></span>
+			</div>
+			<div class="control-row">
+				<span class="label" data-cn="變化">Vary</span>
+				<input type="range" id="alphaVary" min="0" max="100">
+				<span class="value" id="alphaVaryVal"></span>
+			</div>
+		</section>
+
+		<!-- 2 ── Columns: how many, left to right, edge to edge; then the list
+			 picks one, and the sliders beneath are that column's own — its
+			 width and how tangled the flow inside it is (Hailei, 2026-09-12:
+			 one column at a time, each a module; "Mix" said nothing, "Tangle"
+			 says what the dial does). -->
+		<section class="panel" id="columnPanel">
+			<h2 data-cn="欄">Columns</h2>
+			<div class="control-row">
+				<span class="label" data-cn="欄數">Count</span>
+				<input type="range" id="columns" min="1" max="7">
+				<span class="value" id="columnsVal"></span>
+			</div>
+			<div class="control-row group" id="colTabs"></div>
+			<div class="control-row">
+				<span class="label" data-cn="寬度">Width</span>
+				<input type="range" id="colWidth" min="1" max="100">
+				<span class="value" id="colWidthVal"></span>
+			</div>
+			<div class="control-row">
+				<span class="label" data-cn="纏結">Tangle</span>
+				<input type="range" id="colTangle" min="0" max="100">
+				<span class="value" id="colTangleVal"></span>
+			</div>
+		</section>
+
+		<!-- 3 ── Bars: one more than the columns, each shared by its two
+			 neighbours, so they are their own section rather than a side of a
+			 column (Hailei, 2026-09-12). The list picks one; the dials beneath
+			 are that bar's own: how tall, how thick, its air, its nodes, its
+			 colour. -->
+		<section class="panel" id="barPanel">
+			<h2 data-cn="柱">Bars</h2>
+			<div class="control-row group" id="barTabs"></div>
+			<div class="control-row">
+				<span class="label" data-cn="高度">Height</span>
+				<input type="range" id="barSpread" min="0" max="100">
+				<span class="value" id="barSpreadVal"></span>
+			</div>
+			<!-- Where a bar shorter than the sheet stands: 0 at the top, 50
+				 centred, 100 at the bottom. Held at full height. -->
+			<div class="control-row">
+				<span class="label" data-cn="位置">Place</span>
+				<input type="range" id="barPlace" min="0" max="100">
+				<span class="value" id="barPlaceVal"></span>
+			</div>
+			<div class="control-row">
+				<span class="label" data-cn="寬度">Width</span>
+				<input type="range" id="barThick" min="0" max="300">
+				<span class="value" id="barThickVal"></span>
+			</div>
+			<div class="control-row">
+				<span class="label" data-cn="間隙">Gap</span>
+				<input type="range" id="barGap" min="0" max="80">
+				<span class="value" id="barGapVal"></span>
+			</div>
+			<div class="control-row">
+				<span class="label" data-cn="節點">Nodes</span>
+				<input type="range" id="barNodes" min="1" max="40">
+				<span class="value" id="barNodesVal"></span>
+			</div>
+			<div class="control-row">
+				<span class="label" data-cn="顏色">Colour</span>
+				<button type="button" class="chip" id="barColourChip" title="Pick" aria-label="Pick the bar's colour"></button>
+				<input type="text" class="hex" id="barColour" spellcheck="false">
+			</div>
+		</section>
+
+		<!-- 4 ── Deal: how the lines are dealt to the nodes — how uneven the
+			 first bar's nodes are, how many ways a node splits, how nodes are
+			 stacked. -->
+		<section class="panel">
+			<h2 data-cn="分配">Deal</h2>
+			<div class="control-row">
+				<span class="label" data-cn="偏重">Skew</span>
+				<input type="range" id="skew" min="0" max="100">
+				<span class="value" id="skewVal"></span>
+			</div>
+			<!-- How many ways every node's bundle is cut at the next bar. -->
+			<div class="control-row">
+				<span class="label" data-cn="分束">Split</span>
+				<input type="range" id="split" min="1" max="12">
+				<span class="value" id="splitVal"></span>
+			</div>
+			<!-- How nodes stack down a bar: as dealt, largest at the top, or
+				 largest at the bottom. -->
+			<div class="control-row group" id="orderRow">
+				<button class="btn on" data-order="rolled" data-cn="隨擲">As dealt</button>
+				<button class="btn" data-order="big" data-cn="大在上">Big up</button>
+				<button class="btn" data-order="small" data-cn="小在上">Small up</button>
+			</div>
+		</section>
+
+		<!-- 4 ── Shape: the last bar's scatter and the slack in every span -->
+		<section class="panel">
+			<h2 data-cn="形狀">Shape</h2>
+			<!-- The last column's nodes pulled back across the last span, each
+				 to its own rolled place. -->
+			<div class="control-row">
+				<span class="label" data-cn="散佈">Scatter</span>
+				<input type="range" id="scatter" min="0" max="100">
+				<span class="value" id="scatterVal"></span>
+			</div>
+			<div class="control-row">
+				<span class="label" data-cn="鬆緊">Curve</span>
+				<input type="range" id="tension" min="0" max="100">
+				<span class="value" id="tensionVal"></span>
+			</div>
+		</section>
+
+		<!-- 5 ── Canvas -->
+		<section class="panel">
+			<h2 data-cn="畫布">Canvas</h2>
+			<!-- The ground is the canvas's own colour (Hailei, 2026-09-12). -->
+			<div class="control-row">
+				<span class="label" data-cn="底色">Ground</span>
+				<button type="button" class="chip" id="groundChip" title="Pick" aria-label="Pick the ground"></button>
+				<input type="text" class="hex" id="ground" spellcheck="false">
+			</div>
+			<div class="control-row">
+				<select id="ratioSel"></select>
+				<input type="number" id="ratioNum" min="0.2" max="20" step="0.01">
+				<span class="label tight">: 1</span>
+			</div>
+			<div class="control-row">
+				<span class="label tight" id="outWShown"></span>
+				<!-- the letter X, not U+00D7 — the multiplication sign sits at
+					 lowercase height in this face and reads as a small x -->
+				<span class="label tight">X</span>
+				<input type="number" id="outH" min="200" max="8000" step="20">
+				<span class="label tight">px</span>
+			</div>
+			<!-- Zoom is how large the sheet is shown, never how large it is
+				 exported. FIT sizes it to the room left of this bar. -->
+			<div class="control-row">
+				<span class="label" data-cn="檢視">Zoom</span>
+				<input type="range" id="zoom" min="10" max="300">
+				<span class="value" id="zoomVal"></span>
+				<button class="btn" id="fit" data-cn="合適">Fit</button>
+			</div>
+		</section>
+
+		<!-- 7 ── Output -->
+		<section class="panel">
+			<h2 data-cn="輸出">Output</h2>
+			<!-- LINK saves a text file holding the page's URL with every setting
+				 after the #, so a sheet can be kept beside its exports and opened
+				 again exactly. -->
+			<div class="control-row">
+				<button class="btn" id="dlSvg">SVG</button>
+				<button class="btn" id="dlPng">PNG</button>
+				<button class="btn" id="dlLink" data-cn="連結">Link</button>
+			</div>
+		</section>
+
+		</div>
+	</div>
+</aside>
+
+</div>
+
+<!-- The colour picker, the house's (the Gradient tool's): a hue strip over a
+	 chroma × lightness field. Opened from the chip beside any hex field or
+	 from a swatch on the shelf, it edits that one field. It floats over the
+	 shell, so it stands outside it. The close icon is an IBM Carbon Design
+	 System glyph (Apache-2.0). -->
+<div id="picker" class="hidden">
+	<button id="pClose" type="button" title="Close" aria-label="Close"><svg viewBox="0 0 32 32" fill="currentColor" aria-hidden="true"><path d="M24 9.4 22.6 8 16 14.6 9.4 8 8 9.4 14.6 16 8 22.6 9.4 24 16 17.4 22.6 24 24 22.6 17.4 16z"/></svg></button>
+	<div id="hueWrap"><canvas id="hue" width="176" height="14"></canvas><div id="hueDot"></div></div>
+	<div id="fieldWrap"><canvas id="field" width="132" height="88"></canvas><div id="dot"></div></div>
+	<div class="picker-row"><input type="text" id="phex" spellcheck="false" aria-label="Hex"></div>
+</div>
+
+<script src="help.js"></script>
+<script src="alluvial.js"></script>
+
+</body>
+</html>

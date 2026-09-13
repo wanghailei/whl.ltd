@@ -1,0 +1,241 @@
+/* WHL Generative Alluvial — stylesheet. Loaded by the page
+   beside it; see README.md. */
+/* Berkeley Mono lives beside the file as berkeley.woff2 rather than inside it,
+	 exactly as it does beside the Gradient tool: both engines load a sibling
+	 woff2 from file://, and the desktop cut installs on macOS as well. A machine
+	 with neither steps down to IBM Plex Mono. The face is licensed per seat and
+	 never enters the repository (.gitignore bars *.woff2). */
+@font-face{
+	font-family:"Berkeley Mono";
+	src:url(berkeley.woff2) format("woff2");
+	font-weight:100 900;
+	font-stretch:60% 100%;
+	font-style:oblique -16deg 0deg;
+	font-display:block;
+}
+:root{
+	/* Hailei's law for every WHL site: Berkeley Mono, IBM Plex Mono, monospace —
+		 one size, one set of weight rules. No font is embedded for the Chinese
+		 toolbar and none is wanted; it takes whatever the system hands it. */
+	--font-mono:"Berkeley Mono","IBM Plex Mono","IBM Plex Sans TC",monospace;
+	--panel-width:252px;
+	--panel-width-wide:calc(var(--panel-width) * 2);
+	/* The shell's columns. The control column is the panel plus its margin to
+		 the window edge; the help column is twice it (Hailei, 2026-09-13). */
+	--panel-column:calc(var(--panel-width) + var(--page-margin) - 10px);
+	--help-column:calc(var(--panel-column) * 2);
+	--base-row-height:36px;             /* one panel row = two line boxes */
+	--base-min-width:960px;             /* narrowest viewport the layout is drawn for */
+	--base-edge-gap:3px;                /* how far the bar sits off the window edge */
+	--page-margin:4ch;                  /* content-to-edge distance — Hailei's law for every WHL site */
+	--base-font-size:0.75rem;
+	--base-line-height:1.5;
+	--tile-fill:rgba(0,0,0,.62);
+	--line-strong:rgba(255,255,255,.34);
+	--line-mid:rgba(255,255,255,.55);
+	--line-soft:rgba(255,255,255,.28);
+}
+*{box-sizing:border-box; border-radius:0 !important}
+html,body{height:100%; margin:0; background:#0B0B0B; overscroll-behavior:none}
+body{min-width:var(--base-min-width); overflow-x:auto; overflow-y:hidden}
+body{font-family:var(--font-mono); font-size:var(--base-font-size); line-height:var(--base-line-height);
+	color:#fff; -webkit-font-smoothing:antialiased}
+button,input,select{font-family:inherit; font-size:inherit; color:inherit}
+/* No focus box. Nothing else in this interface is boxed. */
+:focus{outline:none}
+:focus-visible{outline:none}
+.hidden{display:none !important}
+
+/* ── Shell: canvas | help | controls, the nexus pattern ── */
+/* One grid, three columns, and the column template is a class on the shell:
+	 a hidden column is 0px wide and the change slides. Each column clips
+	 (overflow hidden, min-width 0) so its content is cut, not squeezed, while
+	 it slides; what scrolls is a body inside the column. */
+#shell{display:grid; grid-template-rows:1fr; width:100%; height:100%;
+	transition:grid-template-columns .2s ease}
+#shell.show-canvas{grid-template-columns:1fr 0px 0px}
+#shell.show-canvas-panel{grid-template-columns:1fr 0px var(--panel-column)}
+#shell.show-canvas-help{grid-template-columns:1fr var(--help-column) 0px}
+#shell.show-canvas-help-panel{grid-template-columns:1fr var(--help-column) var(--panel-column)}
+#main,#help,#toolbar{grid-row:1; min-width:0; min-height:0; overflow:hidden}
+
+/* ── Canvas: the render, sized by ZOOM, in the first column ── */
+/* The script says the zoom and the ratio as custom properties on the stage;
+	 these rules do the rest. Height is the zoom's share of the stage, width
+	 follows the ratio, and auto margins centre the sheet — falling to nought
+	 when it is wider than the stage, so its left edge stays reachable as the
+	 stage scrolls. Layout is CSS's, not JS's (Hailei, 2026-09-13). */
+#main{position:relative}
+#stage{position:absolute; inset:0; overflow:auto; overscroll-behavior:none;
+	display:flex; align-items:center; justify-content:flex-start;
+	--zoom:100; --ratio:2.3333}
+#canvas{flex:0 0 auto; overflow:hidden; margin:auto;
+	height:calc(var(--zoom) * 1%); aspect-ratio:var(--ratio)}
+#canvas svg{display:block; width:100%; height:100%}
+
+/* Foreground layout. One grid over the render: the readout and the toggles
+	 top left, the foot bottom left. The layer itself takes no pointer events,
+	 so clicks fall through to the canvas; its children take them back, which
+	 is also what makes their text selectable. */
+#fg{position:absolute; inset:0; z-index:10; display:grid;
+	grid-template-columns:var(--panel-width-wide) 1fr;
+	grid-template-rows:auto 1fr auto;
+	gap:var(--base-edge-gap); padding:var(--base-edge-gap);
+	padding-bottom:calc(var(--base-edge-gap) + env(safe-area-inset-bottom));
+	pointer-events:none}
+#fg > *{pointer-events:auto}
+/* The readout's own lines are kept by the hud alone; the lead itself
+	 collapses the markup's whitespace, or every newline in it would stand as
+	 a blank line. */
+#lead{grid-column:1; grid-row:1; margin:calc(var(--page-margin) - var(--base-edge-gap)); padding:0;
+	background:none; border:0;
+	-webkit-user-select:text; user-select:text}
+#hud{white-space:pre}
+#titleLine{display:flex; gap:5ch; margin-bottom:calc(var(--base-line-height) * var(--base-font-size))}
+#title{font-weight:500}
+/* The version shares the title's line but not its voice: normal weight against
+	 the title's 500, and a light hand of ink. It is a stamp, not part of the name. */
+#version{font-weight:400; opacity:.4}
+#hud{opacity:.72}
+
+/* The language toggle and, five characters on, the view toggle sit on the
+	 title line, five characters after the version — flex gaps, nothing
+	 measured. Each is two words with a slash between, the live one in full
+	 ink. */
+#tools{display:flex; gap:5ch}
+#lang,#view{line-height:var(--base-line-height);
+	background:none; border:0; padding:0; cursor:pointer; white-space:pre}
+#lang span,#view span{opacity:.42}
+#lang span.on,#view span.on{opacity:1}
+
+#foot{grid-column:1 / 3; grid-row:3; align-self:end; margin:calc(var(--page-margin) - var(--base-edge-gap));
+	-webkit-user-select:text; user-select:text}
+@media (min-width:960px){
+	#terms{white-space:nowrap}
+	#foot{width:min-content}
+}
+#terms{cursor:pointer}
+#helpBtn{cursor:pointer}
+#licence{margin-bottom:18px}
+#licence a, #copy a, #terms a{color:inherit; text-decoration:none}
+
+/* ── Help: the middle column, twice the control column, folded until HELP ── */
+/* The body is as wide as the open column, so the prose holds still while the
+	 column slides shut over it. */
+#help .body{width:var(--help-column); height:100%; overflow-y:auto; overflow-x:hidden;
+	overscroll-behavior:none;
+	padding:calc(var(--page-margin) - 4px) var(--page-margin) var(--page-margin) var(--page-margin);
+	-webkit-user-select:text; user-select:text}
+/* Each sheet opens under its door — the Carbon close icon, per the house law
+	 that every icon is Carbon at 16px. A blank line stands between the door and
+	 the text; fill:currentColor lets it flip with the sheet's ink. */
+.sheetClose{display:block; background:none; border:0; padding:0;
+	color:inherit; cursor:pointer; opacity:.55;
+	margin-bottom:calc(var(--base-line-height) * var(--base-font-size))}
+.sheetClose:hover{opacity:1}
+.sheetClose svg{display:block; width:16px; height:16px}
+
+/* ── Toolbar: the control column ── */
+/* The notice stands at the top; the rail beneath is what scrolls. The rail's
+	 right padding is what stands the panel its page margin off the window
+	 edge, the panel's own 10px counted in. */
+#toolbar{display:flex; flex-direction:column}
+#rail{flex:1 1 auto; min-height:0; overflow-y:auto; overflow-x:hidden; overscroll-behavior:none;
+	padding:calc(var(--page-margin) - 4px) calc(var(--page-margin) - 10px) calc(var(--page-margin) - 8px) 0}
+/* No plate, no drawn dividers. The controls sit straight on the ground, the
+	 way the readout does. #note keeps a ground because it is a transient alert
+	 that has to stay readable whatever is behind it. */
+.panel{background:none; border:0; width:var(--panel-width); padding:4px 10px 8px}
+.panel > h2{margin:0; display:flex; align-items:center; min-height:var(--base-row-height);
+	font-size:var(--base-font-size); font-weight:400; text-transform:uppercase; opacity:.55}
+#blocks{display:block; width:var(--panel-width)}
+#note{background:var(--tile-fill); backdrop-filter:blur(16px) saturate(1.2);
+	-webkit-backdrop-filter:blur(16px) saturate(1.2);
+	padding:8px 18px; color:#fff}
+/* Every row is the same height, headings included, so the column keeps one
+	 vertical rhythm instead of packing each control against the next. */
+.control-row{display:flex; align-items:center; gap:6px; min-height:var(--base-row-height)}
+.control-row > .label:first-child{min-width:42px}
+.label{text-transform:uppercase; opacity:.45; white-space:nowrap; flex:0 0 auto; min-width:38px}
+.label.tight{min-width:0}
+
+/* When the ground turns light, every line the interface owns follows. Black on
+	 a light ground reads lighter than white on a dark one at the same alpha, so
+	 each weight is a touch heavier in black. Anything drawn with a fixed colour
+	 instead of these cannot flip and simply disappears on one side. */
+.ink-dark{--line-strong:rgba(0,0,0,.42); --line-mid:rgba(0,0,0,.62); --line-soft:rgba(0,0,0,.34)}
+
+/* Buttons are words you can press — no box, no fill. Strength of ink says
+	 which one is live; the rest hold back. */
+button.btn{background:none; border:0; padding:2px; text-transform:uppercase;
+	cursor:pointer; white-space:nowrap; color:inherit}
+button.btn:hover{opacity:.85}
+.group .btn:not(.on){opacity:.42}
+.group .btn.on{opacity:1}
+button:disabled{opacity:.35; cursor:default}
+
+/* No boxes. A field is the value itself, editable where it stands. */
+input[type=number],input[type=text],select{background:transparent; border:0; padding:0; color:inherit}
+input[type=number]{width:52px; -moz-appearance:textfield}
+input[type=number]::-webkit-outer-spin-button,
+input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none; margin:0}
+input[type=text].hex{width:72px; text-transform:lowercase}
+/* A control that data has taken over is shown, not hidden: the designer can
+	 see what the records decided for them. */
+input:disabled{opacity:.35}
+/* The arrow is drawn in currentColor, not a fixed white. Baked white, it
+	 vanishes the moment the ground is judged light and the ink turns black. */
+select{appearance:none; padding-right:15px; cursor:pointer;
+	background-image:linear-gradient(45deg,transparent 50%,currentColor 50%),
+									 linear-gradient(135deg,currentColor 50%,transparent 50%);
+	background-position:right 6px center, right 2px center;
+	background-size:4px 4px,4px 4px; background-repeat:no-repeat}
+select option{background:#111; color:#fff; font-size:var(--base-font-size)}
+#ratioSel{margin-right:calc( 2ch - 6px )}
+
+input[type=range]{-webkit-appearance:none; appearance:none; background:transparent;
+	height:14px; margin:0; width:clamp(72px, 8vw, 92px)}
+input[type=range]::-webkit-slider-runnable-track{height:1px; background:var(--line-strong)}
+input[type=range]::-moz-range-track{height:1px; background:var(--line-strong)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:3px; height:13px;
+	background:currentColor; margin-top:-6px; cursor:pointer}
+input[type=range]::-moz-range-thumb{width:3px; height:13px; background:currentColor; border:0; cursor:pointer}
+.value{min-width:34px; text-align:right; opacity:.85}
+/* The column list: one numbered word per column, the picked one in full ink. */
+#colTabs .btn, #barTabs .btn{min-width:2ch}
+/* A chip reads the hex field beside it and, pressed, opens the picker on that
+	 field (Hailei, 2026-09-12: a picker like the Gradient tool's). */
+.chip{width:16px; height:16px; padding:0; display:block; flex:0 0 auto;
+	border:1px solid var(--line-strong); background:none; cursor:pointer}
+/* The shelf. A swatch picks its slot and opens the picker on it; the hex
+	 field below is the typed way in. Selection is drawn in the panel's own ink
+	 so it survives a light ground. */
+#swatches{display:flex; gap:5px; flex-wrap:wrap}
+.swatch{width:22px; height:22px; padding:0; display:block; flex:0 0 auto;
+	border:1px solid var(--line-strong); cursor:pointer}
+.swatch.sel{outline:1px solid currentColor; outline-offset:2px}
+/* ── Colour picker: a hue strip over a rectangular field, the Gradient
+	 tool's. Across the field is chroma, up it is lightness; the right edge is
+	 the gamut edge for that lightness, so every point in the rectangle is a
+	 colour sRGB can hold — no dead corners. It carries its own dark ground
+	 and pins white line-work, whatever the sheet's ground. ── */
+#picker{position:fixed; z-index:20; background:rgba(0,0,0,.78); color:#fff;
+	--line-strong:rgba(255,255,255,.34);
+	--line-mid:rgba(255,255,255,.55); --line-soft:rgba(255,255,255,.28);
+	backdrop-filter:blur(18px) saturate(1.2); -webkit-backdrop-filter:blur(18px) saturate(1.2);
+	border:1px solid var(--line-strong); padding:14px}
+#pClose{position:absolute; top:2px; right:6px; background:none; border:0; color:#fff;
+	padding:4px; opacity:.7; cursor:pointer}
+#pClose:hover{opacity:1}
+#pClose svg{display:block; width:16px; height:16px}
+#hueWrap{position:relative; width:176px; height:14px; margin:14px 0 8px}
+#hue{display:block; width:176px; height:14px; cursor:crosshair; touch-action:none}
+#hueDot{position:absolute; top:-2px; bottom:-2px; width:3px; margin-left:-1px;
+	background:#fff; box-shadow:0 0 0 1px #000; pointer-events:none}
+#fieldWrap{position:relative; width:176px; height:118px; margin-bottom:10px}
+#field{display:block; width:176px; height:118px; cursor:crosshair; touch-action:none}
+#dot{position:absolute; width:9px; height:9px; margin:-5px 0 0 -5px; pointer-events:none;
+	border:1px solid #000; box-shadow:0 0 0 1px #fff inset, 0 0 0 1px #fff}
+.picker-row{display:flex; align-items:center; gap:7px}
+#phex{background:transparent; border:1px solid var(--line-strong); padding:5px 6px; color:inherit;
+	font:inherit; width:100%; text-transform:lowercase}
