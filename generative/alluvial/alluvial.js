@@ -6,7 +6,7 @@
 	 alone, major on Hailei's word. It sat at 0.1.0 through the twenty
 	 deliveries from 2026-09-11 to 2026-09-13 (Hailei: "bump version
 	 properly"), so it starts here at what they add up to. */
-const VERSION = "0.25.0"
+const VERSION = "0.26.0"
 /* Where the tool lives once published. A saved link points here whatever
 	 the page was opened from — a file on disk, a local server — since only
 	 the settings after the ? matter to it (Hailei, 2026-09-13). */
@@ -1292,6 +1292,10 @@ function rollSheet( rand ){
 	state.weight = Math.round( between( 2, 3.5 ) * 10 ) / 10
 	state.bandWidth = whole( 60, 85 )
 	state.bandAlpha = whole( 40, 60 )
+	/* The colours roll with the rest (Hailei, 2026-09-13): a fresh shelf off
+		 the same dice, and two to four of it in play. The accent stays. */
+	state.palette = rollPalette( rand )
+	state.colours = whole( 2, 4 )
 	/* No scatter: an aligned last bar is the family's; a scattered one is the
 		 designer's own choice (a rolled scatter read as the old mess). */
 	state.scatter = 0
