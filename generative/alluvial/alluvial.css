@@ -92,7 +92,9 @@ button,input,select{font-family:inherit; font-size:inherit; color:inherit}
 	-webkit-user-select:text; user-select:text}
 #hud{white-space:pre}
 #titleLine{display:flex; gap:5ch; margin-bottom:calc(var(--base-line-height) * var(--base-font-size))}
-#title{font-weight:500}
+/* The name is one line whatever the lead column is wide: it may run past the
+	 column over the canvas, never fold (Hailei, 2026-09-13: "Never wrap it!"). */
+#title{font-weight:500; white-space:nowrap}
 /* The version shares the title's line but not its voice: normal weight against
 	 the title's 500, and a light hand of ink. It is a stamp, not part of the name. */
 #version{font-weight:400; opacity:.4}
