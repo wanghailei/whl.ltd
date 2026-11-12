@@ -1,10 +1,28 @@
 import { Point } from "../layout/geometry.js"
 
+/* The keys that end the writing, and how each ends it; Shift+Enter is none of them: it starts a new line. */
+const FINISHING = [
+	{ key: "Enter", shift: false, how: "sibling" },
+	{ key: "Tab", shift: false, how: "child" },
+	{ key: "Tab", shift: true, how: "parent" },
+	{ key: "Escape", shift: false, how: "cancel" },
+	{ key: "Escape", shift: true, how: "cancel" },
+]
+
+/* How a key pressed while a node's words are written ends the writing —
+	sibling, child, parent or cancel — or null where it does not: on the map
+	and in the outline alike. */
+export function finishingBy( event ){
+	return FINISHING.find( finishing => finishing.key === event.key && finishing.shift === event.shiftKey )?.how ?? null
+}
+
 /* The field a node's words are typed in, laid exactly over the node's own
 	words, in their face, size and colour, growing as they are typed.
 
-	Enter keeps the words and Shift+Enter starts a new line; Tab keeps them
-	and asks for a child; Esc throws them away; leaving the field keeps them.
+	Enter keeps the words and asks for a sibling below, so a list is typed in
+	one go, at the master's word (2026-11-12, 23:07), and Shift+Enter starts a
+	new line; Tab keeps them and asks for a child, and Shift+Tab for a parent;
+	Esc throws them away; leaving the field keeps them.
 
 	While a node is selected and nothing is being written, the field waits
 	over it unseen, holding the keyboard's focus — armed. The page's keys
@@ -137,21 +155,13 @@ export class TextEditor {
 		if( !this.isOpen ) return
 		event.stopPropagation()
 		if( event.isComposing || event.keyCode === 229 ) return
-		if( event.key === "Enter" && !event.shiftKey ){
-			event.preventDefault()
-			this.finish( "keep" )
-		}
-		if( event.key === "Tab" ){
-			event.preventDefault()
-			this.finish( "child" )
-		}
-		if( event.key === "Escape" ){
-			event.preventDefault()
-			this.finish( "cancel" )
-		}
+		const how = finishingBy( event )
+		if( !how ) return
+		event.preventDefault()
+		this.finish( how )
 	}
 
-	/* Closes the field and says how: keep, child or cancel, with the words. */
+	/* Closes the field and says how — keep, sibling, child, parent or cancel — with the words. */
 	finish( how ){
 		const session = this.session
 		if( !session?.writing ) return

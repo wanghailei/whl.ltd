@@ -45,6 +45,24 @@ export class CanvasView {
 		if( branch ) this.viewport.querySelector( `[data-branch="${ CSS.escape( branch.id ) }"]` )?.classList.add( "selected" )
 	}
 
+	/* Marks the nodes a search found, by their identities, so they glow; none, none. */
+	markFound( ids ){
+		this.viewport.querySelectorAll( ".found" ).forEach( element => element.classList.remove( "found" ) )
+		for( const id of ids ) this.topicElement( id )?.classList.add( "found" )
+	}
+
+	/* While a node is dragged over a gap among a parent's children, a short
+		 line across the gap marks where it would go; with no gap, none. Only
+		 the marker is drawn: nothing else moves until the node is let go. */
+	markGap( gap ){
+		this.viewport.querySelector( ".gap-marker" )?.remove()
+		if( !gap ) return
+		const marker = this.viewport.ownerDocument.createElementNS( "http://www.w3.org/2000/svg", "path" )
+		marker.setAttribute( "class", "gap-marker" )
+		marker.setAttribute( "d", `M ${ gap.from.x } ${ gap.from.y } L ${ gap.to.x } ${ gap.to.y }` )
+		this.viewport.append( marker )
+	}
+
 	/* Identities come from files, so they are escaped before they stand in a selector. */
 	topicElement( id ){
 		return this.viewport.querySelector( `[data-topic="${ CSS.escape( id ) }"]` )

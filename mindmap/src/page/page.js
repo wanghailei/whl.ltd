@@ -16,17 +16,23 @@ import { FileDoor } from "./file-door.js"
 import { Output } from "./output.js"
 import { HELP } from "./help.js"
 import { RemarkField } from "./remark-field.js"
+import { OutlineView } from "./outline-view.js"
+import { FindBar } from "./find-bar.js"
+import { Search } from "../editor/search.js"
 
 /* The version: a feature change is a minor, a fix or small tweak a patch,
 	the major the master's. Every change raises it one step in its own
 	commit, and it is always the newest version CHANGELOG.md names, its first
 	entry; TAI's check-commits holds every commit to this (bin/check,
 	.check-commits.json). */
-const VERSION = "0.34.4"
+const VERSION = "0.38.3"
 /* How long a notice stays, unless another takes its place. */
 const NOTICE_TIME = 7000
 /* The notice for each reason a file would not open. */
 const FILE_TROUBLES = { "not-a-map": "notAMap", newer: "newer", broken: "broken", empty: "emptyOutline" }
+/* The node opened for words straight after a node's words are kept by
+	Enter, Tab or Shift+Tab: a sibling below, a child, or a parent. */
+const NEXT_NODE = { sibling: editor => editor.addSibling(), child: editor => editor.addChild(), parent: editor => editor.addParent() }
 
 /* The page: it makes the editor and everything that shows and drives it,
 	wires each to the others through named actions, and redraws whenever the
@@ -56,6 +62,14 @@ class Page {
 			},
 		} )
 		this.panel = new Panel( { document, actions: this.panelActions(), picker: new ColourPicker( document ), language: this.language } )
+		this.outline = new OutlineView( { rows: this.element( "outline-rows" ), placeholder: CENTRAL_PLACEHOLDER, say: word => this.language.say( word ), actions: this.outlineActions() } )
+		this.finder = new FindBar( { bar: this.element( "find" ), field: this.element( "find-field" ), count: this.element( "find-count" ), actions: this.findActions() } )
+		/* Where the user last worked, the map or the outline: the node's words
+			 are written there, and the arrow keys step that way. Told before the
+			 press itself is handled, which may redraw. */
+		this.writingIn = "map"
+		this.stage.addEventListener( "pointerdown", () => { this.writingIn = "map" } )
+		this.element( "outline" ).addEventListener( "pointerdown", () => { this.writingIn = "outline" }, { capture: true } )
 		new Keyboard( { document, actions: this.keyActions() } )
 		new Pointer( { stage: this.stage, view: this.view, marquee: this.element( "marquee" ), actions: this.pointerActions() } )
 		this.door.acceptDrops( file => this.open( file ) )
@@ -186,9 +200,16 @@ class Page {
 		this.document.documentElement.style.setProperty( "--ground", this.picture.look.background )
 		this.document.documentElement.classList.toggle( "ink-dark", this.picture.look.isLight )
 		this.panel.sync( { editor: this.editor, look: this.picture.look, zoom: this.view.zoom, highlight: this.highlight() } )
+		if( this.shown?.outline ) this.outline.show( this.editor )
+		this.markFound()
 		this.showRemark()
 		this.markJoining()
 		this.armKeyboard()
+	}
+
+	/* Whether the outline is open and the user last worked in it. */
+	get inOutline(){
+		return this.writingIn === "outline" && this.shown?.outline === true
 	}
 
 	/* The canvas shows it is waiting for a line's second node exactly while the editor is waiting. */
@@ -203,15 +224,17 @@ class Page {
 
 	/* The waiting text field goes over the selected node, unless another
 		 field — of the panel, or the remark — is being typed in, or words are
-		 being written already. */
+		 being written already. While the user works in the outline, the
+		 outline holds the keyboard's focus instead. */
 	armKeyboard(){
-		if( !this.picture || this.textEditor.isOpen ) return
+		if( !this.picture || this.textEditor.isOpen || this.outline.isWriting ) return
 		const focus = this.editor.focus
 		const box = focus && this.picture.arrangement.boxOf( focus )
 		const active = this.document.activeElement
 		const typing = active !== this.textField && active?.matches?.( "input, textarea, select" )
-		if( !box || typing ){
+		if( !box || typing || this.inOutline ){
 			this.textEditor.disarm()
+			if( this.inOutline && !typing ) this.outline.focus()
 			return
 		}
 		const map = this.editor.map
@@ -297,13 +320,17 @@ class Page {
 
 	// ── Writing words ───────────────────────────────────────────────
 
-	/* Opens the text field on a node, selected and in sight. A fresh node is one just added. */
+	/* Opens a field on a node for its words, the node selected and in sight:
+		 in its line of the outline while the user works there, else over the
+		 node on the map. A fresh node is one just added. */
 	editTopic( id, { replace = null, fresh = false } = {} ){
 		const topic = this.editor.map.find( id )
 		if( !topic || !this.picture.arrangement.boxOf( topic ) ) return
 		if( !this.editor.selection.includes( topic ) ) this.editor.select( topic )
 		this.reveal( topic )
 		const map = this.editor.map
+		const done = result => this.finishEditing( id, fresh, map, result )
+		if( this.inOutline && this.outline.write( { topic, replace, done } ) ) return
 		this.textEditor.open( {
 			face: this.picture.faces.of( topic ),
 			box: this.picture.arrangement.boxOf( topic ),
@@ -330,12 +357,14 @@ class Page {
 		if( !topic ) return
 		if( fresh ){
 			this.editor.finishWriting( topic, how === "cancel" ? "" : text )
-			if( how !== "child" || text.trim() === "" ) return
+			/* A node just added and left empty goes, and the list it would have carried on ends there. */
+			if( how === "cancel" || text.trim() === "" ) return
 		} else {
 			if( how === "cancel" ) return
 			if( text !== topic.text ) this.editor.rename( topic, text )
 		}
-		if( how === "child" ) this.addAndEdit( () => this.editor.addChild() )
+		const next = NEXT_NODE[ how ]
+		if( next ) this.addAndEdit( () => next( this.editor ) )
 	}
 
 	addAndEdit( add ){
@@ -367,22 +396,38 @@ class Page {
 
 	// ── The title line ──────────────────────────────────────────────
 
-	/* The shell's columns, Alluvial's: HELP toggles the help, FULLSCREEN /
-		 PANEL the controls, and FULLSCREEN folds the help away too, a full
-		 screen being the map alone. Neither is part of the map. */
+	/* The shell's columns, Alluvial's: OUTLINE toggles the outline, HELP the
+		 help, FULLSCREEN / PANEL the controls, and FULLSCREEN folds the help
+		 and the outline away too, a full screen being the map alone: the
+		 outline is never shown in it, at the master's word (2026-11-12,
+		 23:07), so OUTLINE in a full screen brings the panel back with it.
+		 None of them is part of the map. */
 	wireTitleLine(){
-		const shown = { help: false, panel: true }
+		const shown = this.shown = { help: false, panel: true, outline: false }
 		const sync = () => {
-			this.element( "shell" ).className = "show-canvas" + ( shown.help ? "-help" : "" ) + ( shown.panel ? "-panel" : "" )
+			this.element( "shell" ).className = [ shown.outline && "with-outline", shown.help && "with-help", shown.panel && "with-panel" ].filter( Boolean ).join( " " )
 			this.element( "view-full" ).classList.toggle( "on", !shown.panel )
 			this.element( "view-panel" ).classList.toggle( "on", shown.panel )
 			this.element( "help-button" ).classList.toggle( "on", shown.help )
+			this.element( "outline-button" ).classList.toggle( "on", shown.outline )
+			this.writingIn = shown.outline ? this.writingIn : "map"
+		}
+		const showOutline = open => {
+			Object.assign( shown, open ? { outline: true, panel: true } : { outline: false } )
+			if( open ){
+				this.writingIn = "outline"
+				this.outline.show( this.editor )
+			}
+			sync()
+			this.armKeyboard()
 		}
 		this.showPanel = () => { shown.panel = true; sync() }
+		this.element( "outline-button" ).addEventListener( "click", () => showOutline( !shown.outline ) )
+		this.element( "outline" ).querySelector( ".sheet-close" ).addEventListener( "click", () => showOutline( false ) )
 		this.element( "help-button" ).addEventListener( "click", () => { shown.help = !shown.help; sync() } )
 		this.element( "help" ).querySelector( ".sheet-close" ).addEventListener( "click", () => { shown.help = false; sync() } )
 		this.element( "view" ).addEventListener( "click", () => {
-			if( shown.panel ) Object.assign( shown, { panel: false, help: false } )
+			if( shown.panel ) Object.assign( shown, { panel: false, help: false, outline: false } )
 			else shown.panel = true
 			sync()
 		} )
@@ -407,12 +452,21 @@ class Page {
 		return {
 			addChild: () => this.addAndEdit( () => editor.addChild() ),
 			addSibling: () => this.addAndEdit( () => editor.addSibling() ),
+			addParent: () => this.addAndEdit( () => editor.addParent() ),
+			reorder: step => {
+				editor.reorder( step )
+				if( editor.focus ) this.reveal( editor.focus )
+			},
+			copy: () => editor.copy(),
+			cut: () => editor.cut(),
+			paste: () => editor.paste(),
 			deleteSelected: () => editor.deleteSelected(),
 			edit: replace => { if( editor.focus ) this.editTopic( editor.focus.id, { replace } ) },
 			fold: () => editor.toggleFold(),
+			/* On the map, to the nearest node that way; in the outline, to the line above or below, the parent or the first child. */
 			move: way => {
 				const focus = editor.focus
-				const next = focus && this.picture.arrangement.nearest( focus, way )
+				const next = focus && ( this.inOutline ? this.outline.neighbour( focus, way ) : this.picture.arrangement.nearest( focus, way ) )
 				if( !next ) return
 				editor.select( next )
 				this.reveal( next )
@@ -423,7 +477,61 @@ class Page {
 			save: () => this.save(),
 			open: () => this.door.choose( file => this.open( file ) ),
 			centre: () => this.view.centre(),
-			escape: () => editor.isJoining ? this.stopJoining() : editor.clearSelection(),
+			find: () => this.finder.open(),
+			/* Esc stops waiting for a line's second node, or closes the find field, or else clears the selection. */
+			escape: () => {
+				if( editor.isJoining ) this.stopJoining()
+				else if( this.finder.isOpen ) this.finder.close()
+				else editor.clearSelection()
+			},
+		}
+	}
+
+	/* What the find field finds and where it goes: the nodes the words find,
+		 by identity, and the one gone to, its folds opened, selected and
+		 brought into sight. */
+	findActions(){
+		const editor = this.editor
+		return {
+			matching: words => new Search( words ).matchesIn( editor.map ).map( topic => topic.id ),
+			go: id => {
+				const topic = editor.map.find( id )
+				if( !topic ) return
+				editor.uncover( topic )
+				this.reveal( topic )
+			},
+			marked: () => this.markFound(),
+			closed: () => {
+				this.markFound()
+				this.armKeyboard()
+			},
+		}
+	}
+
+	/* While the find field is open, the nodes its words find glow, kept in step with the map. */
+	markFound(){
+		if( this.finder.isOpen ) this.finder.refresh()
+		this.view.markFound( this.finder.isOpen ? this.finder.found : [] )
+	}
+
+	/* What is done in the outline: a line pressed selects its node as a
+		 press on the map does, its fold mark folds as the map's fold dot does,
+		 and a double-click writes the node's words in its line. */
+	outlineActions(){
+		const { settle, press, fold } = this.pointerActions()
+		/* Words being written are kept first, as before a press on the map: a
+			 fold made while a parent just added was empty went into the history
+			 before the empty parent was taken away (found in review, 2026-11-13). */
+		return {
+			press: ( id, additive ) => {
+				settle()
+				press( id, additive )
+			},
+			fold: id => {
+				settle()
+				fold( id )
+			},
+			edit: id => this.editTopic( id ),
 		}
 	}
 
@@ -471,6 +579,15 @@ class Page {
 			move: ( id, targetId ) => {
 				const dragged = topic( id ), target = topic( targetId )
 				if( !dragged || !target || !editor.move( dragged, target ) ) this.redraw( { mapChanged: true } )
+			},
+			/* The gap among the drawn nodes a dragged node would go into at this point of the map, or null. */
+			gapAt: ( id, point ) => {
+				const dragged = topic( id )
+				return dragged && !dragged.isRoot ? this.picture.arrangement.gapAt( point, dragged ) : null
+			},
+			place: ( id, gap ) => {
+				const dragged = topic( id )
+				if( !dragged || !editor.move( dragged, gap.parent, gap.index ) ) this.redraw( { mapChanged: true } )
 			},
 			redraw: () => this.redraw( { mapChanged: true } ),
 			selectArea: area => {

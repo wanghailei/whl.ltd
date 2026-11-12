@@ -156,13 +156,17 @@ class MarqueeGesture extends Gesture {
 }
 
 /* A node dragged: it follows the pointer, and the node under the pointer is
-	marked while it would take the drop. Let go over it, the node moves there;
-	anywhere else, it goes back. */
+	marked while it would take the drop; between two siblings, or just past
+	the first or last of a node's children, a marker shows the gap it would
+	go into, at the master's word (2026-11-12, 23:07). Nothing else moves
+	while it is dragged. Let go over a node, it becomes its last child; in a
+	gap, it stands there; anywhere else, it goes back. */
 class DragGesture extends Gesture {
 	constructor( pointer, event, id ){
 		super( pointer, event )
 		this.id = id
 		this.target = null
+		this.gap = null
 	}
 
 	move( event ){
@@ -173,13 +177,16 @@ class DragGesture extends Gesture {
 		element.setAttribute( "transform", `translate(${ ( event.clientX - this.start.x ) / view.zoom } ${ ( event.clientY - this.start.y ) / view.zoom })` )
 		const under = stage.ownerDocument.elementFromPoint( event.clientX, event.clientY )?.closest( "[data-topic]" )
 		this.target = under && actions.accepts( this.id, under.dataset.topic ) ? under.dataset.topic : null
+		this.gap = this.target || under ? null : actions.gapAt( this.id, view.toMap( event.clientX, event.clientY ) )
 		view.viewport.querySelectorAll( ".drop-target" ).forEach( each => each.classList.remove( "drop-target" ) )
 		if( this.target ) view.topicElement( this.target )?.classList.add( "drop-target" )
+		view.markGap( this.gap )
 	}
 
 	end(){
 		if( !this.moved ) return
 		if( this.target ) this.pointer.actions.move( this.id, this.target )
+		else if( this.gap ) this.pointer.actions.place( this.id, this.gap )
 		else this.pointer.actions.redraw()
 	}
 

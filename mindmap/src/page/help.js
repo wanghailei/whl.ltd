@@ -21,12 +21,24 @@ const TASKS = [
 		cn: [ "我想開一張新地圖，怎麼做？", "按面板上的「新建」。原來的地圖會被換掉，按 CMD+Z 可以找回。" ],
 	},
 	{
-		en: [ "I want to add a node. How?", "Select a node and press TAB for a child, or ENTER for a sibling after it; type its words and press ENTER." ],
-		cn: [ "我想加一個節點，怎麼做？", "選一個節點，按 TAB 加子節點，或按 ENTER 在其後加同級節點；打字後按 ENTER。" ],
+		en: [ "I want to add a node. How?", "Select a node and press TAB for a child, ENTER for a sibling after it, or SHIFT+TAB for a new parent above it, and type its words." ],
+		cn: [ "我想加一個節點，怎麼做？", "選一個節點，按 TAB 加子節點，ENTER 在其後加同級節點，或 SHIFT+TAB 在其上加一個父節點，再打字。" ],
 	},
 	{
-		en: [ "I want to change a node's words. How?", "Double-click it and type: ENTER keeps the words, SHIFT+ENTER starts a new line, ESC throws the change away. Or select it and type to write them afresh." ],
-		cn: [ "我想改節點的文字，怎麼做？", "雙擊節點後打字：ENTER 保留，SHIFT+ENTER 換行，ESC 放棄。選取後直接打字則重寫文字。" ],
+		en: [ "I want to type a list of nodes in one go. How?", "Type a node's words and press ENTER: the next sibling opens below for its words. ESC on the empty one ends the list." ],
+		cn: [ "我想一口氣打出一串節點，怎麼做？", "打完一個節點的文字後按 ENTER，下方隨即開出下一個同級節點。在空的那個按 ESC 即結束。" ],
+	},
+	{
+		en: [ "I want to change a node's words. How?", "Double-click it and type: ENTER keeps the words and opens a sibling below, SHIFT+ENTER starts a new line, ESC throws the change away, and a click elsewhere keeps them. Or select it and type to write them afresh." ],
+		cn: [ "我想改節點的文字，怎麼做？", "雙擊節點後打字：ENTER 保留並在下方開出同級節點，SHIFT+ENTER 換行，ESC 放棄，點別處即保留。選取後直接打字則重寫文字。" ],
+	},
+	{
+		en: [ "I want to put a node earlier or later among its siblings. How?", "Select it and press ALT+↑ or ALT+↓, or drag it between two of its siblings." ],
+		cn: [ "我想調整節點在同級中的順序，怎麼做？", "選取後按 ALT+↑ 或 ALT+↓，或把它拖到兩個同級節點之間。" ],
+	},
+	{
+		en: [ "I want to copy or move a branch. How?", "Select its node and press CMD+C to copy or CMD+X to cut it, then select another node and press CMD+V: the branch goes under it." ],
+		cn: [ "我想複製或搬移一個分支，怎麼做？", "選取其節點，按 CMD+C 複製或 CMD+X 剪下，再選另一個節點按 CMD+V，分支即貼到它之下。" ],
 	},
 	{
 		en: [ "I want to delete a node. How?", "Select it and press DELETE or BACKSPACE; everything under it goes with it." ],
@@ -37,12 +49,20 @@ const TASKS = [
 		cn: [ "我想選取節點，怎麼做？", "點一下節點；按住 SHIFT 或 CMD 點擊可加選，按住 SHIFT 拖曳空白處可框選，CMD+A 全選。方向鍵移到那一側最近的節點。" ],
 	},
 	{
-		en: [ "I want to move a node elsewhere. How?", "Drag it onto another node: it becomes that node's last child, with everything under it." ],
-		cn: [ "我想把節點移到別處，怎麼做？", "把它拖到另一個節點上：它連同其下一切成為那個節點的最後一個子節點。" ],
+		en: [ "I want to find a node. How?", `Press CMD+F and type: every node whose words or ${ EN_REMARK } hold them glows. ENTER goes to the next and SHIFT+ENTER back, opening folds on the way; ESC closes the field.` ],
+		cn: [ "我想找一個節點，怎麼做？", `按 CMD+F 後打字：文字或${ REMARK.cn }含有這些字的節點都會發亮。ENTER 到下一個，SHIFT+ENTER 回上一個，途中自動展開；ESC 關閉。` ],
+	},
+	{
+		en: [ "I want to move a node elsewhere. How?", "Drag it onto another node: it becomes that node's last child, with everything under it. Or drag it between two nodes, where a short line marks the place: it goes in there." ],
+		cn: [ "我想把節點移到別處，怎麼做？", "把它拖到另一個節點上：它連同其下一切成為那個節點的最後一個子節點。或把它拖到兩個節點之間，出現一條短線標出位置，放開即插入該處。" ],
 	},
 	{
 		en: [ "I want to fold a branch away. How?", "Select its node and press SPACE, or click the small dot at the node's end; do it again to open it." ],
 		cn: [ "我想收起一個分支，怎麼做？", "選取節點後按空白鍵，或點節點末端的小圓點；再做一次即展開。" ],
+	},
+	{
+		en: [ "I want to see and edit the map as an outline. How?", "Press OUTLINE: the map shows at the left as an indented list, in step with it. Click a line to select its node, double-click to write its words; ENTER, TAB and SHIFT+TAB add nodes as on the map." ],
+		cn: [ "我想以大綱檢視並編輯地圖，怎麼做？", "按「大綱」，地圖即以縮排清單顯示在左側，與地圖同步。點一行選取節點，雙擊改寫文字；ENTER、TAB、SHIFT+TAB 加節點，與在地圖上相同。" ],
 	},
 	{
 		en: [ "I want to join two nodes with a line and label it. How?", "Select both and press ADD under Line, or select one, press ADD and click the other. Double-click the line to write its label. Two nodes take one line." ],

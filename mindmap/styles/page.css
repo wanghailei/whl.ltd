@@ -1,23 +1,30 @@
 /* WHL Mindmap — the shell, and what lies over the canvas: the title line,
-	the notices, the remark, the foot with its key hints; and the help column. */
+	the notices, the remark, the foot with its key hints; the outline column
+	and the help column. */
 @layer page {
-	/* ── Shell: canvas | help | panel, Alluvial's ─────────────────────────
-		One grid, three columns, the column template a class on the shell: a
-		folded column is 0px wide and the change slides. Each column clips, so
-		its content is cut, not squeezed, while it slides. */
+	/* ── Shell: outline | canvas | help | panel, Alluvial's ───────────────
+		One grid, four columns: a folded column is 0px wide, each opened by a
+		class of its own on the shell, and the change slides. Each column
+		clips, so its content is cut, not squeezed, while it slides. */
 	#shell {
+		--outline-open: 0px;
+		--help-open: 0px;
+		--panel-open: 0px;
 		display: grid;
 		grid-template-rows: 1fr;
+		grid-template-columns: var(--outline-open) 1fr var(--help-open) var(--panel-open);
 		width: 100%;
 		height: 100%;
 		transition: grid-template-columns .2s ease;
 	}
-	#shell.show-canvas { grid-template-columns: 1fr 0px 0px; }
-	#shell.show-canvas-panel { grid-template-columns: 1fr 0px var(--panel-column); }
-	#shell.show-canvas-help { grid-template-columns: 1fr var(--help-column) 0px; }
-	#shell.show-canvas-help-panel { grid-template-columns: 1fr var(--help-column) var(--panel-column); }
-	#main, #help, #toolbar { grid-row: 1; min-width: 0; min-height: 0; overflow: hidden; }
-	#main { position: relative; }
+	#shell.with-outline { --outline-open: var(--outline-column); }
+	#shell.with-help { --help-open: var(--help-column); }
+	#shell.with-panel { --panel-open: var(--panel-column); }
+	#outline, #main, #help, #toolbar { grid-row: 1; min-width: 0; min-height: 0; overflow: hidden; }
+	#outline { grid-column: 1; }
+	#main { grid-column: 2; position: relative; }
+	#help { grid-column: 3; }
+	#toolbar { grid-column: 4; }
 
 	/* ── Over the canvas ──────────────────────────────────────────────────
 		The layer takes no pointer events, so the map below takes them; its
@@ -60,7 +67,7 @@
 	/* The toggles are two words with a slash between, the live one in full
 		ink; HELP is one word, in full ink while the help is open. */
 	#tools { display: flex; gap: 5ch; }
-	#language, #appearance, #view, #help-button {
+	#language, #appearance, #view, #help-button, #outline-button {
 		line-height: var(--base-line-height);
 		background: none;
 		border: 0;
@@ -68,8 +75,24 @@
 		cursor: pointer;
 		white-space: pre;
 	}
-	#language span, #appearance span, #view span, #help-button { opacity: .42; }
-	#language span.on, #appearance span.on, #view span.on, #help-button.on { opacity: 1; }
+	#language span, #appearance span, #view span, #help-button, #outline-button { opacity: .42; }
+	#language span.on, #appearance span.on, #view span.on, #help-button.on, #outline-button.on { opacity: 1; }
+
+	/* The find field: its words on the map's own ground, a hairline under
+		them as under the remark, and which match of how many beside it, held back. */
+	#find { display: flex; align-items: baseline; gap: 2ch; width: max-content; margin-top: calc(var(--base-line-height) * var(--base-font-size)); }
+	#find-field {
+		width: 24ch;
+		margin: 0;
+		padding: 0;
+		border: 0;
+		border-bottom: 1px solid var(--line-soft);
+		background: var(--ground);
+		color: inherit;
+		line-height: var(--base-line-height);
+	}
+	#find-field::placeholder { color: inherit; opacity: .45; }
+	#find-count { color: var(--ink-held); font-variant-numeric: tabular-nums; }
 
 	/* A notice keeps a ground of its own: it is transient and must read over whatever map lies behind it. */
 	#note {
@@ -170,4 +193,55 @@
 	/* Each task's question, a small heading held back as a panel section's
 		name is, its answer under it in full ink. */
 	#help-text h3 { margin: 0; font-size: inherit; font-weight: 400; opacity: .55; }
+
+	/* ── Outline: the left column, folded until OUTLINE ───────────────────
+		Like the help, the body is as wide as the open column, so its lines
+		hold still while it slides. A line is a node's words, set in from the
+		left two characters a level, after the mark that folds its children;
+		the selected lines glow as selected nodes do, in the highlight at 40%. */
+	#outline .body {
+		width: var(--outline-column);
+		height: 100%;
+		overflow-y: auto;
+		overflow-x: hidden;
+		overscroll-behavior: none;
+		padding: calc(var(--page-margin) - 4px) var(--page-margin) var(--page-margin) var(--page-margin);
+	}
+	#outline-rows:focus { outline: none; }
+	.outline-row {
+		position: relative;
+		display: flex;
+		align-items: flex-start;
+		padding-left: calc(var(--depth) * 2ch);
+		line-height: var(--base-line-height);
+		cursor: default;
+	}
+	.outline-row.selected::before {
+		content: "";
+		position: absolute;
+		inset: 0 calc(-1 * var(--page-margin) / 2);
+		background: var(--highlight);
+		opacity: .4;
+		pointer-events: none;
+	}
+	.outline-fold, .outline-space { flex: none; width: 2ch; height: calc(var(--base-line-height) * 1em); }
+	.outline-fold { position: relative; display: grid; place-items: center; background: none; border: 0; padding: 0; color: inherit; cursor: pointer; opacity: .55; }
+	.outline-fold:hover { opacity: 1; }
+	.outline-fold svg { width: 12px; height: 12px; }
+	.outline-text { position: relative; min-width: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+	.outline-text.placeholder { color: var(--ink-held); }
+	.outline-field {
+		position: relative;
+		flex: 1;
+		min-width: 0;
+		margin: 0;
+		padding: 0;
+		border: 0;
+		border-bottom: 1px solid var(--line-soft);
+		background: var(--ground);
+		color: inherit;
+		line-height: var(--base-line-height);
+		resize: none;
+		overflow: hidden;
+	}
 }

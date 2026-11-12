@@ -25,6 +25,8 @@ export class Editor {
 		this.listeners = []
 		this.lastGesture = null
 		this.lineFrom = null
+		/* Branches copied, to paste: the page's own, kept while it is open, across maps opened in it. */
+		this.clipboard = []
 	}
 
 	/* Hears every change: { mapChanged } says whether the map itself changed or only the selection. */
@@ -55,6 +57,14 @@ export class Editor {
 
 	select( topic ){
 		this.reselect( Selection.of( topic ) )
+	}
+
+	/* Selects a topic, opening every fold above it first, so it is drawn:
+		 where a search goes to it. The folds opened are a change of the map,
+		 undone as any is; a topic already drawn changes nothing. */
+	uncover( topic ){
+		if( topic.isHidden ) this.change( () => this.unfoldTo( topic.parent ) )
+		this.select( topic )
 	}
 
 	selectMany( topics ){
@@ -100,6 +110,58 @@ export class Editor {
 		return this.addUnder( focus.parent, focus.index + 1 )
 	}
 
+	/* A new empty node put between the focus and its parent, in the focus's
+		 place, the focus under it with everything under that, selected for its
+		 words to be written, at the master's word (2026-11-12, 23:07). The
+		 central node has no parent to put one under. */
+	addParent(){
+		const focus = this.focus
+		if( !focus || focus.isRoot ) return null
+		return this.adding( parent => {
+			focus.parent.adopt( parent, focus.index )
+			parent.adopt( focus )
+		} )
+	}
+
+	/* Moves the focus one place earlier among its siblings, by a step of −1,
+		 or one later, by +1, with everything under it; at either end it stays. */
+	reorder( step ){
+		const focus = this.focus
+		if( !focus || focus.isRoot ) return
+		const place = focus.index + step
+		if( place < 0 || place >= focus.parent.children.length ) return
+		this.change( () => focus.parent.adopt( focus, place ) )
+	}
+
+	// ── Copy and paste ──────────────────────────────────────────────
+
+	/* The selected nodes, each with everything under it, kept to paste, in
+		 the map's order: copies, so changes to the map after do not reach them.
+		 A node under another selected one goes with that one, once. */
+	copy(){
+		const selected = this.selectedTopics
+		const tops = this.map.topics.filter( topic => selected.includes( topic ) && !selected.some( other => other !== topic && other.contains( topic ) ) )
+		if( tops.length > 0 ) this.clipboard = tops.map( topic => this.map.copyOf( topic ) )
+	}
+
+	cut(){
+		this.copy()
+		this.deleteSelected()
+	}
+
+	/* Copies of what was copied, each with identities of its own, become the
+		 last children of the focus, opened if folded, and are selected. */
+	paste(){
+		const parent = this.focus
+		if( !parent || this.clipboard.length === 0 ) return
+		const pasted = this.clipboard.map( topic => this.map.copyOf( topic ) )
+		this.change( () => {
+			this.unfoldTo( parent )
+			for( const topic of pasted ) parent.adopt( topic )
+		} )
+		this.selectMany( pasted )
+	}
+
 	rename( topic, text ){
 		this.change( () => { topic.text = text } )
 	}
@@ -107,7 +169,10 @@ export class Editor {
 	/* The first words of a node just added. Written, they are one step with
 		 the add, which undo takes back together; left empty, the node was never
 		 wanted and goes — withdrawn without a trace when the add is still the
-		 last change, or else taken away as a change of its own. */
+		 last change, or else taken away as a change of its own. Taken away so,
+		 whatever stands under it stays, in its place: a parent added above a
+		 node, then left empty after another change, took the node and its
+		 branch with it (found in review, 2026-11-13). */
 	finishWriting( topic, text ){
 		if( text.trim() !== "" ){
 			this.change( () => { topic.text = text }, Editor.writing( topic ) )
@@ -116,7 +181,11 @@ export class Editor {
 		const before = this.history.withdraw( Editor.writing( topic ) )
 		if( before === null ){
 			const left = this.map.find( topic.id )
-			if( left && left.text === "" ) this.change( () => this.map.remove( left ) )
+			if( left && left.text === "" ) this.change( () => {
+				const [ parent, place ] = [ left.parent, left.index ]
+				for( const [ at, child ] of [ ...left.children ].entries() ) parent.adopt( child, place + 1 + at )
+				this.map.remove( left )
+			} )
 			return
 		}
 		this.map = this.file.read( before )
@@ -147,12 +216,16 @@ export class Editor {
 		this.select( this.map.find( nearest.id ) ?? this.map.root )
 	}
 
-	/* Moves a node, with everything under it, to be the last child of another.
-		 Says whether the map changed: a node cannot go under itself or anything
-		 under it, and one dropped where it already is changes nothing. */
-	move( topic, parent ){
+	/* Moves a node, with everything under it, under another: to a place
+		 among its children, counted as they stand before the move, or else to
+		 be its last child. Says whether the map changed: a node cannot go under
+		 itself or anything under it, and one dropped where it already is
+		 changes nothing. */
+	move( topic, parent, place = parent.children.length ){
 		if( topic.isRoot || topic.contains( parent ) ) return false
-		return this.change( () => parent.adopt( topic ) )
+		/* Taken out from before the place, the node leaves one fewer before it. */
+		const index = topic.parent === parent && topic.index < place ? place - 1 : place
+		return this.change( () => parent.adopt( topic, index ) )
 	}
 
 	toggleFold(){
@@ -351,19 +424,29 @@ export class Editor {
 		if( line ) this.change( () => mutation( line ), gesture )
 	}
 
-	/* What was selected before the add is kept, for an empty node to go back
-		 to. The new node is selected without ending the gesture of its add, so
-		 its first words join it. */
 	addUnder( parent, index ){
-		this.beforeAdding = this.selection
-		const child = this.map.newTopic()
-		this.change( () => {
-			for( let opening = parent; opening; opening = opening.parent ) opening.folded = false
+		return this.adding( child => {
+			this.unfoldTo( parent )
 			parent.adopt( child, index )
-		}, Editor.writing( child ) )
-		this.selection = Selection.of( child )
+		} )
+	}
+
+	/* A new empty node, put in the tree by `place`. What was selected before
+		 the add is kept, for an empty node to go back to. The new node is
+		 selected without ending the gesture of its add, so its first words
+		 join it. */
+	adding( place ){
+		this.beforeAdding = this.selection
+		const topic = this.map.newTopic()
+		this.change( () => place( topic ), Editor.writing( topic ) )
+		this.selection = Selection.of( topic )
 		this.announce( { mapChanged: false } )
-		return child
+		return topic
+	}
+
+	/* Opens every fold from a topic up, so it and its children are drawn. */
+	unfoldTo( topic ){
+		for( let opening = topic; opening; opening = opening.parent ) opening.folded = false
 	}
 
 	/* The gesture of adding a node and writing its first words. */

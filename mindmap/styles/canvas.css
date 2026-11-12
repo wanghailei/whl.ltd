@@ -33,6 +33,15 @@
 	.halo { stroke-width: 3; filter: blur(1px); }
 	.topic.selected .halo { display: inline; }
 	.topic.drop-target .halo { display: inline; stroke-dasharray: 4 3; }
+	/* While the find field is open, every node it finds glows in the
+		highlight, and the one gone to, being selected, glows stronger.
+		Behaviour (by eye): the one gone to stands out among the others found. */
+	.topic.found .halo { display: inline; }
+	.topic.found.selected .halo { stroke-opacity: .9; stroke-width: 4; }
+	/* While a node is dragged between two siblings, a short line in the
+		interface's ink marks the gap it would go into.
+		Behaviour (by eye): the marker reads on light and dark canvases alike. */
+	.gap-marker { fill: none; stroke: var(--ink); stroke-width: 2; stroke-linecap: round; pointer-events: none; }
 	.line, .line-target, .branch-target { cursor: pointer; }
 	/* A line is pressed by its wide unseen target, which lies under the
 		nodes; its drawn stroke, and an arc's edge under it, take no press, so

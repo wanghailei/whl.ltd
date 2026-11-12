@@ -139,6 +139,15 @@ export class MindMap {
 		return new Topic( { ...fields, id: "n" + this.counters.topic } )
 	}
 
+	/* A copy of a topic and everything under it, words, remarks, folds and
+		 styles, each given an identity of this map's; it is not yet in the tree.
+		 Styles are frozen values, so the copies share them. */
+	copyOf( topic ){
+		const copy = this.newTopic( { text: topic.text, remark: topic.remark, folded: topic.folded, style: topic.style, branch: topic.branch } )
+		for( const child of topic.children ) copy.adopt( this.copyOf( child ) )
+		return copy
+	}
+
 	/* The central node stays: a map without one is not a map. */
 	remove( topic ){
 		if( topic.isRoot ) return

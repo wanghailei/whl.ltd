@@ -15,10 +15,16 @@
 </head>
 <body>
 
-<!-- The shell, Alluvial's: one grid of three columns — the canvas, the help,
-	the control panel — whose column template is a class on the shell. A
-	folded column is 0px wide and the change slides. -->
-<div id="shell" class="show-canvas-panel">
+<!-- The shell, Alluvial's: one grid of four columns — the outline, the
+	canvas, the help, the control panel — each folded column 0px wide, opened
+	by a class of its own on the shell, and the change slides. -->
+<div id="shell" class="with-panel">
+
+<!-- The outline: the map as an indented list, kept in step with it, folded
+	until OUTLINE. Its lines are written by the page. -->
+<aside id="outline">
+<div class="body"><button class="sheet-close" type="button" aria-label="close" data-cn-aria-label="關閉"><svg viewBox="0 0 32 32" fill="currentColor" aria-hidden="true"><path d="M24 9.4 22.6 8 16 14.6 9.4 8 8 9.4 14.6 16 8 22.6 9.4 24 16 17.4 22.6 24 24 22.6 17.4 16z"/></svg></button><div id="outline-rows" role="tree" tabindex="-1" aria-label="Outline" data-cn-aria-label="大綱"></div></div>
+</aside>
 
 <main id="main">
 <!-- The map. The stage takes every pointer and wheel; the SVG draws the map
@@ -39,7 +45,11 @@
 <button id="appearance" title="Light or dark map" data-cn-title="淺色或深色地圖" aria-label="Light or dark map" data-cn-aria-label="淺色或深色地圖"><span id="appearance-light" data-cn="淺">LIGHT</span><span>/</span><span id="appearance-dark" class="on" data-cn="深">DARK</span></button>
 <button id="view" title="Show or hide the control panel" data-cn-title="顯示或隱藏操作面板" aria-label="Show or hide the control panel" data-cn-aria-label="顯示或隱藏操作面板"><span id="view-full" data-cn="全螢幕">FULLSCREEN</span><span>/</span><span id="view-panel" class="on" data-cn="面板">PANEL</span></button>
 <button id="help-button" title="Open or fold the help" data-cn-title="開啟或收起幫助" aria-label="Open or fold the help" data-cn-aria-label="開啟或收起幫助" data-cn="幫助">HELP</button>
+<button id="outline-button" title="Open or fold the outline" data-cn-title="開啟或收起大綱" aria-label="Open or fold the outline" data-cn-aria-label="開啟或收起大綱" data-cn="大綱">OUTLINE</button>
 </div></div>
+<!-- The find field, under the title line while Cmd+F has it open: the words
+	to find, and which match of how many was gone to. -->
+<div id="find" class="hidden"><input id="find-field" type="text" spellcheck="false" autocomplete="off" placeholder="Find" data-cn-placeholder="搜尋" aria-label="Find nodes by their words or remark" data-cn-aria-label="以文字或備註搜尋節點"><span id="find-count" aria-live="polite"></span></div>
 <div id="note" class="hidden" role="status"></div>
 </div>
 
@@ -56,7 +66,7 @@
 	folds between hints; nor does the space before each separator, so a
 	folded line never starts with one. -->
 <div id="foot-line">
-<div id="keys" data-cn="TAB&nbsp;子節點&nbsp;· ENTER&nbsp;同級節點&nbsp;· DELETE&nbsp;刪除&nbsp;· 方向鍵&nbsp;切換節點&nbsp;· CMD+Z&nbsp;復原&nbsp;· CMD+SHIFT+Z&nbsp;重做&nbsp;· CMD+0&nbsp;置中">TAB&nbsp;child&nbsp;· ENTER&nbsp;sibling&nbsp;· DELETE&nbsp;delete&nbsp;· ARROWS&nbsp;move&nbsp;between&nbsp;nodes&nbsp;· CMD+Z&nbsp;undo&nbsp;· CMD+SHIFT+Z&nbsp;redo&nbsp;· CMD+0&nbsp;centre</div>
+<div id="keys" data-cn="TAB&nbsp;子節點&nbsp;· SHIFT+TAB&nbsp;父節點&nbsp;· ENTER&nbsp;同級節點&nbsp;· DELETE&nbsp;刪除&nbsp;· 方向鍵&nbsp;切換節點&nbsp;· ALT+↑↓&nbsp;調整順序&nbsp;· CMD+C/X/V&nbsp;複製、剪下、貼上&nbsp;· CMD+F&nbsp;搜尋&nbsp;· CMD+Z&nbsp;復原&nbsp;· CMD+SHIFT+Z&nbsp;重做&nbsp;· CMD+0&nbsp;置中">TAB&nbsp;child&nbsp;· SHIFT+TAB&nbsp;parent&nbsp;· ENTER&nbsp;sibling&nbsp;· DELETE&nbsp;delete&nbsp;· ARROWS&nbsp;move&nbsp;between&nbsp;nodes&nbsp;· ALT+↑↓&nbsp;reorder&nbsp;· CMD+C/X/V&nbsp;copy,&nbsp;cut,&nbsp;paste&nbsp;· CMD+F&nbsp;find&nbsp;· CMD+Z&nbsp;undo&nbsp;· CMD+SHIFT+Z&nbsp;redo&nbsp;· CMD+0&nbsp;centre</div>
 </div>
 </div>
 </div>

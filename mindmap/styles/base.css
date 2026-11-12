@@ -35,6 +35,7 @@
 		--panel-width-wide: calc(var(--panel-width) * 2);
 		--panel-column: calc(var(--panel-width) + var(--page-margin) - 10px);
 		--help-column: calc(var(--panel-column) * 2);
+		--outline-column: var(--panel-column);
 		/* The ground is the map's own background; the page sets it with the
 			map. The ink and the interface's lines turn black on a light ground. */
 		--ground: #0b0b0b;

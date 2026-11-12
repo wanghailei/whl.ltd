@@ -33,6 +33,8 @@ const WORDS = {
 		draftSetAside: () => "The map kept in this browser could not be opened — it may come from a newer Mindmap — so it has been set aside, untouched, and a new map begun. Save it as a file to open it in the Mindmap that made it.",
 		draftLost: () => "The map kept in this browser could not be opened, and the browser would not keep a copy apart, so this new map has taken its place. Save it as a file now to keep it.",
 		saveSetAside: () => "Save it",
+		foldBranch: () => "Fold",
+		openBranch: () => "Open",
 	},
 	cn: {
 		remark: () => REMARK.cn,
@@ -51,6 +53,8 @@ const WORDS = {
 		draftSetAside: () => "存在這個瀏覽器的地圖無法開啟——可能來自較新的 Mindmap——已原封不動另存一旁，並開了一張新地圖。把它存成檔案，便可在製作它的 Mindmap 中開啟。",
 		draftLost: () => "存在這個瀏覽器的地圖無法開啟，瀏覽器也不肯另存一份，所以這張新地圖已取代它。請立刻把它存成檔案保留。",
 		saveSetAside: () => "存成檔案",
+		foldBranch: () => "收起",
+		openBranch: () => "展開",
 	},
 }
 
