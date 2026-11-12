@@ -1,0 +1,170 @@
+/* WHL Mindmap — the shell, and what lies over the canvas: the title line,
+	the notices, the remark, the foot with its key hints; and the help column. */
+@layer page {
+	/* ── Shell: canvas | help | panel, Alluvial's ─────────────────────────
+		One grid, three columns, the column template a class on the shell: a
+		folded column is 0px wide and the change slides. Each column clips, so
+		its content is cut, not squeezed, while it slides. */
+	#shell {
+		display: grid;
+		grid-template-rows: 1fr;
+		width: 100%;
+		height: 100%;
+		transition: grid-template-columns .2s ease;
+	}
+	#shell.show-canvas { grid-template-columns: 1fr 0px 0px; }
+	#shell.show-canvas-panel { grid-template-columns: 1fr 0px var(--panel-column); }
+	#shell.show-canvas-help { grid-template-columns: 1fr var(--help-column) 0px; }
+	#shell.show-canvas-help-panel { grid-template-columns: 1fr var(--help-column) var(--panel-column); }
+	#main, #help, #toolbar { grid-row: 1; min-width: 0; min-height: 0; overflow: hidden; }
+	#main { position: relative; }
+
+	/* ── Over the canvas ──────────────────────────────────────────────────
+		The layer takes no pointer events, so the map below takes them; its
+		children take them back, which also makes their text selectable. */
+	#foreground {
+		position: absolute;
+		inset: 0;
+		z-index: var(--z-foreground);
+		display: grid;
+		grid-template-columns: var(--panel-width-wide) 1fr;
+		grid-template-rows: auto 1fr auto;
+		gap: var(--base-edge-gap);
+		padding: var(--base-edge-gap);
+		padding-bottom: calc(var(--base-edge-gap) + env(safe-area-inset-bottom));
+		pointer-events: none;
+	}
+	#foreground > * { pointer-events: auto; }
+	/* The foot spans the canvas and, with the remark, stands tall over it:
+		only what is in it takes the pointer, so the map under the rest of it
+		can still be pressed, dragged and scrolled (found in review, 2026-11-12). */
+	#foreground > #foot, #foot-line { pointer-events: none; }
+	#remark-area { pointer-events: auto; }
+
+	#lead {
+		grid-column: 1;
+		grid-row: 1;
+		margin: calc(var(--page-margin) - var(--base-edge-gap));
+		-webkit-user-select: text;
+		user-select: text;
+	}
+
+	/* The title line: the name and version, then the toggles five characters
+		on and five apart — a flex row, so nothing is measured. */
+	#title-line { display: flex; gap: 5ch; margin-bottom: calc(var(--base-line-height) * var(--base-font-size)); }
+	/* The name is one line whatever the column is wide: it may run past it over the canvas, never fold. */
+	#title { font-weight: 500; white-space: nowrap; }
+	/* The version shares the title's line but not its voice: a stamp, not part of the name. */
+	#version { font-weight: 400; opacity: .4; }
+
+	/* The toggles are two words with a slash between, the live one in full
+		ink; HELP is one word, in full ink while the help is open. */
+	#tools { display: flex; gap: 5ch; }
+	#language, #appearance, #view, #help-button {
+		line-height: var(--base-line-height);
+		background: none;
+		border: 0;
+		padding: 0;
+		cursor: pointer;
+		white-space: pre;
+	}
+	#language span, #appearance span, #view span, #help-button { opacity: .42; }
+	#language span.on, #appearance span.on, #view span.on, #help-button.on { opacity: 1; }
+
+	/* A notice keeps a ground of its own: it is transient and must read over whatever map lies behind it. */
+	#note {
+		margin-top: calc(var(--base-line-height) * var(--base-font-size));
+		width: max-content;
+		max-width: var(--panel-width-wide);
+		padding: 8px 18px;
+		background: var(--tile-fill);
+		backdrop-filter: blur(16px) saturate(1.2);
+		-webkit-backdrop-filter: blur(16px) saturate(1.2);
+		color: #ffffff;
+	}
+
+	#foot {
+		grid-column: 1 / 3;
+		grid-row: 3;
+		align-self: end;
+		margin: calc(var(--page-margin) - var(--base-edge-gap));
+		-webkit-user-select: text;
+		user-select: text;
+	}
+	/* The key hints at the left of the foot's line. Where the line is too
+		short for them, they fold onto lines of their own above. */
+	#foot-line { display: flex; align-items: flex-end; }
+	/* Quiet: held back as an unchosen word is, never in the way. They stand
+		on a backdrop of the canvas's own colour, a little wider than the words,
+		so where the map runs under them no node's words show through (found in
+		use, 2026-11-12); the edge is a shadow, so the words do not move.
+		Behaviour (by eye): the hints read as quieter than the words of the page. */
+	#keys {
+		min-width: 0;
+		text-align: left;
+		color: var(--ink-held);
+		background: var(--ground);
+		box-shadow: 0 0 0 4px var(--ground);
+	}
+	/* The hints are only read, so they take no pointer: folded, they cover a
+		block of the canvas, and the map under it still takes presses and scrolls. */
+
+	/* The remark: a fixed width, fixed at the bottom centre of the canvas,
+		standing on the foot, whichever node is selected and wherever the map
+		is moved. Its ground is the map's, so it reads over any map behind it;
+		it keeps a hairline to show where it can be written. It has no title:
+		its name is its placeholder. Empty and not typed in, it is barely
+		there, placeholder and hairline very faint, and the map shows through
+		it, so it hides nothing; with words in it, or while it is typed in,
+		both come up to their usual strength, on the map's own ground.
+		Behaviour (by eye): the remark reads over any map behind it. */
+	/* Half the canvas's width, at the master's word (2026-11-12), and no wider
+		than 640px: the foot is the canvas less a page margin each side. */
+	#remark-area {
+		width: min(640px, (100% + 2 * var(--page-margin)) / 2);
+		margin: 0 auto calc(var(--base-line-height) * var(--base-font-size));
+	}
+	#remark {
+		display: block;
+		width: 100%;
+		margin: 0;
+		padding: 0;
+		border: 0;
+		border-bottom: 1px solid var(--line-soft);
+		background: var(--ground);
+		color: inherit;
+		line-height: var(--base-line-height);
+		resize: none;
+	}
+	#remark::placeholder { color: inherit; opacity: .45; }
+	#remark:placeholder-shown:not(:focus) { border-bottom-color: var(--line-faint); background: transparent; }
+	#remark:placeholder-shown:not(:focus)::placeholder { opacity: .18; }
+
+	/* ── Help: the middle column, twice the panel's, folded until HELP ────
+		The body is as wide as the open column, so the prose holds still while
+		the column slides shut over it. */
+	#help .body {
+		width: var(--help-column);
+		height: 100%;
+		overflow-y: auto;
+		overflow-x: hidden;
+		overscroll-behavior: none;
+		padding: calc(var(--page-margin) - 4px) var(--page-margin) var(--page-margin) var(--page-margin);
+		-webkit-user-select: text;
+		user-select: text;
+	}
+	/* The sheet opens under its door, the Carbon close icon at 16px, a blank line between door and text. */
+	.sheet-close {
+		display: block;
+		background: none;
+		border: 0;
+		padding: 0;
+		color: inherit;
+		cursor: pointer;
+		opacity: .55;
+		margin-bottom: calc(var(--base-line-height) * var(--base-font-size));
+	}
+	.sheet-close:hover { opacity: 1; }
+	.sheet-close svg { display: block; width: 16px; height: 16px; }
+	#help-text p { margin: 0 0 calc(var(--base-line-height) * var(--base-font-size)); }
+}

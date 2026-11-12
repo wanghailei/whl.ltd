@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<!-- WHL Mindmap: a single-page mind-map editor. What it does and how it is
+	used: SPEC.md; how to run it: README.md. Everything runs in this page;
+	nothing is sent anywhere. -->
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>WHL Mindmap</title>
+<link rel="stylesheet" href="styles/base.css">
+<link rel="stylesheet" href="styles/page.css">
+<link rel="stylesheet" href="styles/panel.css">
+<link rel="stylesheet" href="styles/picker.css">
+<link rel="stylesheet" href="styles/canvas.css">
+</head>
+<body>
+
+<!-- The shell, Alluvial's: one grid of three columns — the canvas, the help,
+	the control panel — whose column template is a class on the shell. A
+	folded column is 0px wide and the change slides. -->
+<div id="shell" class="show-canvas-panel">
+
+<main id="main">
+<!-- The map. The stage takes every pointer and wheel; the SVG draws the map
+	inside one group the view moves and scales. -->
+<div id="stage">
+<svg id="map" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="The mind map" data-cn-aria-label="心智圖"><g id="viewport"></g></svg>
+<div id="marquee" class="hidden"></div>
+<textarea id="text-editor" class="hidden" spellcheck="false" aria-label="Node text" data-cn-aria-label="節點文字"></textarea>
+</div>
+
+<!-- The toggles, the notices, the remark and the foot lie over the canvas.
+	The layer takes no pointer events, so clicks fall through to the map; its
+	children take them back. -->
+<div id="foreground">
+<div id="lead">
+<div id="title-line"><div id="title"></div><div id="tools">
+<button id="language" title="Interface language" data-cn-title="介面語言" aria-label="Interface language" data-cn-aria-label="介面語言"><span id="language-en" class="on">EN</span><span>/</span><span id="language-cn">CN</span></button>
+<button id="appearance" title="Light or dark map" data-cn-title="淺色或深色地圖" aria-label="Light or dark map" data-cn-aria-label="淺色或深色地圖"><span id="appearance-light" data-cn="淺">LIGHT</span><span>/</span><span id="appearance-dark" class="on" data-cn="深">DARK</span></button>
+<button id="view" title="Show or hide the control panel" data-cn-title="顯示或隱藏操作面板" aria-label="Show or hide the control panel" data-cn-aria-label="顯示或隱藏操作面板"><span id="view-full" data-cn="全螢幕">FULLSCREEN</span><span>/</span><span id="view-panel" class="on" data-cn="面板">PANEL</span></button>
+<button id="help-button" title="Open or fold the help" data-cn-title="開啟或收起幫助" aria-label="Open or fold the help" data-cn-aria-label="開啟或收起幫助" data-cn="幫助">HELP</button>
+</div></div>
+<div id="note" class="hidden" role="status"></div>
+</div>
+
+<div id="foot">
+<!-- The selected node's remark, fixed at the bottom centre of the canvas:
+	content, so by the map and not among the controls. It has no title: the
+	page gives the field its name, in the live language, as its placeholder. -->
+<div id="remark-area" class="hidden">
+<textarea id="remark" rows="3" spellcheck="false"></textarea>
+</div>
+<!-- The foot's line: held back, at its left, the main keys, in the keyboard
+	map's own words (SPEC.md, The keyboard); double-click edits a node too but
+	is not listed. Within a hint the spaces do not break, so a narrow line
+	folds between hints; nor does the space before each separator, so a
+	folded line never starts with one. -->
+<div id="foot-line">
+<div id="keys" data-cn="TAB&nbsp;子節點&nbsp;· ENTER&nbsp;同級節點&nbsp;· DELETE&nbsp;刪除&nbsp;· 方向鍵&nbsp;切換節點&nbsp;· CMD+Z&nbsp;復原&nbsp;· CMD+SHIFT+Z&nbsp;重做&nbsp;· CMD+0&nbsp;置中">TAB&nbsp;child&nbsp;· ENTER&nbsp;sibling&nbsp;· DELETE&nbsp;delete&nbsp;· ARROWS&nbsp;move&nbsp;between&nbsp;nodes&nbsp;· CMD+Z&nbsp;undo&nbsp;· CMD+SHIFT+Z&nbsp;redo&nbsp;· CMD+0&nbsp;centre</div>
+</div>
+</div>
+</div>
+</main>
+
+<!-- The help: twice the control panel's width, folded until HELP. Its body
+	is as wide as the open column, so the text holds still while it slides. -->
+<aside id="help">
+<div class="body"><button class="sheet-close" type="button" aria-label="close" data-cn-aria-label="關閉"><svg viewBox="0 0 32 32" fill="currentColor" aria-hidden="true"><path d="M24 9.4 22.6 8 16 14.6 9.4 8 8 9.4 14.6 16 8 22.6 9.4 24 16 17.4 22.6 24 24 22.6 17.4 16z"/></svg></button><div id="help-text"></div></div>
+</aside>
+
+<aside id="toolbar">
+<div id="rail">
+<div id="blocks">
+
+<!-- File: the map's own file in and out. -->
+<section class="panel">
+	<h2 data-cn="檔案">File</h2>
+	<div class="control-row">
+		<button class="word" data-command="new" data-cn="新建">New</button>
+		<button class="word" data-command="open" data-cn="開啟">Open</button>
+		<button class="word" data-command="save" data-cn="儲存">Save</button>
+	</div>
+</section>
+
+<!-- Output: the map as a picture or an outline. -->
+<section class="panel">
+	<h2 data-cn="輸出">Output</h2>
+	<div class="control-row">
+		<button class="word" data-command="png">PNG</button>
+		<button class="word" data-command="svg">SVG</button>
+		<button class="word" data-command="pdf">PDF</button>
+		<button class="word" data-command="markdown">MD</button>
+	</div>
+</section>
+
+<!-- The map as a whole: its layout, its theme and the canvas it stands on. -->
+<section class="panel">
+	<h2 data-cn="佈局">Layout</h2>
+	<div class="control-row group" data-map="layout">
+		<button class="word" data-value="right" data-cn="右展">Right</button>
+		<button class="word" data-value="both" data-cn="兩側">Both</button>
+		<button class="word" data-value="down" data-cn="向下">Down</button>
+	</div>
+</section>
+
+<section class="panel">
+	<h2 data-cn="主題">Theme</h2>
+	<div class="control-row group" data-map="theme">
+		<button class="word" data-value="mono" data-cn="墨">Mono</button>
+		<button class="word" data-value="spectrum" data-cn="光譜">Spectrum</button>
+		<button class="word" data-value="ocean" data-cn="海洋">Ocean</button>
+		<button class="word" data-value="earth" data-cn="大地">Earth</button>
+		<button class="word" data-value="dusk" data-cn="暮色">Dusk</button>
+	</div>
+	<div class="control-row">
+		<span class="label" data-cn="畫布">Canvas</span>
+		<button type="button" class="chip" data-for="canvas-colour" title="Pick" data-cn-title="取色" aria-label="Pick the canvas colour" data-cn-aria-label="為畫布取色"></button>
+		<input type="text" class="hex" id="canvas-colour" data-setting="canvas" spellcheck="false" aria-label="Canvas colour" data-cn-aria-label="畫布顏色">
+	</div>
+</section>
+
+<!-- View: how large the map is shown, never how large it is exported. -->
+<section class="panel">
+	<h2 data-cn="檢視">View</h2>
+	<div class="control-row">
+		<span class="label" data-cn="縮放">Zoom</span>
+		<button class="word" data-command="zoom-out" title="Zoom out by 10%" data-cn-title="縮小 10%" aria-label="Zoom out by 10%" data-cn-aria-label="縮小 10%">−</button>
+		<button class="word" data-command="zoom-in" title="Zoom in by 10%" data-cn-title="放大 10%" aria-label="Zoom in by 10%" data-cn-aria-label="放大 10%">+</button>
+		<span class="value" id="zoom-value"></span>
+		<button class="word" data-command="centre" data-cn="置中">Centre</button>
+	</div>
+	<div class="control-row">
+		<span class="label" data-cn="醒目色">Highlight</span>
+		<button type="button" class="chip" data-for="highlight-colour" title="Pick" data-cn-title="取色" aria-label="Pick the highlight colour" data-cn-aria-label="為醒目色取色"></button>
+		<input type="text" class="hex" id="highlight-colour" data-setting="highlight" spellcheck="false" aria-label="Highlight colour" data-cn-aria-label="醒目色">
+	</div>
+</section>
+
+<!-- Below here the panel's sections show only with a selection: the
+	Line section's ADD is always there, its own rows only with a line
+	selected; Node and Branch only with nodes selected. They stand under every
+	section always shown, so showing or hiding them moves nothing else. -->
+
+<!-- Line: auxiliary lines between any two nodes. ADD is always here; the
+	rows under it are the selected line's own. -->
+<section class="panel" id="line-panel">
+	<h2 data-cn="輔助線">Line</h2>
+	<div class="control-row">
+		<button class="word" data-command="add-line" data-cn="新增">Add</button>
+	</div>
+	<div id="line-rows">
+		<div class="control-row">
+			<span class="label" data-cn="標籤">Label</span>
+			<input type="text" id="line-label" class="wide" spellcheck="false" aria-label="Line label" data-cn-aria-label="輔助線標籤">
+		</div>
+		<div class="control-row group" data-line-arrows>
+			<span class="label" data-cn="箭頭">Arrow</span>
+			<button class="word" data-value="none" data-cn="無">None</button>
+			<button class="word" data-value="start" data-cn="起">Start</button>
+			<button class="word" data-value="end" data-cn="終">End</button>
+			<button class="word" data-value="both" data-cn="兩端">Both</button>
+		</div>
+		<div class="control-row group" data-style="line" data-property="shape">
+			<button class="word" data-value="curve" data-cn="曲線">Curve</button>
+			<button class="word" data-value="straight" data-cn="直線">Straight</button>
+		</div>
+		<div class="control-row">
+			<span class="label" data-cn="顏色">Colour</span>
+			<button type="button" class="chip" data-for="line-colour" title="Pick" data-cn-title="取色" aria-label="Pick the line colour" data-cn-aria-label="為輔助線取色"></button>
+			<input type="text" class="hex" id="line-colour" data-style="line" data-property="colour" spellcheck="false" aria-label="Line colour" data-cn-aria-label="輔助線顏色">
+		</div>
+		<div class="control-row">
+			<span class="label" data-cn="寬度">Width</span>
+			<input type="range" id="line-width" data-style="line" data-property="width" min="0.5" max="12" step="0.25" aria-label="Line width" data-cn-aria-label="輔助線寬度">
+			<span class="value" data-shows="line-width"></span>
+		</div>
+		<div class="control-row group" data-style="line" data-property="dash">
+			<button class="word" data-value="solid" data-cn="實線">Solid</button>
+			<button class="word" data-value="dashed" data-cn="虛線">Dashed</button>
+		</div>
+		<div class="control-row">
+			<button class="word" data-command="default-line" data-cn="設為預設">Set as default</button>
+			<button class="word" data-command="delete-line" data-cn="刪除">Delete</button>
+		</div>
+	</div>
+</section>
+
+<!-- Node: the selected nodes' look. Shown while nodes are selected. -->
+<section class="panel" id="node-panel">
+	<h2 id="node-heading">Node</h2>
+	<div class="control-row group" data-style="node" data-property="shape">
+		<button class="word" data-value="box" data-cn="方">Box</button>
+		<button class="word" data-value="round" data-cn="圓角">Round</button>
+		<button class="word" data-value="pill" data-cn="膠囊">Pill</button>
+		<button class="word" data-value="none" data-cn="無">None</button>
+	</div>
+	<div class="control-row">
+		<span class="label" data-cn="填色">Fill</span>
+		<button type="button" class="chip" data-for="node-fill" title="Pick" data-cn-title="取色" aria-label="Pick the fill" data-cn-aria-label="為填色取色"></button>
+		<input type="text" class="hex" id="node-fill" data-style="node" data-property="fill" spellcheck="false" aria-label="Fill" data-cn-aria-label="填色">
+	</div>
+	<div class="control-row">
+		<span class="label" data-cn="層級填色">Level fill</span>
+		<button type="button" class="chip" data-for="level-fill" title="Pick" data-cn-title="取色" aria-label="Pick the level's fill" data-cn-aria-label="為層級填色取色"></button>
+		<input type="text" class="hex" id="level-fill" data-setting="level-fill" spellcheck="false" placeholder="not set" data-cn-placeholder="未設定" aria-label="Level fill" data-cn-aria-label="層級填色">
+	</div>
+	<div class="control-row">
+		<span class="label" data-cn="邊框">Border</span>
+		<button type="button" class="chip" data-for="node-border" title="Pick" data-cn-title="取色" aria-label="Pick the border" data-cn-aria-label="為邊框取色"></button>
+		<input type="text" class="hex" id="node-border" data-style="node" data-property="border" spellcheck="false" aria-label="Border" data-cn-aria-label="邊框">
+	</div>
+	<div class="control-row">
+		<span class="label" data-cn="寬度">Width</span>
+		<input type="range" id="node-border-width" data-style="node" data-property="borderWidth" min="0" max="8" step="0.5" aria-label="Border width" data-cn-aria-label="邊框寬度">
+		<span class="value" data-shows="node-border-width"></span>
+	</div>
+	<div class="control-row group" data-style="node" data-property="font">
+		<button class="word" data-value="mono" data-cn="等寬">Mono</button>
+		<button class="word" data-value="sans" data-cn="無襯線">Sans</button>
+		<button class="word" data-value="serif" data-cn="襯線">Serif</button>
+	</div>
+	<div class="control-row">
+		<span class="label" data-cn="字級">Size</span>
+		<input type="range" id="node-font-size" data-style="node" data-property="fontSize" min="8" max="72" step="1" aria-label="Font size" data-cn-aria-label="字級">
+		<span class="value" data-shows="node-font-size"></span>
+	</div>
+	<div class="control-row">
+		<span class="label" data-cn="字色">Text</span>
+		<button type="button" class="chip" data-for="node-text-colour" title="Pick" data-cn-title="取色" aria-label="Pick the text colour" data-cn-aria-label="為字色取色"></button>
+		<input type="text" class="hex" id="node-text-colour" data-style="node" data-property="textColour" spellcheck="false" aria-label="Text colour" data-cn-aria-label="字色">
+	</div>
+	<div class="control-row">
+		<button class="word" data-command="default-node" data-cn="設為預設">Set as default</button>
+		<button class="word" data-command="clear-style" data-cn="清除">Clear</button>
+	</div>
+</section>
+
+<!-- Branch: the lines from the selected nodes to their parents. -->
+<section class="panel" id="branch-panel">
+	<h2 data-cn="分支">Branch</h2>
+	<div class="control-row group" data-style="branch" data-property="shape">
+		<button class="word" data-value="curve" data-cn="曲線">Curve</button>
+		<button class="word" data-value="elbow" data-cn="折線">Elbow</button>
+		<button class="word" data-value="straight" data-cn="直線">Straight</button>
+	</div>
+	<div class="control-row">
+		<span class="label" data-cn="顏色">Colour</span>
+		<button type="button" class="chip" data-for="branch-colour" title="Pick" data-cn-title="取色" aria-label="Pick the branch colour" data-cn-aria-label="為分支取色"></button>
+		<input type="text" class="hex" id="branch-colour" data-style="branch" data-property="colour" spellcheck="false" aria-label="Branch colour" data-cn-aria-label="分支顏色">
+	</div>
+	<div class="control-row">
+		<span class="label" data-cn="寬度">Width</span>
+		<input type="range" id="branch-width" data-style="branch" data-property="width" min="0.5" max="12" step="0.5" aria-label="Branch width" data-cn-aria-label="分支寬度">
+		<span class="value" data-shows="branch-width"></span>
+	</div>
+	<div class="control-row group" data-style="branch" data-property="dash">
+		<button class="word" data-value="solid" data-cn="實線">Solid</button>
+		<button class="word" data-value="dashed" data-cn="虛線">Dashed</button>
+	</div>
+</section>
+
+</div>
+</div>
+<!-- The copyright stands at the panel's foot, below what scrolls. -->
+<div id="copy">© 2026 Wanted Hacker Limited</div>
+</aside>
+
+</div>
+
+<!-- The colour picker, the house's (the Gradient tool's): a hue strip over a
+	chroma × lightness field. Opened from the chip beside any hex field, it
+	edits that field. It floats over the shell, so it stands outside it. The
+	close icon is an IBM Carbon Design System glyph (Apache-2.0). -->
+<div id="picker" class="hidden">
+	<button id="picker-close" type="button" title="Close" data-cn-title="關閉" aria-label="Close" data-cn-aria-label="關閉"><svg viewBox="0 0 32 32" fill="currentColor" aria-hidden="true"><path d="M24 9.4 22.6 8 16 14.6 9.4 8 8 9.4 14.6 16 8 22.6 9.4 24 16 17.4 22.6 24 24 22.6 17.4 16z"/></svg></button>
+	<div id="hue-wrap"><canvas id="hue" width="176" height="14"></canvas><div id="hue-dot"></div></div>
+	<div id="field-wrap"><canvas id="field" width="132" height="88"></canvas><div id="dot"></div></div>
+	<div class="picker-row"><input type="text" id="picker-hex" spellcheck="false" aria-label="Hex" data-cn-aria-label="十六進位色碼"></div>
+</div>
+
+<input type="file" id="open-file" accept=".json,.md,.markdown,.txt,application/json,text/markdown,text/plain" hidden>
+
+<script type="module" src="src/page/page.js"></script>
+
+</body>
+</html>

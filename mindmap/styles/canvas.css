@@ -1,0 +1,64 @@
+/* WHL Mindmap — the map on its canvas: the stage, the selection, the fold
+	dots, the drop target, the rectangle of a Shift-drag, and the field a
+	node's text is typed in. */
+@layer canvas {
+	#stage {
+		position: absolute;
+		inset: 0;
+		overflow: hidden;
+		background: var(--ground);
+		cursor: grab;
+		touch-action: none;
+	}
+	#stage.panning { cursor: grabbing; }
+	#stage.joining, #stage.joining .topic { cursor: crosshair; }
+	#map { display: block; width: 100%; height: 100%; }
+
+	.topic { cursor: pointer; }
+	.topic.dragging { opacity: .55; pointer-events: none; }
+
+	/* The selection is a soft glow round the node's own shape, in the
+		highlight colour at half strength whatever that colour is, at the
+		master's word (2026-11-12); a selected line glows the same way.
+		Behaviour (by eye): the glow reads as soft, not as a box. */
+	.halo, .line-halo { display: none; fill: none; stroke: var(--highlight); stroke-opacity: .5; pointer-events: none; }
+	.halo { stroke-width: 6; filter: blur(1.5px); }
+	.topic.selected .halo { display: inline; }
+	.topic.drop-target .halo { display: inline; stroke-dasharray: 4 3; }
+	.line { cursor: pointer; }
+	.line.selected .line-halo { display: inline; stroke-width: 7; }
+
+	/* The fold dot shows on the node under the pointer, and on the selected one. */
+	.fold-dot { opacity: 0; cursor: pointer; transition: opacity .12s ease; }
+	.topic:hover .fold-dot, .topic.selected .fold-dot { opacity: 1; }
+	.fold-badge { cursor: pointer; }
+
+	#marquee {
+		position: absolute;
+		border: 1px dashed var(--line-mid);
+		background: transparent;
+		pointer-events: none;
+	}
+
+	/* The text field lies exactly over the node, in its face and size; the page sets those. */
+	#text-editor {
+		position: absolute;
+		z-index: var(--z-editor);
+		margin: 0;
+		padding: 0;
+		border: 0;
+		resize: none;
+		overflow: hidden;
+		white-space: pre;
+		background: transparent;
+		caret-color: currentColor;
+	}
+	/* Waiting unseen over the selected node for an input method to compose in; clicks pass through it. */
+	#text-editor.armed { opacity: 0; pointer-events: none; }
+	/* An empty central node's placeholder, held back as the drawn one is (drawing/face.js).
+		Behaviour (by eye): editing an empty central node shows its placeholder in
+		the field, in the words' own colour held back, until the first character. */
+	#text-editor::placeholder { color: inherit; opacity: .5; }
+	/* While a node's words are written in the field, its drawn words are hidden under it. */
+	.topic.writing .words { visibility: hidden; }
+}
