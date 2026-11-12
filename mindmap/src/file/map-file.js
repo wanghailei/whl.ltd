@@ -5,8 +5,9 @@ import { NODE, BRANCH, LINE } from "../model/style.js"
 import { fileName } from "./file-name.js"
 
 export const FORMAT = "whl-mindmap"
-/* 2 since 0.2.0: the map's style holds level fills and a canvas colour,
-	which a Mindmap reading version 1 would lose without a word. */
+/* 2 since 0.2.0: the map's style holds a canvas colour, and until 0.32.0
+	held level fills, which a Mindmap reading version 1 would lose without a
+	word. */
 export const VERSION = 2
 
 /* Version 1 gave a new map's central node these words as its own, in
@@ -32,7 +33,10 @@ export class MapFileError extends Error {
 	map's styles, theme, appearance and layout, under the format's name and
 	version. The lines' form came with 0.26.0 and needs no new version: a
 	file without it, or a Mindmap before it reading one with it, draws the
-	lines straight, as they were. Writing and reading are
+	lines straight, as they were. So with the colour style, in the map's
+	style from 0.32.0: a file without it opens in its theme's own, as every
+	map was drawn before, and the level fills an older file gives are left out
+	without a word. Writing and reading are
 	exact inverses for every map the editor makes, which the round-trip test
 	holds it to.
 

@@ -53,8 +53,16 @@ const TASKS = [
 		cn: [ "我想改顏色或樣式，怎麼做？", "點一下節點、分支或輔助線，在面板中改它的顏色、形狀、寬度或線型。在節點或輔助線上按「設為預設」，同類中未手動設定的與新地圖都照這個樣子。" ],
 	},
 	{
-		en: [ "I want to curve the lines between nodes. How?", "Choose ARC under Line to draw every line as one smooth curve from node to node, or STRAIGHT for straight lines that turn round the nodes on round corners." ],
-		cn: [ "我想讓輔助線彎曲，怎麼做？", "在「輔助線」下選「弧線」，每條輔助線都成為從節點到節點的一道圓滑曲線；選「直線」則得到繞過節點、拐角圓滑的直線。" ],
+		en: [ "I want to make a border, a branch or a line thicker. How?", "Select it and press + or − beside WIDTH; the width shows beside them. Picking a BORDER colour for a node with no border gives it one, 1 wide." ],
+		cn: [ "我想讓邊框、分支或輔助線變粗，怎麼做？", "選取後按「寬度」旁的 + 或 −，寬度就顯示在旁邊。為沒有邊框的節點選「邊框」顏色，即得到寬 1 的邊框。" ],
+	},
+	{
+		en: [ "I want to colour the map by level, all in one colour, or by branch. How?", "Under Theme, choose LEVEL for one colour per level, ONE for one colour throughout, or RAINBOW for one colour per main branch. A node's branch always takes the node's colour, and a fill given to a node wins." ],
+		cn: [ "我想按層、全圖一色或按分支為地圖上色，怎麼做？", "在「主題」下選「同層同色」每層一色，選「全局同色」全圖一色，或選「彩虹色」每個主分支一色。分支與其節點同色，手動給節點的填色優先。" ],
+	},
+	{
+		en: [ "I want to curve the lines between nodes. How?", "Choose ARC under Line to draw every line as part of a circle from node to node, or STRAIGHT for straight lines that turn round the nodes on round corners." ],
+		cn: [ "我想讓輔助線彎曲，怎麼做？", "在「輔助線」下選「弧線」，每條輔助線都成為從節點到節點的一段圓弧；選「直線」則得到繞過節點、拐角圓滑的直線。" ],
 	},
 	{
 		en: [ "I want to change the layout or theme. How?", "Press RIGHT, BOTH or DOWN under Layout, or a theme under Theme. LIGHT/DARK at the top switches the appearance." ],

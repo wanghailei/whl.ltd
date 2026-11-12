@@ -22,7 +22,7 @@ import { RemarkField } from "./remark-field.js"
 	commit, and it is always the newest version CHANGELOG.md names, its first
 	entry; TAI's check-commits holds every commit to this (bin/check,
 	.check-commits.json). */
-const VERSION = "0.31.0"
+const VERSION = "0.34.4"
 /* How long a notice stays, unless another takes its place. */
 const NOTICE_TIME = 7000
 /* The notice for each reason a file would not open. */
@@ -519,7 +519,6 @@ class Page {
 			line: ( changes, gesture ) => editor.styleLine( changes, gesture ),
 		}
 		const settings = {
-			"level-fill": ( fill, gesture ) => editor.fillLevels( fill, gesture ),
 			canvas: ( colour, gesture ) => editor.paintCanvas( colour, gesture ),
 			/* The selection's colour is the user's, not the map's: kept by the browser, never undone. */
 			highlight: colour => {
@@ -532,6 +531,7 @@ class Page {
 		const choosers = {
 			layout: value => { editor.changeLayout( value ); this.view.centre() },
 			theme: value => editor.changeTheme( value ),
+			colourStyle: value => editor.changeColourStyle( value ),
 			lineForm: value => editor.changeLineForm( value ),
 		}
 		return {

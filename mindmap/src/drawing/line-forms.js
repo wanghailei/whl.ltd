@@ -10,12 +10,16 @@ const LINE_CORNER = 24
 const LEAST_CORNER = 1
 /* How many steps a corner's turn is followed in, to check it passes under no node. */
 const TURN_STEPS = 16
-/* How far an arc's handles reach out of its two tails, as a share of the way
-	between them: a half, so two siblings' arc swings out round and wide. */
-const ARC_REACH = 0.5
+/* How much of its circle an arc is: sixty degrees, the same for every arc,
+	so every arc is the same shape at its own size. */
+const ARC_SWEEP = Math.PI / 3
 /* How far apart, at most, the points stand that an arc is known by, where
-	its middle is found and the picture framed. */
+	its label is placed and the picture framed. */
 const ARC_STEP = 6
+/* How near the line through an arc's two tails the central node's centre
+	may stand and still count as on it, so that the side away from it is not
+	told by a stray fraction of a pixel. */
+const ON_LINE = 1
 
 /* The form a map's auxiliary lines take, chosen for the whole map at the
 	master's word (2026-11-12): straight, routed round the nodes in straight
@@ -24,11 +28,12 @@ const ARC_STEP = 6
 
 	Pre-flight answers. A form knows only how a line runs from one tail to
 	another, each given as its point, the way out of it, and its node's box,
-	and whether its lines lie under the nodes or over them; which tails, and
-	the line's look, are the picture's. What it gives back is a course, which
-	answers for itself: the points it passes, for the picture's frame, its
-	path, its middle and where its label stands, and the same course run the
-	other way. */
+	and whether its lines lie under the nodes or over them: straight lines
+	know the nodes' boxes, to run round them, and arcs the central node's
+	centre, to bow away from it. Which tails, and the line's look, are the
+	picture's. What it gives back is a course, which answers for itself: the
+	points it passes, for the picture's frame, its path, its middle and where
+	its label stands, and the same course run the other way. */
 class StraightLines {
 	constructor( { boxes } ){
 		this.boxes = boxes
@@ -41,40 +46,58 @@ class StraightLines {
 		return false
 	}
 
-	/* Round every node between (line-route.js), as 0.22.8 ran it, every
-		 corner round, at the master's word (2026-11-12, 22:28): a line has no
-		 sharp corners to choose any more. */
+	/* Round every node between, in level and upright runs alone, at the
+		 master's word (2026-11-12, 23:12) (line-route.js), every corner round,
+		 at the master's word (2026-11-12, 22:28): a line has no sharp corners
+		 to choose any more. A point where the way goes on as it went is no
+		 corner, and is left out. */
 	course( start, end ){
-		const points = distinct( this.route.between( start.point, start.outward, end.point, end.outward ).waypoints )
+		const points = straightened( distinct( this.route.between( start.point, start.outward, end.point, end.outward ).waypoints ) )
 		return new Route( points, points.slice( 1, -1 ).map( ( corner, index ) => cornerRadius( points[ index ], corner, points[ index + 2 ], this.boxes ) ) )
 	}
 }
 
-/* Lines drawn as arcs, at the master's word (2026-11-12, 22:28): each one
-	simple, regular curve, the same shape for every line, a single cubic that
-	leaves the tail of one node straight out and comes into the tail of the
-	other straight in, its handles reaching out of each tail a share of the
-	way between them. It does not bend round the nodes between: 0.27.0's
-	arcs, which bent round them as often as they must, followed no rule the
-	eye could see, and the master would not have them. So an arc may pass over
-	a node it does not join, and it lies over the nodes, never hidden behind
-	one. */
+/* Lines drawn as arcs, at the master's word (2026-11-12, 23:10): "an arc is
+	simply part of a true circle". Each runs from the tail of one node to the
+	tail of the other as sixty degrees of a circle, the same share for every
+	line, so every arc is the same shape at its own size. 0.31.0's arcs were
+	cubic curves leaving each tail straight out, which the master found drawn
+	wrong; between two tails on one line they ran back over themselves. An
+	arc does not bend round the nodes between, as 0.27.0's did, following no
+	rule the eye could see: it may pass over a node it does not join, so it
+	lies over the nodes, never hidden behind one. */
 class ArcLines {
+	constructor( { centre } ){
+		this.centre = centre
+	}
+
 	get liesOverNodes(){
 		return true
 	}
 
 	course( start, end ){
-		const reach = end.point.minus( start.point ).length * ARC_REACH
-		return new Arc( start.point, start.point.plus( start.outward.times( reach ) ), end.point.plus( end.outward.times( reach ) ), end.point )
+		return new Arc( start.point, end.point, this.bowBetween( start.point, end.point ) )
+	}
+
+	/* The side an arc between two tails bows to: away from the central node.
+		 Where the central node stands on the line through the two tails, as
+		 between two nodes level with it on either side of it, no side is away
+		 from it, so every such arc bows the same way: up, or for an upright
+		 line, to the right. The side comes out the same whichever tail the arc
+		 starts from, so a line runs the same drawn either way. */
+	bowBetween( start, end ){
+		const along = end.minus( start ), across = along.perpendicular.unit
+		const away = start.plus( end ).times( 0.5 ).minus( this.centre ).dot( across )
+		if( Math.abs( away ) > ON_LINE ) return across.times( Math.sign( away ) )
+		return across.times( Math.sign( along.isLevel ? -across.y : across.x ) || 1 )
 	}
 }
 
 const FORMS = { straight: StraightLines, arc: ArcLines }
 
-/* The form of this name, made for a map whose nodes stand in these boxes. */
-export function lineFormFor( name, { boxes } ){
-	return new FORMS[ name ]( { boxes } )
+/* The form of this name, made for a map whose nodes stand in these boxes, its central node's centre at this point. */
+export function lineFormFor( name, { boxes, centre } ){
+	return new FORMS[ name ]( { boxes, centre } )
 }
 
 /* A line drawn straight: its points, and the radius each corner between them turns by. */
@@ -106,43 +129,66 @@ class Route {
 	}
 }
 
-/* A line drawn as an arc: one cubic curve from its start to its end, with a
-	handle out of each. */
+/* A line drawn as an arc: sixty degrees of a circle from its start to its
+	end, bowing to one side, drawn as the circle's own arc, never a curve
+	that only looks like one. */
 class Arc {
-	constructor( start, first, second, end ){
+	constructor( start, end, bow ){
 		this.start = start
-		this.first = first
-		this.second = second
 		this.end = end
+		this.bow = bow
 	}
 
-	/* The points along it, a step apart at most, its two ends exactly. */
+	/* Its circle's radius: the chord of a sixty-degree arc is as long as the radius. */
+	get radius(){
+		return this.end.minus( this.start ).length / ( 2 * Math.sin( ARC_SWEEP / 2 ) )
+	}
+
+	/* Its circle's centre, back from the middle of the chord away from the bow. */
+	get centre(){
+		return this.start.plus( this.end ).times( 0.5 ).minus( this.bow.times( this.radius * Math.cos( ARC_SWEEP / 2 ) ) )
+	}
+
+	/* The way it turns round its centre from start to end: clockwise on the
+		 screen, where angles grow, or the other way; as SVG's sweep flag, 1 or 0. */
+	get sweep(){
+		const centre = this.centre
+		return this.start.minus( centre ).cross( this.end.minus( centre ) ) > 0 ? 1 : 0
+	}
+
+	/* The points along it, a step apart at most and an even number of steps,
+		 so its middle is one of them, and its two ends exactly. */
 	get points(){
-		const steps = Math.max( 4, Math.ceil( ( this.first.minus( this.start ).length + this.second.minus( this.first ).length + this.end.minus( this.second ).length ) / ARC_STEP ) )
+		const centre = this.centre, from = this.start.minus( centre ), turning = this.sweep ? ARC_SWEEP : -ARC_SWEEP
+		const steps = 2 * Math.max( 2, Math.ceil( this.radius * ARC_SWEEP / ( 2 * ARC_STEP ) ) )
 		return Array.from( { length: steps + 1 }, ( _, step ) => {
-			const t = step / steps, u = 1 - t
-			return this.start.times( u * u * u ).plus( this.first.times( 3 * u * u * t ) ).plus( this.second.times( 3 * u * t * t ) ).plus( this.end.times( t * t * t ) )
+			if( step === 0 ) return this.start
+			if( step === steps ) return this.end
+			return centre.plus( from.turned( turning * step / steps ) )
 		} )
 	}
 
 	get path(){
 		const at = point => rounded( point.x ) + " " + rounded( point.y )
-		return "M " + at( this.start ) + " C " + at( this.first ) + " " + at( this.second ) + " " + at( this.end )
+		const radius = rounded( this.radius )
+		return "M " + at( this.start ) + " A " + radius + " " + radius + " 0 0 " + this.sweep + " " + at( this.end )
 	}
 
-	/* The point halfway along the curve. */
+	/* The point of the arc halfway round it. */
 	get middle(){
-		return halfway( this.points )
+		return this.centre.plus( this.bow.times( this.radius ) )
 	}
 
-	/* Its label stands at the middle of the curve, at the master's word
-		 (2026-11-12, 22:28), so every arc carries its label alike. */
-	labelPoint(){
-		return this.middle
+	/* Where its label stands: at the middle of the arc, or where that would
+		 cover a node or another label, slid along the arc to the nearest place
+		 clear of them, as a straight line's is (label-place.js), at the
+		 master's word (2026-11-12, 23:10). */
+	labelPoint( half, keepClear ){
+		return labelPlace( this.points, half, keepClear )
 	}
 
 	reversed(){
-		return new Arc( this.end, this.second, this.first, this.start )
+		return new Arc( this.end, this.start, this.bow )
 	}
 }
 
@@ -161,6 +207,17 @@ function halfway( points ){
 	leaves its tail point twice. */
 function distinct( points ){
 	return points.filter( ( point, index ) => index === 0 || point.minus( points[ index - 1 ] ).length > 0 )
+}
+
+/* A run of level and upright points with every point between two others
+	on one line with them left out: the way does not turn there, as where a
+	stub runs on into the way beyond it. */
+function straightened( points ){
+	return points.filter( ( point, index ) => {
+		if( index === 0 || index === points.length - 1 ) return true
+		const before = points[ index - 1 ], after = points[ index + 1 ]
+		return !( before.x === point.x && point.x === after.x ) && !( before.y === point.y && point.y === after.y )
+	} )
 }
 
 /* A path through these points, each corner between two straight runs

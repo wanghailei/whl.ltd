@@ -35,9 +35,10 @@
 	.topic.drop-target .halo { display: inline; stroke-dasharray: 4 3; }
 	.line, .line-target, .branch-target { cursor: pointer; }
 	/* A line is pressed by its wide unseen target, which lies under the
-		nodes; its drawn stroke takes no press, so where an arc, drawn over the
-		nodes, crosses one, a press there is the node's. */
-	.line-path { pointer-events: none; }
+		nodes; its drawn stroke, and an arc's edge under it, take no press, so
+		where an arc, drawn over the nodes, crosses one, a press there is the
+		node's. */
+	.line-path, .line-edge { pointer-events: none; }
 	.line.selected .line-halo, [data-branch].selected .branch-halo { display: inline; stroke-width: 7; }
 
 	/* The fold dot shows on the node under the pointer, and on the selected one. */

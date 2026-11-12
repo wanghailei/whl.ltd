@@ -159,10 +159,13 @@ export const NODE = new StyleKind( {
 	textColour: new Colour(),
 } )
 
+/* A branch's and a line's width step by a quarter, at the master's word
+	(2026-11-12, 22:35), and so go as thin as one quarter; they went to a half
+	on the slider before. */
 export const BRANCH = new StyleKind( {
 	shape: new Choice( BRANCH_SHAPES ),
 	colour: new Colour(),
-	width: new Measure( 0.5, 12 ),
+	width: new Measure( 0.25, 12 ),
 	dash: new Choice( DASHES ),
 } )
 
@@ -172,6 +175,6 @@ export const BRANCH = new StyleKind( {
 	left out without a word, and the line's corners are round. */
 export const LINE = new StyleKind( {
 	colour: new Colour(),
-	width: new Measure( 0.5, 12 ),
+	width: new Measure( 0.25, 12 ),
 	dash: new Choice( LINE_DASHES ),
 } )

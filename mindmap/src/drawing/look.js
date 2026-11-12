@@ -2,6 +2,7 @@ import { NODE, BRANCH, LINE } from "../model/style.js"
 import { Theme } from "./themes.js"
 import { inkOver, isLightColour } from "./colour.js"
 import { shapeFor } from "./shapes.js"
+import { colourStyleFor } from "./colour-styles.js"
 
 /* What every value falls back to when nothing above has set it: the house's
 	shapes, sizes and widths — every node a pill with no border, set at one
@@ -21,11 +22,14 @@ const BASE = {
 	order is kept:
 
 	- a node: what it has been given by hand; for its fill, then the fill of
-	  its branch — the nearest set by hand above it — and then its level's;
-	  then the map's style for its kind; then the theme; then the base;
+	  its branch — the nearest set by hand above it; then the map's style for
+	  its kind; then the theme, coloured by the map's colour style; then the
+	  base;
 	- a branch: what it has been given by hand, over the map's branch style;
-	  its colour, when neither gives one, the fill of the node it starts from,
-	  or where that node shows none, the theme's; then the base;
+	  its colour, when neither gives one, the fill of the node it leads to, at
+	  the master's word (2026-11-12, 22:35): a node and its branch are one
+	  colour; where that node shows no fill, the colour the theme gives it;
+	  then the base;
 	- an auxiliary line: by hand, the map's line style, the theme, the base.
 
 	The theme is taken in the map's appearance, light or dark; a canvas
@@ -37,6 +41,9 @@ export class Look {
 		this.canvas = map.style.canvas
 		this.appearance = this.canvas ? ( isLightColour( this.canvas ) ? "light" : "dark" ) : map.appearance
 		this.scheme = Theme.for( map.theme ).scheme( this.appearance )
+		/* The colour style the map has been given, or else its theme's own. */
+		this.colourStyle = map.style.colourStyle || Theme.for( map.theme ).colourStyle
+		this.colours = colourStyleFor( this.colourStyle )
 	}
 
 	/* Words not given a colour — by hand or by the map's style — are black
@@ -46,14 +53,14 @@ export class Look {
 		 set by hand. */
 	node( topic ){
 		const chosen = topic.style.over( this.inheritedFill( topic ) ).over( this.map.style.forTopic( topic ) )
-		const style = chosen.over( this.scheme.node( topic ) ).over( topic.isRoot ? BASE.root : BASE.node )
+		const style = chosen.over( this.scheme.node( topic, this.colours ) ).over( topic.isRoot ? BASE.root : BASE.node )
 		if( chosen.get( "textColour" ) !== undefined ) return style
 		return style.with( { textColour: inkOver( this.shownFill( style ) ?? this.background ) } )
 	}
 
-	/* The fill a node takes when it has none of its own: its branch's, else its level's. */
+	/* The fill a node takes when it has none of its own: its branch's. */
 	inheritedFill( topic ){
-		return NODE.style( { fill: topic.branchFill ?? this.map.style.levels.fillAt( topic.depth ) } )
+		return NODE.style( { fill: topic.branchFill } )
 	}
 
 	/* The fill a node shows, or null where its shape shows none or it has none. */
@@ -64,10 +71,10 @@ export class Look {
 
 	branch( topic ){
 		const chosen = topic.branch.over( this.map.style.branch )
-		const given = chosen.over( this.scheme.branch( topic ) ).over( BASE.branch )
+		const given = chosen.over( this.scheme.branch( topic, this.colours ) ).over( BASE.branch )
 		if( chosen.get( "colour" ) !== undefined || topic.isRoot ) return given
-		const from = this.shownFill( this.node( topic.parent ) )
-		return from ? given.with( { colour: from } ) : given
+		const to = this.shownFill( this.node( topic ) )
+		return to ? given.with( { colour: to } ) : given
 	}
 
 	line( line ){

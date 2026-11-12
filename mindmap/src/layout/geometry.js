@@ -11,6 +11,16 @@ export class Point {
 	times( factor ){ return new Point( this.x * factor, this.y * factor ) }
 	dot( other ){ return this.x * other.x + this.y * other.y }
 
+	/* How this direction turns into another: more than nothing where it turns
+		 clockwise on the screen, whose y runs down. */
+	cross( other ){ return this.x * other.y - this.y * other.x }
+
+	/* The same point turned round the origin by an angle, clockwise on the screen where the angle is more than nothing. */
+	turned( angle ){
+		const cosine = Math.cos( angle ), sine = Math.sin( angle )
+		return new Point( this.x * cosine - this.y * sine, this.x * sine + this.y * cosine )
+	}
+
 	get length(){ return Math.hypot( this.x, this.y ) }
 
 	/* The same direction, one unit long; a point at the origin has none and stays put. */

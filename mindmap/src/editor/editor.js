@@ -2,6 +2,7 @@ import { MapFile } from "../file/map-file.js"
 import { History } from "./history.js"
 import { Selection } from "./selection.js"
 import { NODE, BRANCH, LINE } from "../model/style.js"
+import { Look } from "../drawing/look.js"
 
 /* The editor: the map being edited, what is selected, and every change the
 	user can make, each one undoable.
@@ -171,22 +172,22 @@ export class Editor {
 	// ── Styles ──────────────────────────────────────────────────────
 
 	/* A gesture names a run of changes — a slider dragged, a colour picked by
-		 dragging — that undo takes back as one. */
+		 dragging — that undo takes back as one. A border colour given to a node
+		 whose border is drawn 0 wide gives it a border 1 wide as well, so the
+		 border shows at once, at the master's word (2026-11-12, 22:35): picking
+		 a colour and seeing nothing was a bad experience. */
 	styleNodes( changes, gesture = null ){
-		this.change( () => this.selectedTopics.forEach( topic => { topic.style = topic.style.with( changes ) } ), gesture )
+		const look = new Look( this.map )
+		this.change( () => this.selectedTopics.forEach( topic => {
+			const shown = changes.border && look.node( topic ).get( "borderWidth" ) === 0 ? { borderWidth: 1 } : {}
+			topic.style = topic.style.with( { ...shown, ...changes } )
+		} ), gesture )
 	}
 
 	/* The selected branch takes it, or the selected nodes' branches. */
 	styleBranches( changes, gesture = null ){
 		const branched = this.selectedBranch ? [ this.selectedBranch ] : this.selectedTopics
 		this.change( () => branched.forEach( topic => { topic.branch = topic.branch.with( changes ) } ), gesture )
-	}
-
-	/* Every node at the depth of each selected node takes this fill; a null
-		 gives the levels back to what lies beneath. */
-	fillLevels( fill, gesture = null ){
-		const depths = new Set( this.selectedTopics.map( topic => topic.depth ) )
-		this.change( () => depths.forEach( depth => { this.map.style = this.map.style.withLevelFill( depth, fill ) } ), gesture )
 	}
 
 	/* The map stands on this solid colour; a null gives it back the theme's background. */
@@ -205,9 +206,8 @@ export class Editor {
 	/* What the focus — or the selected line — has been given by hand becomes
 		 the map's style for its kind, and it keeps nothing of its own, since
 		 the map's style now says the same — save a node's fill, which it keeps:
-		 its fill also fills its branch and stands above the level fills, so
-		 taking it away would change how this map looks. The central node has
-		 no branch. */
+		 its fill also fills its branch, the nodes under it, so taking it away
+		 would change how this map looks. The central node has no branch. */
 	setAsDefault(){
 		const line = this.selectedLine
 		const topic = this.focus
@@ -235,6 +235,11 @@ export class Editor {
 	/* The form every auxiliary line of the map takes: straight or arc. */
 	changeLineForm( name ){
 		this.change( () => { this.map.lineForm = name } )
+	}
+
+	/* How the nodes take the theme's colours: by level, all one, or by main branch. */
+	changeColourStyle( name ){
+		this.change( () => { this.map.style = this.map.style.withColourStyle( name ) } )
 	}
 
 	/* A theme sets aside the colours of the map's own styles, so it shows;

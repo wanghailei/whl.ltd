@@ -1,10 +1,8 @@
 import { NODE, BRANCH, LINE, hexColour } from "../model/style.js"
 
 const KINDS = { node: NODE, branch: BRANCH, line: LINE }
-/* The map's own colour settings and what each would keep of what is typed:
-	a level's fill may be none, the canvas only a solid colour. */
+/* The colour settings and what each would keep of what is typed: only a solid colour. */
 const SETTINGS = {
-	"level-fill": typed => NODE.accept( "fill", typed ),
 	canvas: typed => hexColour( typed ),
 	highlight: typed => hexColour( typed ),
 }
@@ -47,6 +45,30 @@ function hexFieldFor( field ){
 	return field.dataset.setting ? new SettingHexField( field ) : new StyleHexField( field )
 }
 
+/* A width of a style — data-style and data-property — shown as its value,
+	with − and + that take it a step, data-step, down or up, at the master's
+	word (2026-11-12, 22:35): a slider resting at 0 hid the very border a
+	colour was picked for. A press goes to the next step on the step's own
+	grid, so a width a file gave between steps comes onto it, and the style's
+	kind holds it to its bounds. */
+class Stepper {
+	constructor( row ){
+		this.row = row
+		this.value = 0
+	}
+
+	show( value ){
+		this.value = value
+		this.row.querySelector( ".value" ).textContent = String( value )
+	}
+
+	press( actions, direction ){
+		const { style, property } = this.row.dataset, step = Number( this.row.dataset.step )
+		const grid = direction > 0 ? Math.floor( this.value / step + 1e-9 ) + 1 : Math.ceil( this.value / step - 1e-9 ) - 1
+		actions.style( style, { [ property ]: KINDS[ style ].accept( property, grid * step ) } )
+	}
+}
+
 /* The control panel: its controls wired to the page's actions by what their
 	data attributes say, and shown, after every change, what is selected.
 
@@ -63,9 +85,11 @@ export class Panel {
 		this.language = language
 		/* Each drag of a slider, and each opening of the picker, is a gesture of its own. */
 		this.gestures = 0
+		this.steppers = this.all( ".stepper[data-style]" ).map( row => new Stepper( row ) )
 		this.wireCommands()
 		this.wireChoices()
 		this.wireFields()
+		this.wireSteppers()
 		this.wireLine()
 	}
 
@@ -80,6 +104,16 @@ export class Panel {
 	wireCommands(){
 		for( const button of this.all( "[data-command]" ) ){
 			button.addEventListener( "click", () => this.actions.command( button.dataset.command ) )
+		}
+	}
+
+	/* Each press of − or + is a change of its own, which undo takes back alone. */
+	wireSteppers(){
+		for( const stepper of this.steppers ){
+			stepper.row.addEventListener( "click", event => {
+				const button = event.target.closest( "[data-steps]" )
+				if( button ) stepper.press( this.actions, Number( button.dataset.steps ) )
+			} )
 		}
 	}
 
@@ -153,6 +187,8 @@ export class Panel {
 		const line = editor.selectedLine
 		this.choose( "[data-map=layout]", map.layout )
 		this.choose( "[data-map=theme]", map.theme )
+		/* The colour style the map is drawn in: its own, or else its theme's. */
+		this.choose( "[data-map=colourStyle]", look.colourStyle )
 		this.choose( "[data-map=lineForm]", map.lineForm )
 		this.showHex( "canvas-colour", look.background )
 		this.showHex( "highlight-colour", highlight )
@@ -163,17 +199,15 @@ export class Panel {
 		const branched = editor.selectedBranch ?? topics.find( topic => !topic.isRoot )
 		this.element( "branch-panel" ).classList.toggle( "hidden", !branched )
 		this.element( "line-rows" ).classList.toggle( "hidden", !line )
-		if( focus ) this.showNode( focus, topics, look, map )
+		if( focus ) this.showNode( focus, topics, look )
 		if( branched ) this.showStyle( "branch", look.branch( branched ) )
 		if( line ) this.showLine( line, look )
 		this.element( "zoom-value" ).textContent = Math.round( zoom * 100 ) + "%"
 	}
 
-	/* The level's fill shows what has been set for the focus's level, or nothing. */
-	showNode( focus, topics, look, map ){
+	showNode( focus, topics, look ){
 		this.element( "node-heading" ).textContent = this.language.say( "nodeHeading", { selected: topics.length } )
 		this.showStyle( "node", look.node( focus ) )
-		this.showHex( "level-fill", map.style.levels.fillAt( focus.depth ) ?? "" )
 	}
 
 	showLine( line, look ){
@@ -184,6 +218,7 @@ export class Panel {
 	/* Every control of one kind of style, set from the style. */
 	showStyle( kind, style ){
 		for( const row of this.all( `.group[data-style=${ kind }]` ) ) this.choose( row, style.get( row.dataset.property ) )
+		for( const stepper of this.steppers.filter( each => each.row.dataset.style === kind ) ) stepper.show( style.get( stepper.row.dataset.property ) )
 		for( const field of this.all( `input[data-style=${ kind }]` ) ){
 			const value = style.get( field.dataset.property )
 			if( field.type === "range" ){

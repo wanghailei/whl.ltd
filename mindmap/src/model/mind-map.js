@@ -7,55 +7,30 @@ export const THEMES = [ "mono", "spectrum", "ocean", "earth", "dusk" ]
 export const APPEARANCES = [ "light", "dark" ]
 /* The forms a map's auxiliary lines take, all alike: routed round the nodes in straight runs, or arcs (drawing/line-forms.js). */
 export const LINE_FORMS = [ "straight", "arc" ]
-
-/* The fills given to whole levels of the map: a colour, or none, for every
-	node at a depth, the central node's being depth nought. A value: every
-	change is a new one. */
-export class LevelFills {
-	constructor( fills = {} ){
-		this.fills = Object.freeze( fills )
-	}
-
-	/* Made from plain values: only depths, each with a fill a node would take. */
-	static from( values ){
-		const fills = {}
-		for( const [ depth, value ] of Object.entries( values ?? {} ) ){
-			const fill = NODE.accept( "fill", value )
-			if( /^\d{1,3}$/.test( depth ) && fill !== undefined ) fills[ Number( depth ) ] = fill
-		}
-		return new LevelFills( fills )
-	}
-
-	fillAt( depth ){
-		return this.fills[ depth ]
-	}
-
-	/* With this depth's fill given, or taken away by a null. */
-	with( depth, fill ){
-		const fills = { ...this.fills }
-		if( fill === null ) delete fills[ depth ]
-		else fills[ depth ] = fill
-		return new LevelFills( fills )
-	}
-
-	toJSON(){
-		return { ...this.fills }
-	}
-}
+/* How a map's nodes take its theme's colours: by depth, all one, or by main branch (drawing/colour-styles.js). */
+export const COLOUR_STYLES = [ "level", "one", "rainbow" ]
 
 /* The map's own styles, one for each kind of thing drawn: the central node,
 	every other node, every branch and every auxiliary line; with them the
-	fills given to whole levels, and the canvas colour, which stands in for the
-	theme's background. Each is what the map has been given — by hand, by Set
-	as default, or by a file — and shows through wherever a node, branch or
-	line has nothing of its own. */
+	colour style the nodes take the theme's colours in, and the canvas colour,
+	which stands in for the theme's background. Each is what the map has been
+	given — by hand, by Set as default, or by a file — and shows through
+	wherever a node, branch or line has nothing of its own.
+
+	The fills given to whole levels, LEVEL FILL, are taken away at the
+	master's word (2026-11-12, 22:35), the colour style doing their work: a
+	file or a kept default that gives them is read without them, without a
+	word. */
 export class MapStyle {
-	constructor( { root = NODE.style(), node = NODE.style(), branch = BRANCH.style(), line = LINE.style(), levels = new LevelFills(), canvas = "" } = {} ){
+	constructor( { root = NODE.style(), node = NODE.style(), branch = BRANCH.style(), line = LINE.style(), colourStyle = "", canvas = "" } = {} ){
 		this.root = root
 		this.node = node
 		this.branch = branch
 		this.line = line
-		this.levels = levels
+		/* One of COLOUR_STYLES, once one is chosen; until then empty, and the
+			 map takes its theme's own (drawing/themes.js), as every map was drawn
+			 before colour styles: Mono's all one, the palette themes' a rainbow. */
+		this.colourStyle = COLOUR_STYLES.includes( colourStyle ) ? colourStyle : ""
 		/* A solid colour, #rrggbb, or empty for the theme's own background. */
 		this.canvas = canvas
 	}
@@ -67,7 +42,7 @@ export class MapStyle {
 			node: NODE.style( values?.node ),
 			branch: BRANCH.style( values?.branch ),
 			line: LINE.style( values?.line ),
-			levels: LevelFills.from( values?.levels ),
+			colourStyle: values?.colourStyle,
 			canvas: hexColour( values?.canvas ) ?? "",
 		} )
 	}
@@ -86,9 +61,9 @@ export class MapStyle {
 		return new MapStyle( { ...this, [ kind ]: style } )
 	}
 
-	/* A new map style with every node at this depth filled so, or, with a null, as before. */
-	withLevelFill( depth, fill ){
-		return new MapStyle( { ...this, levels: this.levels.with( depth, fill ) } )
+	/* A new map style whose nodes take the theme's colours in this colour style. */
+	withColourStyle( name ){
+		return new MapStyle( { ...this, colourStyle: name } )
 	}
 
 	/* A new map style on this canvas colour, or, with a null, on the theme's background. */
@@ -96,18 +71,21 @@ export class MapStyle {
 		return new MapStyle( { ...this, canvas: colour ?? "" } )
 	}
 
-	/* The same styles without their colours — level fills and canvas too — so a newly chosen theme shows. */
+	/* The same styles without their colours — the canvas too — so a newly
+		 chosen theme shows; the colour style stays, as the way the new theme's
+		 colours are taken. */
 	colourless(){
 		return new MapStyle( {
 			root: this.root.colourless(),
 			node: this.node.colourless(),
 			branch: this.branch.colourless(),
 			line: this.line.colourless(),
+			colourStyle: this.colourStyle,
 		} )
 	}
 
 	toJSON(){
-		return { root: this.root.toJSON(), node: this.node.toJSON(), branch: this.branch.toJSON(), line: this.line.toJSON(), levels: this.levels.toJSON(), canvas: this.canvas }
+		return { root: this.root.toJSON(), node: this.node.toJSON(), branch: this.branch.toJSON(), line: this.line.toJSON(), colourStyle: this.colourStyle, canvas: this.canvas }
 	}
 }
 

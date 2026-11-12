@@ -14,6 +14,10 @@ const FOLD_BADGE_RADIUS = 8
 const LABEL_SIZE = 12
 /* A label's edge of the map's background, half its outline's width. */
 const LABEL_EDGE = 2
+/* The edge of the map's background on each side of a line drawn over the
+	nodes, as wide as a label's, so an arc's dots read over any node's fill:
+	in Mono, light dots vanished over white nodes (found in use, 2026-11-12). */
+const LINE_EDGE = LABEL_EDGE
 /* How wide the unseen stroke is that takes a press on a line or a branch. */
 const LINE_TARGET = 14
 
@@ -34,7 +38,7 @@ export class MapPicture {
 		this.measure = measure
 		this.faces = new Faces( this.look, measure, placeholder, writing )
 		this.arrangement = Layout.for( map ).arrange( map.root, this.faces )
-		this.lineForm = map.lines.length > 0 ? lineFormFor( map.lineForm, { boxes: this.arrangement.topics.map( topic => this.arrangement.boxOf( topic ) ) } ) : null
+		this.lineForm = map.lines.length > 0 ? lineFormFor( map.lineForm, { boxes: this.arrangement.topics.map( topic => this.arrangement.boxOf( topic ) ), centre: this.arrangement.boxOf( map.root ).centre } ) : null
 		/* Shaped in turn, so each label keeps clear of the labels before it. */
 		this.lineShapes = []
 		for( const line of map.lines ){
@@ -132,8 +136,8 @@ export class MapPicture {
 	/* Where a line runs, at the master's word (2026-11-12): out of the tail of
 		 one node — the end away from its parent, the way the node grows — and
 		 into the tail of the other, in the form the map's lines take
-		 (line-forms.js): routed round every node between, or one arc. A line
-		 to a node under a fold is not drawn. */
+		 (line-forms.js): routed round every node between, or one arc of a
+		 circle. A line to a node under a fold is not drawn. */
 	lineShape( line ){
 		const from = this.map.find( line.from ), to = this.map.find( line.to )
 		if( !from || !to || !this.arrangement.boxOf( from ) || !this.arrangement.boxOf( to ) ) return null
@@ -157,9 +161,9 @@ export class MapPicture {
 	}
 
 	/* Where a line's label stands, and how far it reaches from there, as its
-		 course places it (line-forms.js): a straight line's clear of the nodes'
-		 words and of the labels placed before it, an arc's at its middle. A
-		 line with no label has its middle kept for one. */
+		 course places it (line-forms.js): nearest its middle, clear of the
+		 nodes' words and of the labels placed before it, whether the line is
+		 straight or an arc. A line with no label has its middle kept for one. */
 	labelAt( line, course ){
 		if( !line.label ) return { point: course.middle, half: null }
 		const half = { x: this.measure.width( line.label, { family: fontFamily( "mono" ), size: LABEL_SIZE } ) / 2 + LABEL_EDGE, y: LABEL_SIZE / 2 + LABEL_EDGE }
@@ -172,12 +176,19 @@ export class MapPicture {
 		return "<path" + attributes( { class: "line-target", "data-line": line.id, d: path, fill: "none", stroke: "transparent", "stroke-width": LINE_TARGET } ) + "/>"
 	}
 
+	/* A line, and under it, where the form's lines are drawn over the nodes,
+		 its edge: the same stroke in the map's background, wider by an edge on
+		 each side, dotted or dashed alike, so each dot or dash is ringed, at the
+		 master's word (2026-11-12). The glow, when the line is selected, lies
+		 over the edge. */
 	lineMarkup( shape, screen ){
 		const { line, style } = shape
 		const d = shape.path
+		const look = stroke( style )
+		const edge = this.lineForm.liesOverNodes ? "<path" + attributes( { class: "line-edge", d, fill: "none", ...look, stroke: this.look.background, "stroke-width": look[ "stroke-width" ] + 2 * LINE_EDGE } ) + "/>" : ""
 		const halo = screen ? "<path" + attributes( { class: "line-halo", d, fill: "none" } ) + "/>" : ""
-		const path = "<path" + attributes( { class: "line-path", d, fill: "none", ...stroke( style ) } ) + "/>"
-		return "<g" + attributes( { class: "line", "data-line": line.id } ) + ">" + halo + path + "</g>"
+		const path = "<path" + attributes( { class: "line-path", d, fill: "none", ...look } ) + "/>"
+		return "<g" + attributes( { class: "line", "data-line": line.id } ) + ">" + edge + halo + path + "</g>"
 	}
 
 	/* A line's label at its middle, haloed in the background so it reads over whatever it crosses; pressing it selects the line. */

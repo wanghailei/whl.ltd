@@ -112,6 +112,15 @@
 		<button class="word" data-value="earth" data-cn="大地">Earth</button>
 		<button class="word" data-value="dusk" data-cn="暮色">Dusk</button>
 	</div>
+	<!-- How the nodes take the theme's colours, for the whole map: each
+		level one colour, every node one colour, or each main branch one
+		colour (2026-11-12). -->
+	<div class="control-row group" data-map="colourStyle">
+		<span class="label" data-cn="配色">Colour</span>
+		<button class="word" data-value="level" data-cn="同層同色">Level</button>
+		<button class="word" data-value="one" data-cn="全局同色">One</button>
+		<button class="word" data-value="rainbow" data-cn="彩虹色">Rainbow</button>
+	</div>
 	<div class="control-row">
 		<span class="label" data-cn="畫布">Canvas</span>
 		<button type="button" class="chip" data-for="canvas-colour" title="Pick" data-cn-title="取色" aria-label="Pick the canvas colour" data-cn-aria-label="為畫布取色"></button>
@@ -164,10 +173,11 @@
 			<button type="button" class="chip" data-for="line-colour" title="Pick" data-cn-title="取色" aria-label="Pick the line colour" data-cn-aria-label="為輔助線取色"></button>
 			<input type="text" class="hex" id="line-colour" data-style="line" data-property="colour" spellcheck="false" aria-label="Line colour" data-cn-aria-label="輔助線顏色">
 		</div>
-		<div class="control-row">
+		<div class="control-row stepper" id="line-width" data-style="line" data-property="width" data-step="0.25">
 			<span class="label" data-cn="寬度">Width</span>
-			<input type="range" id="line-width" data-style="line" data-property="width" min="0.5" max="12" step="0.25" aria-label="Line width" data-cn-aria-label="輔助線寬度">
-			<span class="value" data-shows="line-width"></span>
+			<button class="word" data-steps="-1" title="Thinner" data-cn-title="變細" aria-label="Make the line thinner" data-cn-aria-label="輔助線變細">−</button>
+			<button class="word" data-steps="1" title="Thicker" data-cn-title="變粗" aria-label="Make the line thicker" data-cn-aria-label="輔助線變粗">+</button>
+			<span class="value"></span>
 		</div>
 		<div class="control-row group" data-style="line" data-property="dash">
 			<button class="word" data-value="solid" data-cn="實線">Solid</button>
@@ -196,19 +206,15 @@
 		<input type="text" class="hex" id="node-fill" data-style="node" data-property="fill" spellcheck="false" aria-label="Fill" data-cn-aria-label="填色">
 	</div>
 	<div class="control-row">
-		<span class="label" data-cn="層級填色">Level fill</span>
-		<button type="button" class="chip" data-for="level-fill" title="Pick" data-cn-title="取色" aria-label="Pick the level's fill" data-cn-aria-label="為層級填色取色"></button>
-		<input type="text" class="hex" id="level-fill" data-setting="level-fill" spellcheck="false" placeholder="not set" data-cn-placeholder="未設定" aria-label="Level fill" data-cn-aria-label="層級填色">
-	</div>
-	<div class="control-row">
 		<span class="label" data-cn="邊框">Border</span>
 		<button type="button" class="chip" data-for="node-border" title="Pick" data-cn-title="取色" aria-label="Pick the border" data-cn-aria-label="為邊框取色"></button>
 		<input type="text" class="hex" id="node-border" data-style="node" data-property="border" spellcheck="false" aria-label="Border" data-cn-aria-label="邊框">
 	</div>
-	<div class="control-row">
+	<div class="control-row stepper" id="node-border-width" data-style="node" data-property="borderWidth" data-step="1">
 		<span class="label" data-cn="寬度">Width</span>
-		<input type="range" id="node-border-width" data-style="node" data-property="borderWidth" min="0" max="8" step="0.5" aria-label="Border width" data-cn-aria-label="邊框寬度">
-		<span class="value" data-shows="node-border-width"></span>
+		<button class="word" data-steps="-1" title="Thinner" data-cn-title="變細" aria-label="Make the border thinner" data-cn-aria-label="邊框變細">−</button>
+		<button class="word" data-steps="1" title="Thicker" data-cn-title="變粗" aria-label="Make the border thicker" data-cn-aria-label="邊框變粗">+</button>
+		<span class="value"></span>
 	</div>
 	<div class="control-row group" data-style="node" data-property="font">
 		<button class="word" data-value="mono" data-cn="等寬">Mono</button>
@@ -244,10 +250,11 @@
 		<button type="button" class="chip" data-for="branch-colour" title="Pick" data-cn-title="取色" aria-label="Pick the branch colour" data-cn-aria-label="為分支取色"></button>
 		<input type="text" class="hex" id="branch-colour" data-style="branch" data-property="colour" spellcheck="false" aria-label="Branch colour" data-cn-aria-label="分支顏色">
 	</div>
-	<div class="control-row">
+	<div class="control-row stepper" id="branch-width" data-style="branch" data-property="width" data-step="0.25">
 		<span class="label" data-cn="寬度">Width</span>
-		<input type="range" id="branch-width" data-style="branch" data-property="width" min="0.5" max="12" step="0.25" aria-label="Branch width" data-cn-aria-label="分支寬度">
-		<span class="value" data-shows="branch-width"></span>
+		<button class="word" data-steps="-1" title="Thinner" data-cn-title="變細" aria-label="Make the branch thinner" data-cn-aria-label="分支變細">−</button>
+		<button class="word" data-steps="1" title="Thicker" data-cn-title="變粗" aria-label="Make the branch thicker" data-cn-aria-label="分支變粗">+</button>
+		<span class="value"></span>
 	</div>
 	<div class="control-row group" data-style="branch" data-property="dash">
 		<button class="word" data-value="solid" data-cn="實線">Solid</button>
