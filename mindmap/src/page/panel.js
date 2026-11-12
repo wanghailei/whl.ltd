@@ -140,11 +140,6 @@ export class Panel {
 	wireLine(){
 		const label = this.element( "line-label" )
 		label.addEventListener( "change", () => this.actions.label( label.value ) )
-		const arrows = this.document.querySelector( "[data-line-arrows]" )
-		arrows.addEventListener( "click", event => {
-			const button = event.target.closest( "[data-value]" )
-			if( button ) this.actions.arrows( button.dataset.value )
-		} )
 	}
 
 	// ── Showing what is selected ────────────────────────────────────
@@ -158,15 +153,17 @@ export class Panel {
 		const line = editor.selectedLine
 		this.choose( "[data-map=layout]", map.layout )
 		this.choose( "[data-map=theme]", map.theme )
+		this.choose( "[data-map=lineForm]", map.lineForm )
 		this.showHex( "canvas-colour", look.background )
 		this.showHex( "highlight-colour", highlight )
 		this.element( "appearance-light" ).classList.toggle( "on", look.appearance === "light" )
 		this.element( "appearance-dark" ).classList.toggle( "on", look.appearance === "dark" )
 		this.element( "node-panel" ).classList.toggle( "hidden", !focus )
-		this.element( "branch-panel" ).classList.toggle( "hidden", !topics.some( topic => !topic.isRoot ) )
+		/* A selected branch shows the Branch section alone, its colour at hand. */
+		const branched = editor.selectedBranch ?? topics.find( topic => !topic.isRoot )
+		this.element( "branch-panel" ).classList.toggle( "hidden", !branched )
 		this.element( "line-rows" ).classList.toggle( "hidden", !line )
 		if( focus ) this.showNode( focus, topics, look, map )
-		const branched = topics.find( topic => !topic.isRoot )
 		if( branched ) this.showStyle( "branch", look.branch( branched ) )
 		if( line ) this.showLine( line, look )
 		this.element( "zoom-value" ).textContent = Math.round( zoom * 100 ) + "%"
@@ -182,7 +179,6 @@ export class Panel {
 	showLine( line, look ){
 		this.showStyle( "line", look.line( line ) )
 		this.fill( "line-label", line.label )
-		this.choose( "[data-line-arrows]", line.arrows )
 	}
 
 	/* Every control of one kind of style, set from the style. */

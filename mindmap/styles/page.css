@@ -167,4 +167,7 @@
 	.sheet-close:hover { opacity: 1; }
 	.sheet-close svg { display: block; width: 16px; height: 16px; }
 	#help-text p { margin: 0 0 calc(var(--base-line-height) * var(--base-font-size)); }
+	/* Each task's question, a small heading held back as a panel section's
+		name is, its answer under it in full ink. */
+	#help-text h3 { margin: 0; font-size: inherit; font-weight: 400; opacity: .55; }
 }

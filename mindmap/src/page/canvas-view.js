@@ -38,8 +38,11 @@ export class CanvasView {
 	mark( editor ){
 		this.viewport.querySelectorAll( ".selected" ).forEach( element => element.classList.remove( "selected" ) )
 		for( const topic of editor.selectedTopics ) this.topicElement( topic.id )?.classList.add( "selected" )
+		/* A line is drawn in parts — its press target under the nodes, the line itself, its label — and each is marked. */
 		const line = editor.selectedLine
-		if( line ) this.viewport.querySelector( `[data-line="${ CSS.escape( line.id ) }"]` )?.classList.add( "selected" )
+		if( line ) this.viewport.querySelectorAll( `[data-line="${ CSS.escape( line.id ) }"]` ).forEach( element => element.classList.add( "selected" ) )
+		const branch = editor.selectedBranch
+		if( branch ) this.viewport.querySelector( `[data-branch="${ CSS.escape( branch.id ) }"]` )?.classList.add( "selected" )
 	}
 
 	/* Identities come from files, so they are escaped before they stand in a selector. */

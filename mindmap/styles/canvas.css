@@ -15,18 +15,30 @@
 	#map { display: block; width: 100%; height: 100%; }
 
 	.topic { cursor: pointer; }
+	/* A node takes a press anywhere within its shape, filled or not: given no
+		fill, its outline took none inside, so a press there went to what lay
+		beneath, an arc's press target or the canvas (found in audit,
+		2026-11-12). A node being dragged takes none, so the node under the
+		pointer can be found to drop it on. */
+	.topic:not(.dragging) .outline { pointer-events: visible; }
 	.topic.dragging { opacity: .55; pointer-events: none; }
 
-	/* The selection is a soft glow round the node's own shape, in the
-		highlight colour at half strength whatever that colour is, at the
-		master's word (2026-11-12); a selected line glows the same way.
-		Behaviour (by eye): the glow reads as soft, not as a box. */
-	.halo, .line-halo { display: none; fill: none; stroke: var(--highlight); stroke-opacity: .5; pointer-events: none; }
-	.halo { stroke-width: 6; filter: blur(1.5px); }
+	/* The selection is a thin, soft glow round the node's own shape, in the
+		highlight colour at 40% strength whatever that colour is, at the
+		master's word (2026-11-12): at 6 wide and half strength it was too
+		thick and too opaque. A selected line or branch glows the same way.
+		Behaviour (by eye): the glow reads as soft, not as a box, and is
+		still seen on a white canvas. */
+	.halo, .line-halo, .branch-halo { display: none; fill: none; stroke: var(--highlight); stroke-opacity: .4; pointer-events: none; }
+	.halo { stroke-width: 3; filter: blur(1px); }
 	.topic.selected .halo { display: inline; }
 	.topic.drop-target .halo { display: inline; stroke-dasharray: 4 3; }
-	.line { cursor: pointer; }
-	.line.selected .line-halo { display: inline; stroke-width: 7; }
+	.line, .line-target, .branch-target { cursor: pointer; }
+	/* A line is pressed by its wide unseen target, which lies under the
+		nodes; its drawn stroke takes no press, so where an arc, drawn over the
+		nodes, crosses one, a press there is the node's. */
+	.line-path { pointer-events: none; }
+	.line.selected .line-halo, [data-branch].selected .branch-halo { display: inline; stroke-width: 7; }
 
 	/* The fold dot shows on the node under the pointer, and on the selected one. */
 	.fold-dot { opacity: 0; cursor: pointer; transition: opacity .12s ease; }

@@ -22,7 +22,7 @@ import { RemarkField } from "./remark-field.js"
 	commit, and it is always the newest version CHANGELOG.md names, its first
 	entry; TAI's check-commits holds every commit to this (bin/check,
 	.check-commits.json). */
-const VERSION = "0.22.8"
+const VERSION = "0.31.0"
 /* How long a notice stays, unless another takes its place. */
 const NOTICE_TIME = 7000
 /* The notice for each reason a file would not open. */
@@ -254,6 +254,13 @@ class Page {
 		this.view.reveal( topic, { below } )
 	}
 
+	/* Scrolls the panel so a control's row is in sight: a line or a branch
+		 is clicked to change its look, its colour first, and in a short window
+		 its rows stood below the panel's fold (found in use, 2026-11-12). */
+	showControl( id ){
+		this.element( id ).closest( ".control-row" ).scrollIntoView( { block: "nearest" } )
+	}
+
 	/* The remark of the one node selected, if it is drawn; with none or several, none. */
 	showRemark(){
 		const topics = this.editor.selectedTopics
@@ -440,7 +447,15 @@ class Page {
 			},
 			selectLine: id => {
 				const line = editor.map.findLine( id )
-				if( line ) editor.selectLine( line )
+				if( !line ) return
+				editor.selectLine( line )
+				this.showControl( "line-colour" )
+			},
+			selectBranch: id => {
+				const leading = topic( id )
+				if( !leading ) return
+				editor.selectBranch( leading )
+				this.showControl( "branch-colour" )
 			},
 			clearSelection: () => editor.clearSelection(),
 			fold: id => {
@@ -517,6 +532,7 @@ class Page {
 		const choosers = {
 			layout: value => { editor.changeLayout( value ); this.view.centre() },
 			theme: value => editor.changeTheme( value ),
+			lineForm: value => editor.changeLineForm( value ),
 		}
 		return {
 			command: name => commands[ name ]?.(),
@@ -524,7 +540,6 @@ class Page {
 			map: ( which, value ) => choosers[ which ]( value ),
 			setting: ( name, value, gesture = null ) => settings[ name ]( value, gesture ),
 			label: text => editor.labelLine( text ),
-			arrows: arrows => editor.pointLine( arrows ),
 			refuseColour: typed => {
 				this.notice( this.language.say( "notAColour", { typed } ) )
 				this.redraw( { mapChanged: false } )

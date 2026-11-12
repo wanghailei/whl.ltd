@@ -5,6 +5,8 @@ import { NODE, BRANCH, LINE, hexColour } from "./style.js"
 export const LAYOUTS = [ "right", "both", "down" ]
 export const THEMES = [ "mono", "spectrum", "ocean", "earth", "dusk" ]
 export const APPEARANCES = [ "light", "dark" ]
+/* The forms a map's auxiliary lines take, all alike: routed round the nodes in straight runs, or arcs (drawing/line-forms.js). */
+export const LINE_FORMS = [ "straight", "arc" ]
 
 /* The fills given to whole levels of the map: a colour, or none, for every
 	node at a depth, the central node's being depth nought. A value: every
@@ -110,24 +112,33 @@ export class MapStyle {
 }
 
 /* A mind map: the tree of topics under its central node, the auxiliary lines
-	between them, and the map's layout, theme, appearance and styles.
+	between them and the form they take, and the map's layout, theme,
+	appearance and styles.
 
 	Pre-flight answers. The map owns the identities of its topics and lines and
 	hands out new ones, so two never share one. It owns removal too: a topic
 	that goes takes its lines with it, which no caller could be trusted to
-	remember. Layout, theme and appearance refuse a name the map does not know,
-	so a map is never in a state no code can draw. */
+	remember. Layout, theme, appearance and line form refuse a name the map does not know,
+	so a map is never in a state no code can draw. Two topics are joined by one
+	line at most, either way, at the master's word (2026-11-12): the map makes
+	no second, and of several handed to it, as an older file may hold, it
+	keeps the first. A line joins two topics, never one to itself: the editor
+	never made one, and an arc cannot be drawn from a tail to that same tail
+	(found in review, 2026-11-12: one in a hand-edited file stopped the page
+	drawing), so the map makes none and keeps none handed to it. */
 export class MindMap {
-	constructor( { root, layout = "right", theme = "mono", appearance = "dark", style = new MapStyle(), lines = [] } ){
+	constructor( { root, layout = "right", theme = "mono", appearance = "dark", lineForm = "straight", style = new MapStyle(), lines = [] } ){
 		this.root = root
 		this.chosenLayout = "right"
 		this.chosenTheme = "mono"
 		this.chosenAppearance = "dark"
+		this.chosenLineForm = "straight"
 		this.layout = layout
 		this.theme = theme
 		this.appearance = appearance
+		this.lineForm = lineForm
 		this.style = style
-		this.lines = lines
+		this.lines = lines.filter( ( line, index ) => line.from !== line.to && lines.findIndex( other => other.joins( line.from, line.to ) ) === index )
 		this.counters = { topic: highest( this.topics.map( topic => topic.id ), "n" ), line: highest( lines.map( line => line.id ), "l" ) }
 	}
 
@@ -158,7 +169,11 @@ export class MindMap {
 		this.lines = this.lines.filter( line => !leaving.some( gone => line.touches( gone ) ) )
 	}
 
+	/* A new line between two topics, or, where a line already joins them either way, that line, and none is made; none from a topic to itself. */
 	newLine( fields ){
+		if( fields.from === fields.to ) return null
+		const joining = this.lineBetween( fields.from, fields.to )
+		if( joining ) return joining
 		this.counters.line += 1
 		const line = new AuxiliaryLine( { ...fields, id: "l" + this.counters.line } )
 		this.lines.push( line )
@@ -167,6 +182,11 @@ export class MindMap {
 
 	findLine( id ){
 		return this.lines.find( line => line.id === id ) ?? null
+	}
+
+	/* The line joining the topics of these two identities, either way, or null. */
+	lineBetween( one, other ){
+		return this.lines.find( line => line.joins( one, other ) ) ?? null
 	}
 
 	removeLine( line ){
@@ -187,11 +207,15 @@ export class MindMap {
 	get appearance(){ return this.chosenAppearance }
 	set appearance( name ){ if( APPEARANCES.includes( name ) ) this.chosenAppearance = name }
 
+	get lineForm(){ return this.chosenLineForm }
+	set lineForm( name ){ if( LINE_FORMS.includes( name ) ) this.chosenLineForm = name }
+
 	toJSON(){
 		return {
 			layout: this.layout,
 			theme: this.theme,
 			appearance: this.appearance,
+			lineForm: this.lineForm,
 			style: this.style.toJSON(),
 			root: this.root.toJSON(),
 			auxiliaryLines: this.lines.map( line => line.toJSON() ),

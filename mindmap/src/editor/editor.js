@@ -41,6 +41,12 @@ export class Editor {
 		return this.selection.lineIn( this.map )
 	}
 
+	/* The topic whose branch is selected, pressed on the canvas so its look
+		 can be changed at once (the master's word, 2026-11-12). */
+	get selectedBranch(){
+		return this.selection.branchIn( this.map )
+	}
+
 	/* The topic a single-node command acts on: the first one selected. */
 	get focus(){
 		return this.selectedTopics[ 0 ] ?? null
@@ -64,6 +70,11 @@ export class Editor {
 
 	selectLine( line ){
 		this.reselect( Selection.ofLine( line ) )
+	}
+
+	/* The central node has no branch to select. */
+	selectBranch( topic ){
+		if( !topic.isRoot ) this.reselect( Selection.ofBranch( topic ) )
 	}
 
 	clearSelection(){
@@ -165,8 +176,10 @@ export class Editor {
 		this.change( () => this.selectedTopics.forEach( topic => { topic.style = topic.style.with( changes ) } ), gesture )
 	}
 
+	/* The selected branch takes it, or the selected nodes' branches. */
 	styleBranches( changes, gesture = null ){
-		this.change( () => this.selectedTopics.forEach( topic => { topic.branch = topic.branch.with( changes ) } ), gesture )
+		const branched = this.selectedBranch ? [ this.selectedBranch ] : this.selectedTopics
+		this.change( () => branched.forEach( topic => { topic.branch = topic.branch.with( changes ) } ), gesture )
 	}
 
 	/* Every node at the depth of each selected node takes this fill; a null
@@ -217,6 +230,11 @@ export class Editor {
 
 	changeLayout( name ){
 		this.change( () => { this.map.layout = name } )
+	}
+
+	/* The form every auxiliary line of the map takes: straight or arc. */
+	changeLineForm( name ){
+		this.change( () => { this.map.lineForm = name } )
 	}
 
 	/* A theme sets aside the colours of the map's own styles, so it shows;
@@ -270,7 +288,9 @@ export class Editor {
 		this.lineFrom = null
 	}
 
-	/* A line from one node to another, selected; none from a node to itself. */
+	/* A line from one node to another, selected; none from a node to itself,
+		 and none where a line already joins the two, which is selected instead
+		 and leaves nothing to undo (model/mind-map.js). */
 	join( from, to ){
 		if( from === to ) return null
 		let line = null
@@ -281,10 +301,6 @@ export class Editor {
 
 	labelLine( label ){
 		this.changeLine( line => { line.label = label } )
-	}
-
-	pointLine( arrows ){
-		this.changeLine( line => { line.arrows = arrows } )
 	}
 
 	styleLine( changes, gesture = null ){
@@ -351,15 +367,19 @@ export class Editor {
 	}
 
 	/* Goes to a state from the history, keeping what is selected wherever it
-		 still exists; a selected node the state folds away gives its place to
-		 the fold that hides it, so the selection is always something drawn. */
+		 still exists; a selected node, or the node a selected branch leads to,
+		 that the state folds away gives its place to the fold that hides it, so
+		 the selection is always something drawn (found in review, 2026-11-12:
+		 a hidden branch stayed selected, its section still live). */
 	travel( state ){
 		if( state === null ) return
 		this.map = this.file.read( state )
 		this.lastGesture = null
 		const topics = this.selectedTopics
 		if( topics.some( topic => topic.isHidden ) ) this.selection = Selection.ofMany( [ ...new Set( topics.map( topic => topic.shownAncestor ) ) ] )
-		if( this.selectedTopics.length === 0 && !this.selectedLine ) this.selection = Selection.of( this.map.root )
+		const branch = this.selectedBranch
+		if( branch?.isHidden ) this.selection = Selection.of( branch.shownAncestor )
+		if( this.selectedTopics.length === 0 && !this.selectedLine && !this.selectedBranch ) this.selection = Selection.of( this.map.root )
 		this.announce( { mapChanged: true } )
 	}
 

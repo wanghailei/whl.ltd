@@ -31,20 +31,17 @@ const FINEST_CELL = 8
 export class LineRoute {
 	constructor( boxes ){
 		this.boxes = boxes
+		/* The nodes as the search avoids them: first with room kept round each, then as they stand. */
+		this.margins = [ CLEARANCE, 0 ].map( clearance => boxes.map( box => box.grown( clearance ) ) )
 	}
 
 	/* The waypoints from the start, leaving along `outward`, to the end,
-		 arriving against `inward`; whether the way keeps room round the nodes
-		 it passes or, finding none, runs close along them; and how far to
-		 either side of it lanes may run. Lines that share the way in lanes need
-		 up to `beside` on either side, so it keeps that much more room from
-		 every node, and from the two `joined` nodes, which the lanes leave and
-		 meet square, as much as their stubs allow. Without it, the outer lanes
-		 of three or more lines ran under nodes (found in review, 2026-11-12). */
-	between( start, outward, end, inward, { beside = 0, joined = [] } = {} ){
+		 arriving against `inward`, and whether the way keeps room round the
+		 nodes it passes or, finding none, runs close along them. */
+	between( start, outward, end, inward ){
 		const first = start.plus( outward.times( this.stub( start, outward ) ) ), last = end.plus( inward.times( this.stub( end, inward ) ) )
-		const { turns, keepsRoom, room } = this.middle( first, last, beside, joined )
-		return { waypoints: [ start, first, ...turns, last, end ], keepsRoom, room }
+		const { turns, keepsRoom } = this.middle( first, last )
+		return { waypoints: [ start, first, ...turns, last, end ], keepsRoom }
 	}
 
 	/* How far a line runs straight out of a tail: the stub, or half the way to the first node ahead, if that is nearer. */
@@ -52,23 +49,15 @@ export class LineRoute {
 		return Math.min( STUB, ...this.boxes.map( box => distanceInto( from, toward, box ) / 2 ) )
 	}
 
-	/* The turning points between the stubs, none where the way is clear,
-		 else the shortest way round, and the room it keeps for lanes: all they
-		 need, else half, else none, so where a gap between nodes is too narrow
-		 for the lanes they draw closer rather than the line, finding no way,
-		 running straight under the nodes (found in review, 2026-11-12). At each,
-		 room is kept round the nodes where it can be, else none. */
-	middle( first, last, beside, joined ){
-		for( const room of beside > 0 ? [ beside, beside / 2, 0 ] : [ 0 ] ){
-			for( const [ index, clearance ] of [ CLEARANCE, 0 ].entries() ){
-				const obstacles = this.boxes.map( box => box.grown( joined.includes( box ) ? Math.max( clearance, room ) : clearance + room ) )
-				const keepsRoom = index === 0
-				if( isClear( first, last, obstacles ) ) return { turns: [], keepsRoom, room }
-				const turns = this.search( first, last, obstacles )
-				if( turns ) return { turns, keepsRoom, room }
-			}
+	/* The turning points between the stubs: none where the way is clear, else the shortest way round, with room kept where it can be. */
+	middle( first, last ){
+		for( const [ index, obstacles ] of this.margins.entries() ){
+			const keepsRoom = index === 0
+			if( isClear( first, last, obstacles ) ) return { turns: [], keepsRoom }
+			const turns = this.search( first, last, obstacles )
+			if( turns ) return { turns, keepsRoom }
 		}
-		return { turns: [], keepsRoom: true, room: 0 }
+		return { turns: [], keepsRoom: true }
 	}
 
 	/* The turning points of the shortest way round from one point to another, or null when there is no way. */

@@ -10,7 +10,7 @@ const DRAG_THRESHOLD = 4
 	onto another; a press on the empty canvas pans, or with Shift draws the
 	selecting rectangle, and a click there without moving clears the
 	selection. A press on a fold dot or badge folds, on an auxiliary line
-	selects the line. Each kind of press is a
+	selects the line, and on a branch the branch. Each kind of press is a
 	gesture of its own, which knows how it moves and how it ends. */
 export class Pointer {
 	constructor( { stage, view, marquee, actions } ){
@@ -48,6 +48,11 @@ export class Pointer {
 		const line = target.closest( "[data-line]" )
 		if( line ){
 			this.actions.selectLine( line.dataset.line )
+			return
+		}
+		const branch = target.closest( "[data-branch]" )
+		if( branch ){
+			this.actions.selectBranch( branch.dataset.branch )
 			return
 		}
 		this.gesture = event.shiftKey ? new MarqueeGesture( this, event ) : new PanGesture( this, event )

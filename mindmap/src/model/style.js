@@ -144,8 +144,9 @@ export function hexColour( value ){
 export const NODE_SHAPES = [ "box", "round", "pill", "none" ]
 export const FONTS = [ "mono", "sans", "serif" ]
 export const BRANCH_SHAPES = [ "curve", "elbow", "straight" ]
-export const LINE_SHAPES = [ "curve", "straight" ]
 export const DASHES = [ "solid", "dashed" ]
+/* A line may also be dotted, as it is unless given another (drawing/look.js). */
+export const LINE_DASHES = [ ...DASHES, "dotted" ]
 
 export const NODE = new StyleKind( {
 	/* Oval and underline were offered until 0.2.0, which took them away at the master's word. */
@@ -165,9 +166,12 @@ export const BRANCH = new StyleKind( {
 	dash: new Choice( DASHES ),
 } )
 
+/* A line's corners were round or sharp, its shape, until 0.30.0 made every
+	corner round at the master's word (2026-11-12, 22:28). A shape a file or a
+	kept default gives a line is a name this kind no longer knows, so it is
+	left out without a word, and the line's corners are round. */
 export const LINE = new StyleKind( {
-	shape: new Choice( LINE_SHAPES ),
 	colour: new Colour(),
 	width: new Measure( 0.5, 12 ),
-	dash: new Choice( DASHES ),
+	dash: new Choice( LINE_DASHES ),
 } )

@@ -28,19 +28,25 @@ export class MapFileError extends Error {
 }
 
 /* The map's own file, `.mindmap.json`: every topic with its words, remark,
-	styles and fold, every auxiliary line, the map's styles, theme, appearance
-	and layout, under the format's name and version. Writing and reading are
+	styles and fold, every auxiliary line and the form the lines take, the
+	map's styles, theme, appearance and layout, under the format's name and
+	version. The lines' form came with 0.26.0 and needs no new version: a
+	file without it, or a Mindmap before it reading one with it, draws the
+	lines straight, as they were. Writing and reading are
 	exact inverses for every map the editor makes, which the round-trip test
 	holds it to.
 
 	A file from before 0.2.0 may hold an icon or a link on a node, which
-	Mindmap no longer has: both are passed over. Its note is read as the
+	Mindmap no longer has: both are passed over, as are the arrowheads a file
+	from before 0.24.0 gives its lines. Its note is read as the
 	node's remark, the same words under their new name, and its oval and
 	underline shapes as pills (model/style.js).
 
 	Reading is lenient where a hand-edited file can be mended without guessing
 	— a doubled identity gets a new one, an unknown value falls back, a line to
-	a topic that is not there is dropped — and strict only where it cannot:
+	a topic that is not there is dropped, and of several lines between the same
+	two topics the map keeps the first, and none from a topic to itself — and
+	strict only where it cannot:
 	text that is not a map, a newer version, no central node. */
 export class MapFile {
 	static SUFFIX = ".mindmap.json"
@@ -56,7 +62,7 @@ export class MapFile {
 		const root = new TopicReader().read( saved.root )
 		if( !( saved.version >= 2 ) && VERSION_ONE_CENTRAL_WORDS.includes( root.text ) ) root.text = ""
 		const lines = linesFrom( saved.auxiliaryLines, root )
-		return new MindMap( { root, layout: saved.layout, theme: saved.theme, appearance: saved.appearance, style: MapStyle.from( saved.style ), lines } )
+		return new MindMap( { root, layout: saved.layout, theme: saved.theme, appearance: saved.appearance, lineForm: saved.lineForm, style: MapStyle.from( saved.style ), lines } )
 	}
 
 	nameFor( map ){
@@ -126,7 +132,7 @@ function linesFrom( saved, root ){
 	const known = new Set( [ ...root.walk() ].map( topic => topic.id ) )
 	const lines = Array.isArray( saved ) ? saved.filter( isRecord ) : []
 	const read = lines.filter( line => known.has( line.from ) && known.has( line.to ) ).map( function( line ){
-		return new AuxiliaryLine( { id: line.id, from: line.from, to: line.to, label: words( line.label ), arrows: line.arrows, style: LINE.style( line.style ) } )
+		return new AuxiliaryLine( { id: line.id, from: line.from, to: line.to, label: words( line.label ), style: LINE.style( line.style ) } )
 	} )
 	/* As with topics: a missing or doubled identity is replaced by the next free one. */
 	const taken = new Set()

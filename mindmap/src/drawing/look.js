@@ -10,9 +10,11 @@ import { shapeFor } from "./shapes.js"
 const BASE = {
 	root: NODE.style( { shape: "pill", borderWidth: 0, font: "mono", fontSize: 14 } ),
 	node: NODE.style( { shape: "pill", borderWidth: 0, font: "mono", fontSize: 14 } ),
-	branch: BRANCH.style( { shape: "elbow", width: 2, dash: "solid" } ),
-	/* Half the 1.5 it was, at the master's word (2026-11-12). */
-	line: LINE.style( { shape: "curve", width: 0.75, dash: "dashed" } ),
+	/* 1.25 wide, thinner than the 2 it was, at the master's word (2026-11-12). */
+	branch: BRANCH.style( { shape: "elbow", width: 1.25, dash: "solid" } ),
+	/* Dotted in round dots, and 1.5 wide, at the master's word (2026-11-12):
+		 halved to 0.75 first, it was too thin to read once dotted. */
+	line: LINE.style( { width: 1.5, dash: "dotted" } ),
 }
 
 /* How each thing on the map looks, every value settled. The one place the

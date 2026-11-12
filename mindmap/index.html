@@ -137,14 +137,20 @@
 </section>
 
 <!-- Below here the panel's sections show only with a selection: the
-	Line section's ADD is always there, its own rows only with a line
-	selected; Node and Branch only with nodes selected. They stand under every
+	Line section's form and ADD are always there, its own rows only with a
+	line selected; Node and Branch only with nodes selected. They stand under every
 	section always shown, so showing or hiding them moves nothing else. -->
 
-<!-- Line: auxiliary lines between any two nodes. ADD is always here; the
-	rows under it are the selected line's own. -->
+<!-- Line: auxiliary lines between any two nodes. The form every line of
+	the map takes, straight or arc, and ADD are always here; the rows under
+	them are the selected line's own. A line has no SHAPE: every corner of a
+	straight line is round (2026-11-12). -->
 <section class="panel" id="line-panel">
 	<h2 data-cn="輔助線">Line</h2>
+	<div class="control-row group" data-map="lineForm">
+		<button class="word" data-value="straight" data-cn="直線">Straight</button>
+		<button class="word" data-value="arc" data-cn="弧線">Arc</button>
+	</div>
 	<div class="control-row">
 		<button class="word" data-command="add-line" data-cn="新增">Add</button>
 	</div>
@@ -152,17 +158,6 @@
 		<div class="control-row">
 			<span class="label" data-cn="標籤">Label</span>
 			<input type="text" id="line-label" class="wide" spellcheck="false" aria-label="Line label" data-cn-aria-label="輔助線標籤">
-		</div>
-		<div class="control-row group" data-line-arrows>
-			<span class="label" data-cn="箭頭">Arrow</span>
-			<button class="word" data-value="none" data-cn="無">None</button>
-			<button class="word" data-value="start" data-cn="起">Start</button>
-			<button class="word" data-value="end" data-cn="終">End</button>
-			<button class="word" data-value="both" data-cn="兩端">Both</button>
-		</div>
-		<div class="control-row group" data-style="line" data-property="shape">
-			<button class="word" data-value="curve" data-cn="曲線">Curve</button>
-			<button class="word" data-value="straight" data-cn="直線">Straight</button>
 		</div>
 		<div class="control-row">
 			<span class="label" data-cn="顏色">Colour</span>
@@ -177,6 +172,7 @@
 		<div class="control-row group" data-style="line" data-property="dash">
 			<button class="word" data-value="solid" data-cn="實線">Solid</button>
 			<button class="word" data-value="dashed" data-cn="虛線">Dashed</button>
+			<button class="word" data-value="dotted" data-cn="點線">Dotted</button>
 		</div>
 		<div class="control-row">
 			<button class="word" data-command="default-line" data-cn="設為預設">Set as default</button>
@@ -250,7 +246,7 @@
 	</div>
 	<div class="control-row">
 		<span class="label" data-cn="寬度">Width</span>
-		<input type="range" id="branch-width" data-style="branch" data-property="width" min="0.5" max="12" step="0.5" aria-label="Branch width" data-cn-aria-label="分支寬度">
+		<input type="range" id="branch-width" data-style="branch" data-property="width" min="0.5" max="12" step="0.25" aria-label="Branch width" data-cn-aria-label="分支寬度">
 		<span class="value" data-shows="branch-width"></span>
 	</div>
 	<div class="control-row group" data-style="branch" data-property="dash">
