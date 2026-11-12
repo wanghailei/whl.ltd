@@ -40,8 +40,11 @@
 
 	/* Every row is the same height, headings included, so the column keeps one rhythm. */
 	.control-row { display: flex; align-items: center; flex-wrap: wrap; gap: 0 6px; min-height: var(--base-row-height); }
-	/* As wide as the longest label, LEVEL FILL, so every row's control starts on one line. */
-	.control-row > .label:first-child { min-width: 10ch; }
+	/* As wide as the longest label, HIGHLIGHT, so every row's control starts
+		on one line. It was 10ch, for LEVEL FILL, taken away in 0.32.0; the
+		7px over left no room for 同層同色 全局同色 彩虹色, and 彩虹色 fell to
+		a line of its own (found in use, 2026-11-13). */
+	.control-row > .label:first-child { min-width: 9ch; }
 	.label { text-transform: uppercase; opacity: .45; white-space: nowrap; flex: 0 0 auto; }
 
 	/* Buttons are words you can press — no box, no fill. Strength of ink says which one is live. */

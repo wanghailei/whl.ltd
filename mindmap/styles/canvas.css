@@ -9,6 +9,13 @@
 		background: var(--ground);
 		cursor: grab;
 		touch-action: none;
+		/* A press on the map is the map's own gesture, never the browser's text
+			selection: a node pressed near its edge and dragged selected the
+			words of the nodes it passed (found in use, 2026-11-12). The field a
+			node's words are written in is editable, so its own words are still
+			selected as in any field. */
+		-webkit-user-select: none;
+		user-select: none;
 	}
 	#stage.panning { cursor: grabbing; }
 	#stage.joining, #stage.joining .topic { cursor: crosshair; }

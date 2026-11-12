@@ -15,6 +15,18 @@
 </head>
 <body>
 
+<!-- Carbon icons the page's words draw in more than one place, each kept
+	once as a symbol and drawn where it is used: the up and down arrows of the
+	reorder keys, in the foot and the help. The house face draws ↑ and ↓ at its
+	x-height, specks at the interface's 12 pixels that read as + (found in
+	use, 2026-11-13). Each arrow's view is the arrow alone, a unit and a half
+	of room each side, so it fills the one character's cell the glyph took,
+	and the heads of ↑ and ↓ side by side stay apart. -->
+<svg class="symbols" aria-hidden="true">
+<symbol id="arrow-up" viewBox="4.5 4 23 24"><path d="M16 4 6 14 7.41 15.41 15 7.83 15 28 17 28 17 7.83 24.59 15.41 26 14 16 4z"/></symbol>
+<symbol id="arrow-down" viewBox="4.5 4 23 24"><path d="M24.59 16.59 17 24.17 17 4 15 4 15 24.17 7.41 16.59 6 18 16 28 26 18 24.59 16.59z"/></symbol>
+</svg>
+
 <!-- The shell, Alluvial's: one grid of four columns — the outline, the
 	canvas, the help, the control panel — each folded column 0px wide, opened
 	by a class of its own on the shell, and the change slides. -->
@@ -62,11 +74,12 @@
 </div>
 <!-- The foot's line: held back, at its left, the main keys, in the keyboard
 	map's own words (SPEC.md, The keyboard); double-click edits a node too but
-	is not listed. Within a hint the spaces do not break, so a narrow line
-	folds between hints; nor does the space before each separator, so a
-	folded line never starts with one. -->
+	is not listed. Each hint is one piece that does not break, with its own
+	Chinese, so a narrow line folds between hints; nor does the space before
+	each separator, so a folded line never starts with one. The arrows of the
+	reorder keys are the symbols above, named for screen readers. -->
 <div id="foot-line">
-<div id="keys" data-cn="TAB&nbsp;子節點&nbsp;· SHIFT+TAB&nbsp;父節點&nbsp;· ENTER&nbsp;同級節點&nbsp;· DELETE&nbsp;刪除&nbsp;· 方向鍵&nbsp;切換節點&nbsp;· ALT+↑↓&nbsp;調整順序&nbsp;· CMD+C/X/V&nbsp;複製、剪下、貼上&nbsp;· CMD+F&nbsp;搜尋&nbsp;· CMD+Z&nbsp;復原&nbsp;· CMD+SHIFT+Z&nbsp;重做&nbsp;· CMD+0&nbsp;置中">TAB&nbsp;child&nbsp;· SHIFT+TAB&nbsp;parent&nbsp;· ENTER&nbsp;sibling&nbsp;· DELETE&nbsp;delete&nbsp;· ARROWS&nbsp;move&nbsp;between&nbsp;nodes&nbsp;· ALT+↑↓&nbsp;reorder&nbsp;· CMD+C/X/V&nbsp;copy,&nbsp;cut,&nbsp;paste&nbsp;· CMD+F&nbsp;find&nbsp;· CMD+Z&nbsp;undo&nbsp;· CMD+SHIFT+Z&nbsp;redo&nbsp;· CMD+0&nbsp;centre</div>
+<div id="keys"><span class="hint" data-cn="TAB 子節點">TAB child</span>&nbsp;· <span class="hint" data-cn="SHIFT+TAB 父節點">SHIFT+TAB parent</span>&nbsp;· <span class="hint" data-cn="ENTER 同級節點">ENTER sibling</span>&nbsp;· <span class="hint" data-cn="DELETE 刪除">DELETE delete</span>&nbsp;· <span class="hint" data-cn="方向鍵 切換節點">ARROWS move between nodes</span>&nbsp;· <span class="hint">ALT+<svg class="key-arrow" role="img" aria-label="up" data-cn-aria-label="上"><use href="#arrow-up"/></svg><svg class="key-arrow" role="img" aria-label="down" data-cn-aria-label="下"><use href="#arrow-down"/></svg> <span data-cn="調整順序">reorder</span></span>&nbsp;· <span class="hint" data-cn="CMD+C/X/V 複製、剪下、貼上">CMD+C/X/V copy, cut, paste</span>&nbsp;· <span class="hint" data-cn="CMD+F 搜尋">CMD+F find</span>&nbsp;· <span class="hint" data-cn="CMD+Z 復原">CMD+Z undo</span>&nbsp;· <span class="hint" data-cn="CMD+SHIFT+Z 重做">CMD+SHIFT+Z redo</span>&nbsp;· <span class="hint" data-cn="CMD+0 置中">CMD+0 centre</span></div>
 </div>
 </div>
 </div>

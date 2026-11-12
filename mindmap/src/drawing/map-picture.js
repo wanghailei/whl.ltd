@@ -20,6 +20,10 @@ const LABEL_EDGE = 2
 const LINE_EDGE = LABEL_EDGE
 /* How wide the unseen stroke is that takes a press on a line or a branch. */
 const LINE_TARGET = 14
+/* The mask that keeps lines drawn over the nodes off their words, and the
+	filter that makes its holes: one map is drawn to a page or a file. */
+const WORDS_CLEAR = "words-clear"
+const SILHOUETTE = "words-silhouette"
 
 /* The map as a picture: laid out by its layout, every node in its look, its
 	branches and auxiliary lines, as SVG.
@@ -57,12 +61,37 @@ export class MapPicture {
 		 labels, which must be read. */
 	markup( { screen = false } = {} ){
 		const shown = this.arrangement.topics
+		const over = this.lineForm?.liesOverNodes === true
 		const targets = screen ? "<g class=\"line-targets\">" + this.lineShapes.map( shape => this.targetMarkup( shape ) ).join( "" ) + "</g>" : ""
-		const lines = "<g class=\"lines\">" + this.lineShapes.map( shape => this.lineMarkup( shape, screen ) ).join( "" ) + "</g>"
+		const lines = "<g" + attributes( { class: "lines", mask: over ? `url(#${ WORDS_CLEAR })` : undefined } ) + ">" + this.lineShapes.map( shape => this.lineMarkup( shape, screen ) ).join( "" ) + "</g>"
 		const topics = "<g class=\"topics\">" + shown.map( topic => this.topicMarkup( topic, screen ) ).join( "" ) + "</g>"
 		return "<g class=\"branches\">" + shown.filter( topic => !topic.isRoot ).map( topic => this.branchMarkup( topic, screen ) ).join( "" ) + "</g>" +
-			targets + ( this.lineForm?.liesOverNodes ? topics + lines : lines + topics ) +
+			targets + ( over ? topics + this.wordsClearMarkup( screen ) + lines : lines + topics ) +
 			"<g class=\"line-labels\">" + this.lineShapes.map( shape => this.labelMarkup( shape ) ).join( "" ) + "</g>"
+	}
+
+	/* Where the lines lie over the nodes, every node's words stay whole under
+		 them (found in use, 2026-11-13: an arc's edge, in the canvas's colour,
+		 hid a stripe of the words it crossed): the lines are drawn through a
+		 mask open everywhere but over each letter and mark, with a label's
+		 edge round it, so an arc still runs over a node, ringed as ever,
+		 threading between its letters, never hidden behind the node. A mask
+		 over the words' whole box hid the arc across nearly all of a pill.
+		 Each hole is a letter's own alpha, in black whatever its colours,
+		 grown by the edge and laid over the letter as it stands: a colour
+		 emoji keeps its own colours whatever its fill and takes no stroke, so
+		 letters drawn in black and stroked left an emoji's light parts and its
+		 rim open to the arc (found in audit, 2026-11-13); the grown alpha
+		 alone left a letter's thin strokes faintly open, which the letter's
+		 own alpha over it closes. */
+	wordsClearMarkup( screen ){
+		const frame = this.frame, region = { x: frame.x, y: frame.y, width: frame.width, height: frame.height }
+		const holes = this.arrangement.topics.map( topic => this.faces.of( topic ).clearing( this.arrangement.boxOf( topic ), { screen } ) )
+		return "<filter" + attributes( { id: SILHOUETTE, filterUnits: "userSpaceOnUse", ...region } ) + ">" +
+			"<feMorphology" + attributes( { in: "SourceAlpha", operator: "dilate", radius: LABEL_EDGE, result: "grown" } ) + "/>" +
+			"<feMerge><feMergeNode in=\"grown\"/><feMergeNode in=\"SourceAlpha\"/></feMerge></filter>" +
+			"<mask" + attributes( { id: WORDS_CLEAR, maskUnits: "userSpaceOnUse", ...region } ) + ">" +
+			"<rect" + attributes( { ...region, fill: "white" } ) + "/><g" + attributes( { filter: `url(#${ SILHOUETTE })` } ) + ">" + holes.join( "" ) + "</g></mask>"
 	}
 
 	/* The picture as a standalone SVG file, on the map's background, framing
@@ -148,15 +177,20 @@ export class MapPicture {
 		const forward = line.from <= line.to
 		const [ first, second ] = forward ? [ from, to ] : [ to, from ]
 		const style = this.look.line( line )
-		const found = this.lineForm.course( this.tailOf( first ), this.tailOf( second ) )
+		const found = this.lineForm.course( this.tailOf( first, second ), this.tailOf( second, first ) )
 		const course = forward ? found : found.reversed()
 		const label = this.labelAt( line, course )
 		return { line, style, start: course.start, end: course.end, waypoints: course.points, path: course.path, label: label.point, labelHalf: label.half }
 	}
 
-	/* A node's tail, where an auxiliary line leaves or meets it, the way out of it, and the node's box. */
-	tailOf( topic ){
-		const outward = this.arrangement.directionOf( topic ), box = this.arrangement.boxOf( topic )
+	/* A node's tail, where an auxiliary line to another node leaves or meets
+		 it, the way out of it, and the node's box. The central node has no
+		 parent and grows every way, so a line leaves it the way the node it
+		 joins grows, as a branch does: in BOTH, a line to a node on the left
+		 left its right end and ran round the whole right half of the map
+		 (found in use, 2026-11-13). */
+	tailOf( topic, other ){
+		const outward = this.arrangement.directionOf( topic.isRoot ? other : topic ), box = this.arrangement.boxOf( topic )
 		return { point: this.faces.of( topic ).anchor( box, outward ), outward, box }
 	}
 

@@ -18,6 +18,22 @@ export class CanvasView {
 		this.zoom = 1
 		this.offset = new Point( stage.clientWidth / 2, stage.clientHeight / 2 )
 		this.listeners = []
+		this.size = { width: stage.clientWidth, height: stage.clientHeight }
+		new ResizeObserver( () => this.keepMiddle() ).observe( stage )
+	}
+
+	/* When the canvas changes size — the outline, the help or the panel
+		 opening or folding beside it, or the window resized — what stood at
+		 its middle stays at its middle, so a centred map stays centred in the
+		 canvas that remains (found in use, 2026-11-13: opening the outline
+		 left the map where it stood on the narrowed canvas, its middle half
+		 the outline's width off the canvas's). The columns slide, so this
+		 runs at every step of the slide and the map glides with it. */
+	keepMiddle(){
+		const width = this.stage.clientWidth, height = this.stage.clientHeight
+		const across = ( width - this.size.width ) / 2, down = ( height - this.size.height ) / 2
+		this.size = { width, height }
+		if( across !== 0 || down !== 0 ) this.panBy( across, down )
 	}
 
 	/* Hears every change of zoom or pan. */

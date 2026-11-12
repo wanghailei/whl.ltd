@@ -111,7 +111,10 @@ function paletteTheme( { columns, ground } ){
 	their difference it runs on in steps of grey, at the master's word
 	(2026-11-12, 22:35), neighbours far apart, each reading under black or
 	white words and on the ground as the palette themes' colours do. It does
-	not fade outwards. The others take their hue families from the house
+	not fade outwards. Its four greys stand evenly apart in lightness, at
+	least 0.15 in OKLab's, from its first, the ground's ink, to the
+	furthest a branch still reads on the ground at 3 to 1; white and #d4d4d4
+	looked almost the same (found in use, 2026-11-13). The others take their hue families from the house
 	palette's 28: Spectrum spread round the whole wheel, Ocean the cyans to the
 	blues, Earth the ochres to the greens, Dusk the violets to the roses. */
 const THEMES = {
@@ -119,7 +122,7 @@ const THEMES = {
 		dark: new Scheme( {
 			background: "#0b0b0b",
 			root: "#ffffff",
-			mains: [ "#ffffff", "#8c8c8c", "#d4d4d4", "#a6a6a6" ],
+			mains: [ "#ffffff", "#949494", "#c8c8c8", "#636363" ],
 			border: "#8c8c8c",
 			branch: "#8c8c8c",
 			line: "#bdbdbd",
@@ -127,7 +130,7 @@ const THEMES = {
 		light: new Scheme( {
 			background: "#ffffff",
 			root: "#111111",
-			mains: [ "#111111", "#8c8c8c", "#3d3d3d", "#6b6b6b" ],
+			mains: [ "#111111", "#616161", "#363636", "#8e8e8e" ],
 			border: "#8c8c8c",
 			branch: "#8c8c8c",
 			line: "#595959",

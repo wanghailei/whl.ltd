@@ -13,6 +13,14 @@
 import { REMARK } from "./language.js"
 
 const EN_REMARK = REMARK.en.toLowerCase()
+/* The reorder keys, ALT with Carbon's up or down arrow from the page's
+	symbols (index.html), each one piece: the house face draws ↑ and ↓ at its
+	x-height, specks at the help's size (found in use, 2026-11-13). Each
+	arrow is named for screen readers in the sheet's language. */
+const ALT = {
+	en: { up: altWith( "up", "up" ), down: altWith( "down", "down" ) },
+	cn: { up: altWith( "up", "上" ), down: altWith( "down", "下" ) },
+}
 
 /* Each task: its question and answer in English, then in Chinese. */
 const TASKS = [
@@ -33,8 +41,8 @@ const TASKS = [
 		cn: [ "我想改節點的文字，怎麼做？", "雙擊節點後打字：ENTER 保留並在下方開出同級節點，SHIFT+ENTER 換行，ESC 放棄，點別處即保留。選取後直接打字則重寫文字。" ],
 	},
 	{
-		en: [ "I want to put a node earlier or later among its siblings. How?", "Select it and press ALT+↑ or ALT+↓, or drag it between two of its siblings." ],
-		cn: [ "我想調整節點在同級中的順序，怎麼做？", "選取後按 ALT+↑ 或 ALT+↓，或把它拖到兩個同級節點之間。" ],
+		en: [ "I want to put a node earlier or later among its siblings. How?", `Select it and press ${ ALT.en.up } or ${ ALT.en.down }, or drag it between two of its siblings.` ],
+		cn: [ "我想調整節點在同級中的順序，怎麼做？", `選取後按 ${ ALT.cn.up } 或 ${ ALT.cn.down }，或把它拖到兩個同級節點之間。` ],
 	},
 	{
 		en: [ "I want to copy or move a branch. How?", "Select its node and press CMD+C to copy or CMD+X to cut it, then select another node and press CMD+V: the branch goes under it." ],
@@ -115,6 +123,11 @@ const TASKS = [
 ]
 
 export const HELP = { en: sheet( "en" ), cn: sheet( "cn" ) }
+
+/* ALT and the arrow one way, with the name a screen reader says for it. */
+function altWith( way, name ){
+	return `<span class="chord">ALT+<svg class="key-arrow" role="img" aria-label="${ name }"><use href="#arrow-${ way }"/></svg></span>`
+}
 
 /* The sheet in one language: each question a small heading, its answer under it. */
 function sheet( language ){

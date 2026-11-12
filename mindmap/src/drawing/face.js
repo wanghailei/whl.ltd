@@ -56,40 +56,63 @@ export class Face {
 		return this.shape.glow( box )
 	}
 
+	/* Where the words and marks stand in the node's box: in its middle. */
+	wordsIn( box ){
+		const content = this.content
+		return Box.around( box.centre, content.x, content.y )
+	}
+
 	/* The node drawn in its box on the map's background: outline, words, marks. */
 	markup( box, ground, { screen = false } = {} ){
-		const content = this.content
-		const left = box.centre.x - content.x / 2
-		const top = box.centre.y - content.y / 2
-		const words = this.placeholder && !screen ? "" : this.wordsMarkup( left, top )
-		return this.shape.outline( box, this.style, ground ) + words + this.marksMarkup( left + this.textWidth, box.centre.y )
+		const { left, top } = this.wordsIn( box )
+		const ink = { class: this.placeholder ? "words placeholder" : "words", fill: this.style.get( "textColour" ), opacity: this.placeholder ? PLACEHOLDER_INK : undefined }
+		const words = this.drawsWords( screen ) ? this.wordsMarkup( left, top, ink ) : ""
+		return this.shape.outline( box, this.style, ground ) + words + this.marksMarkup( box )
+	}
+
+	/* The words' own shapes and the marks' squares, where they are drawn:
+		 what a mask keeps clear of the lines drawn over the nodes, so the
+		 words read whole and a line still shows between them (map-picture.js). */
+	clearing( box, { screen = false } = {} ){
+		const { left, top } = this.wordsIn( box )
+		const words = this.drawsWords( screen ) ? this.wordsMarkup( left, top, { class: "clearing" } ) : ""
+		const marks = this.markBoxes( box ).map( mark => "<rect" + attributes( { x: mark.x, y: mark.y, width: mark.width, height: mark.height } ) + "/>" )
+		return words + marks.join( "" )
+	}
+
+	/* A placeholder is the page's prompt, drawn on the screen alone; words are drawn everywhere. */
+	drawsWords( screen ){
+		return screen || !this.placeholder
 	}
 
 	/* One text element per line, each centred on its own line's middle, so
-		 every renderer — browser, rasteriser, editor — sets them alike. */
-	wordsMarkup( left, top ){
+		 every renderer — browser, rasteriser, editor — sets them alike, in the
+		 paint given. */
+	wordsMarkup( left, top, { class: name, ...paint } ){
 		return this.lines.map( ( line, index ) => "<text" + attributes( {
-			class: this.placeholder ? "words placeholder" : "words",
+			class: name,
 			x: left,
 			y: top + ( index + 0.5 ) * this.lineHeight,
 			"dominant-baseline": "central",
 			"font-family": this.font.family,
 			"font-size": this.font.size,
-			fill: this.style.get( "textColour" ),
-			opacity: this.placeholder ? PLACEHOLDER_INK : undefined,
+			...paint,
 		} ) + ">" + escaped( line ) + "</text>" ).join( "" )
 	}
 
 	/* The remark mark is three short strokes, a page of lines, in the text's
 		 colour, drawn rather than set as characters, since not every face has
 		 the glyph. */
-	marksMarkup( left, middle ){
-		const size = MARK_SIZE * this.font.size
+	marksMarkup( box ){
 		const colour = this.style.get( "textColour" )
-		return this.marks.map( ( mark, index ) => {
-			const box = new Box( left + MARK_GAP * this.font.size + index * ( MARK_SIZE + MARK_GAP ) * this.font.size, middle - size / 2, size, size )
-			return MARKS[ mark ]( box, colour )
-		} ).join( "" )
+		return this.markBoxes( box ).map( ( mark, index ) => MARKS[ this.marks[ index ] ]( mark, colour ) ).join( "" )
+	}
+
+	/* Each mark's square, after the words, on the box's middle line. */
+	markBoxes( box ){
+		const size = MARK_SIZE * this.font.size
+		const left = this.wordsIn( box ).left + this.textWidth
+		return this.marks.map( ( mark, index ) => new Box( left + MARK_GAP * this.font.size + index * ( MARK_SIZE + MARK_GAP ) * this.font.size, box.centre.y - size / 2, size, size ) )
 	}
 }
 

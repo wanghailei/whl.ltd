@@ -131,6 +131,19 @@
 	}
 	/* The hints are only read, so they take no pointer: folded, they cover a
 		block of the canvas, and the map under it still takes presses and scrolls. */
+	/* Each hint is one piece: a narrow line folds between hints, never inside one. */
+	#keys .hint { white-space: nowrap; }
+
+	/* The symbols the page's words draw take no room of their own. */
+	.symbols { position: absolute; width: 0; height: 0; overflow: hidden; }
+	/* A key's arrow, Carbon's, in the words' own ink: one character's cell
+		wide, as the glyph it stands for was, so the foot's hints take no more
+		room (at 1728 wide they fit its line with under 3 pixels to spare), and
+		standing from the baseline nearly as tall as the capitals beside it. A
+		key named with an arrow is one piece, never folded between ALT and the
+		arrow. */
+	.key-arrow { width: 0.6em; height: calc(0.6em * 24 / 23); fill: currentColor; }
+	.chord { white-space: nowrap; }
 
 	/* The remark: a fixed width, fixed at the bottom centre of the canvas,
 		standing on the foot, whichever node is selected and wherever the map

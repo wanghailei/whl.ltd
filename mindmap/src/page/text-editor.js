@@ -115,6 +115,17 @@ export class TextEditor {
 		this.fit()
 	}
 
+	/* The view moved or scaled the map — panned, zoomed, or the canvas
+		 resized: the field, waiting or open, moves with the node under it, its
+		 words left as they are (found in audit, 2026-11-13: the map kept the
+		 canvas's middle as the window was resized, and the open field stood
+		 where the node had been). */
+	moveWithView(){
+		if( !this.session ) return
+		this.place()
+		this.fit()
+	}
+
 	/* Marks the node as drawn while its words are written, which hides them under the field. */
 	markWriting( writing ){
 		this.view.topicElement( this.session.face.topic.id )?.classList.toggle( "writing", writing )
@@ -123,8 +134,8 @@ export class TextEditor {
 	place(){
 		const { face, box, ground } = this.session
 		const zoom = this.view.zoom
-		const content = face.content
-		const corner = this.view.toStage( new Point( box.centre.x - content.x / 2, box.centre.y - content.y / 2 ) )
+		const words = face.wordsIn( box )
+		const corner = this.view.toStage( new Point( words.left, words.top ) )
 		const fill = face.style.get( "fill" )
 		this.field.placeholder = face.placeholder
 		Object.assign( this.field.style, {
