@@ -40,14 +40,16 @@
 		glows the same way.
 		Behaviour (by eye): the glow reads as soft, not as a box. */
 	.halo, .line-halo, .branch-halo { display: none; fill: none; stroke: var(--glow-mark); stroke-opacity: var(--glow-strength); pointer-events: none; }
-	.halo { stroke-width: 3; filter: blur(1px); }
+	/* Below half size, page.js holds the screen's stroke and blur at their
+		half-size widths. Line and branch halos stay unfiltered. */
+	.halo { stroke-width: calc(3px * var(--glow-scale, 1)); filter: blur(calc(1px * var(--glow-scale, 1))); }
 	.topic.selected .halo { display: inline; }
 	.topic.drop-target .halo { display: inline; stroke-dasharray: 4 3; }
 	/* While the find field is open, every node it finds glows in the
 		highlight, and the one gone to, being selected, glows stronger.
 		Behaviour (by eye): the one gone to stands out among the others found. */
 	.topic.found .halo { display: inline; }
-	.topic.found.selected .halo { stroke-opacity: max(.9, var(--glow-strength)); stroke-width: 4; }
+	.topic.found.selected .halo { stroke-opacity: max(.9, var(--glow-strength)); stroke-width: calc(4px * var(--glow-scale, 1)); }
 	/* While a node is dragged between two siblings, a short line in the
 		interface's ink marks the gap it would go into.
 		Behaviour (by eye): the marker reads on light and dark canvases alike. */
@@ -58,7 +60,7 @@
 		where an arc, drawn over the nodes, crosses one, a press there is the
 		node's. */
 	.line-path, .line-edge { pointer-events: none; }
-	.line.selected .line-halo, [data-branch].selected .branch-halo { display: inline; stroke-width: 7; }
+	.line.selected .line-halo, [data-branch].selected .branch-halo { display: inline; stroke-width: calc(7px * var(--glow-scale, 1)); }
 
 	/* The fold dot shows on the node under the pointer, and on the selected one. */
 	.fold-dot { opacity: 0; cursor: pointer; transition: opacity .12s ease; }

@@ -170,6 +170,18 @@
 	</div>
 </section>
 
+<!-- Branch width belongs to the whole map and is always at hand, above
+	every selection-only row so selecting never moves it (2026-11-13, #33). -->
+<section class="panel" id="branch-width-panel">
+	<h2 data-cn="分支寬度">Branch width</h2>
+	<div class="control-row stepper" id="branch-width" data-style="branch" data-property="width" data-step="0.25" data-scope="map">
+		<span class="label" data-cn="寬度">Width</span>
+		<button class="word" data-steps="-1" title="Thinner" data-cn-title="變細" aria-label="Make the branch thinner" data-cn-aria-label="分支變細">−</button>
+		<button class="word" data-steps="1" title="Thicker" data-cn-title="變粗" aria-label="Make the branch thicker" data-cn-aria-label="分支變粗">+</button>
+		<span class="value"></span>
+	</div>
+</section>
+
 <!-- Below here the panel's sections show only with a selection: the
 	Line section's form and ADD are always there, its own rows only with a
 	line selected; Node and Branch only with nodes selected. They stand under every
@@ -274,12 +286,6 @@
 		<span class="label" data-cn="顏色">Colour</span>
 		<button type="button" class="chip" data-for="branch-colour" title="Pick" data-cn-title="選擇顏色" aria-label="Pick the branch colour" data-cn-aria-label="選擇分支顏色"></button>
 		<input type="text" class="hex" id="branch-colour" data-style="branch" data-property="colour" spellcheck="false" aria-label="Branch colour" data-cn-aria-label="分支顏色">
-	</div>
-	<div class="control-row stepper" id="branch-width" data-style="branch" data-property="width" data-step="0.25">
-		<span class="label" data-cn="寬度">Width</span>
-		<button class="word" data-steps="-1" title="Thinner" data-cn-title="變細" aria-label="Make the branch thinner" data-cn-aria-label="分支變細">−</button>
-		<button class="word" data-steps="1" title="Thicker" data-cn-title="變粗" aria-label="Make the branch thicker" data-cn-aria-label="分支變粗">+</button>
-		<span class="value"></span>
 	</div>
 	<div class="control-row group" data-style="branch" data-property="dash">
 		<button class="word" data-value="solid" data-cn="實線">Solid</button>

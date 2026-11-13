@@ -201,6 +201,8 @@ export class Panel {
 		this.element( "line-rows" ).classList.toggle( "hidden", !line )
 		if( focus ) this.showNode( focus, topics, look )
 		if( branched ) this.showStyle( "branch", look.branch( branched ) )
+		/* Always shown, from the map, never from a selected legacy branch. */
+		this.steppers.find( each => each.row.id === "branch-width" ).show( look.branchWidth )
 		if( line ) this.showLine( line, look )
 		this.element( "zoom-value" ).textContent = Math.round( zoom * 100 ) + "%"
 	}
@@ -218,7 +220,7 @@ export class Panel {
 	/* Every control of one kind of style, set from the style. */
 	showStyle( kind, style ){
 		for( const row of this.all( `.group[data-style=${ kind }]` ) ) this.choose( row, style.get( row.dataset.property ) )
-		for( const stepper of this.steppers.filter( each => each.row.dataset.style === kind ) ) stepper.show( style.get( stepper.row.dataset.property ) )
+		for( const stepper of this.steppers.filter( each => each.row.dataset.style === kind && each.row.dataset.scope !== "map" ) ) stepper.show( style.get( stepper.row.dataset.property ) )
 		for( const field of this.all( `input[data-style=${ kind }]` ) ){
 			const value = style.get( field.dataset.property )
 			if( field.type === "range" ){

@@ -100,10 +100,19 @@ export function highlightOn( highlight, ground, { reach = 1, holdsWords = true }
 	spreads widest, still showed 1.98 on white. */
 export const GLOW_REACH = 0.75
 
+/* At minimum zoom, the compensated stroke stays 1.5 screen pixels wide,
+	but the node covers part of its core as the gap shrinks. Chromium raster
+	pairs at quarter-pixel pan phases fell below 2 to 1 with reach 0.75.
+	Allow for 0.4 retained alpha there, returning continuously to the existing
+	0.75 at half size, so normal-size colours and strengths stay unchanged. */
+const SMALL_GLOW_REACH = 0.4
+
 /* How the selection's glow is drawn on a ground: as a mark in the highlight,
-	for the share of it its blur lets through, with no words on it. */
-export function glowOn( highlight, ground ){
-	return highlightOn( highlight, ground, { reach: GLOW_REACH, holdsWords: false } )
+	for the share of it its blur and coverage let through, with no words on it. */
+export function glowOn( highlight, ground, zoom = 1 ){
+	const small = Math.max( 0, Math.min( 1, ( 0.5 - zoom ) / 0.4 ) )
+	const reach = GLOW_REACH - ( GLOW_REACH - SMALL_GLOW_REACH ) * small
+	return highlightOn( highlight, ground, { reach, holdsWords: false } )
 }
 
 /* Relative luminance, WCAG's: the channels made linear, then weighted. */

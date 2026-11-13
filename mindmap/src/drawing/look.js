@@ -93,6 +93,12 @@ export class Look {
 		return NODE.style( { fill: topic.branchFill } )
 	}
 
+	/* The width offered for the whole map, independent of any legacy topic
+		 override. Themes choose branch colours, not widths. */
+	get branchWidth(){
+		return this.map.style.branch.get( "width" ) ?? BASE.branch.get( "width" )
+	}
+
 	branch( topic ){
 		const chosen = topic.branch.over( this.map.style.branch )
 		const given = chosen.over( this.scheme.branch( topic, this.colours ) ).over( BASE.branch )

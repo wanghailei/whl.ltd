@@ -257,10 +257,19 @@ export class Editor {
 		} ), gesture )
 	}
 
-	/* The selected branch takes it, or the selected nodes' branches. */
-	styleBranches( changes, gesture = null ){
+	/* Width belongs to the whole map; colour, shape and dash still belong to
+		 the selected branch or the selected nodes' branches. Keep the map width
+		 and removal of every legacy override in one undo step, visiting folded
+		 descendants too. Reading files keeps those overrides so undo is exact. */
+	styleBranches( { width, ...changes }, gesture = null ){
 		const branched = this.selectedBranch ? [ this.selectedBranch ] : this.selectedTopics
-		this.change( () => branched.forEach( topic => { topic.branch = topic.branch.with( changes ) } ), gesture )
+		this.change( () => {
+			if( width !== undefined ){
+				this.map.style = this.map.style.withKind( "branch", this.map.style.branch.with( { width } ) )
+				for( const topic of this.map.topics ) topic.branch = topic.branch.with( { width: null } )
+			}
+			for( const topic of branched ) topic.branch = topic.branch.with( changes )
+		}, gesture )
 	}
 
 	/* The map stands on this solid colour; a null gives it back the theme's background. */
@@ -280,7 +289,8 @@ export class Editor {
 		 the map's style for its kind, and it keeps nothing of its own, since
 		 the map's style now says the same — save a node's fill, which it keeps:
 		 its fill also fills its branch, the nodes under it, so taking it away
-		 would change how this map looks. The central node has no branch. */
+		 would change how this map looks. A legacy branch width stays local,
+		 since it is not a choice for the map. The central node has no branch. */
 	setAsDefault(){
 		const line = this.selectedLine
 		const topic = this.focus
@@ -294,8 +304,10 @@ export class Editor {
 			this.map.style = this.map.style.withStyleFor( topic, topic.style.over( this.map.style.forTopic( topic ) ) )
 			topic.style = NODE.style( { fill: topic.style.get( "fill" ) } )
 			if( topic.isRoot ) return
-			this.map.style = this.map.style.withKind( "branch", topic.branch.over( this.map.style.branch ) )
-			topic.branch = BRANCH.style()
+			/* A legacy width is not a new map-wide choice: keep it on its own
+				 branch, and promote only colour, shape and dash. */
+			this.map.style = this.map.style.withKind( "branch", topic.branch.with( { width: null } ).over( this.map.style.branch ) )
+			topic.branch = BRANCH.style( { width: topic.branch.get( "width" ) } )
 		} )
 	}
 

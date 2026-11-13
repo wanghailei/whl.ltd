@@ -26,7 +26,7 @@ import { Search } from "../editor/search.js"
 	step if the release holds any feature, otherwise one patch step; the major
 	is the master's. A commit leaves it as it is; the changes since gather
 	under CHANGELOG.md's Unreleased heading, which the release then numbers. */
-const VERSION = "0.40.1"
+const VERSION = "0.40.2"
 /* How long a notice stays, unless another takes its place. */
 const NOTICE_TIME = 7000
 /* The notice for each reason a file would not open. */
@@ -302,7 +302,7 @@ class Page {
 		const highlight = this.highlight(), canvas = this.picture.look.background
 		const root = this.document.documentElement
 		root.style.setProperty( "--highlight-mark", bandOn( highlight, canvas ) )
-		const glow = glowOn( highlight, canvas )
+		const glow = glowOn( highlight, canvas, this.view.zoom )
 		root.style.setProperty( "--glow-mark", glow.colour )
 		root.style.setProperty( "--glow-strength", String( glow.strength ) )
 		for( const tile of [ this.element( "picker" ), this.element( "note" ) ] ) tile.style.setProperty( "--highlight-mark", bandOn( highlight, groundOf( tile, canvas ) ) )
@@ -337,6 +337,14 @@ class Page {
 	}
 
 	viewChanged(){
+		/* Keep the glow legible below half size without thickening it above
+			that point. The viewport survives every redraw, and show() notifies
+			this listener even on its first drawing; exports never inherit it. */
+		const viewport = this.element( "viewport" ), scale = String( Math.max( 1, 0.5 / this.view.zoom ) )
+		if( viewport.style.getPropertyValue( "--glow-scale" ) !== scale ){
+			viewport.style.setProperty( "--glow-scale", scale )
+			this.showHighlightMark()
+		}
 		if( !this.panel ) return
 		this.element( "zoom-value" ).textContent = Math.round( this.view.zoom * 100 ) + "%"
 		this.textEditor.moveWithView()

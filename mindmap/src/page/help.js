@@ -77,12 +77,12 @@ const TASKS = [
 		cn: [ "我想用輔助線連接兩個節點並添加標籤，怎麼做？", "選擇兩個節點，點擊「輔助線」下的「添加」；或選擇一個、點擊「添加」，再點擊另一個。雙擊輔助線可輸入標籤。兩個節點之間最多一條輔助線。" ],
 	},
 	{
-		en: [ "I want to change a colour or a style. How?", "Click a node, branch or line and change its colour, shape, width or dash in the panel. SET AS DEFAULT on a node or line gives that look to its kind where not styled by hand, and to new maps." ],
-		cn: [ "我想修改顏色或樣式，怎麼做？", "點擊節點、分支或輔助線，在面板中修改顏色、形狀、寬度或線型。選擇節點或輔助線後點擊「設為默認」，同類中未手動設置樣式的對象和新建導圖都使用此樣式。" ],
+		en: [ "I want to change a colour or a style. How?", "Click a node, branch or line to change its colour, shape or dash. SET AS DEFAULT on a node or line gives its look to its kind where not styled by hand, and to new maps." ],
+		cn: [ "我想修改顏色或樣式，怎麼做？", "點擊節點、分支或輔助線，在面板中修改顏色、形狀或線型。選擇節點或輔助線後點擊「設為默認」，同類中未手動設置樣式的對象和新建導圖都使用此樣式。" ],
 	},
 	{
-		en: [ "I want to make a border, a branch or a line thicker. How?", "Select it and press + or − beside WIDTH; the width shows beside them. Picking a BORDER colour for a node with no border gives it one, 1 wide." ],
-		cn: [ "我想讓邊框、分支或輔助線變粗，怎麼做？", "選擇後點擊「寬度」旁的 + 或 −，寬度顯示在旁邊。為沒有邊框的節點選擇邊框顏色，即可添加寬度為 1 的邊框。" ],
+		en: [ "I want to make a border, a branch or a line thicker. How?", "Under Branch width, press + or − to change every branch; no selection needed. For a border or auxiliary line, select it and use its WIDTH. Picking a BORDER colour adds a border where none shows." ],
+		cn: [ "我想讓邊框、分支或輔助線變粗，怎麼做？", "在「分支寬度」下點擊 + 或 −，統一修改所有分支，無需選擇。邊框和輔助線則選擇後修改各自的寬度。選擇邊框顏色可為節點添加寬度為 1 的邊框。" ],
 	},
 	{
 		en: [ "I want to colour the map by level, all in one colour, or by branch. How?", "Under Theme, choose LEVEL for one colour per level, ONE for one colour throughout, or RAINBOW for one colour per main branch. A node's branch always takes the node's colour, and a fill given to a node wins." ],
