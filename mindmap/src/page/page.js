@@ -26,7 +26,7 @@ import { Search } from "../editor/search.js"
 	step if the release holds any feature, otherwise one patch step; the major
 	is the master's. A commit leaves it as it is; the changes since gather
 	under CHANGELOG.md's Unreleased heading, which the release then numbers. */
-const VERSION = "0.41.0"
+const VERSION = "0.42.0"
 /* How long a notice stays, unless another takes its place. */
 const NOTICE_TIME = 7000
 /* The notice for each reason a file would not open. */
@@ -42,6 +42,7 @@ const NEXT_NODE = { sibling: editor => editor.addSibling(), child: editor => edi
 class Page {
 	constructor( document ){
 		this.document = document
+		this.document.title = "WHL Mindmap " + VERSION
 		this.store = new BrowserStore()
 		this.mapFile = new MapFile()
 		this.language = new Language( document )
@@ -347,8 +348,11 @@ class Page {
 			that point. The viewport survives every redraw, and show() notifies
 			this listener even on its first drawing; exports never inherit it. */
 		const viewport = this.element( "viewport" ), scale = String( Math.max( 1, 0.5 / this.view.zoom ) )
-		if( viewport.style.getPropertyValue( "--glow-scale" ) !== scale ){
-			viewport.style.setProperty( "--glow-scale", scale )
+		if( viewport.style.getPropertyValue( "--glow-scale" ) !== scale ) viewport.style.setProperty( "--glow-scale", scale )
+		/* Colour calibration varies above half size too, where width stays
+			unchanged. Panning alone does not change the retained strength. */
+		if( this.glowZoom !== this.view.zoom ){
+			this.glowZoom = this.view.zoom
 			this.showHighlightMark()
 		}
 		if( !this.panel ) return

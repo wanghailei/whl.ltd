@@ -72,12 +72,12 @@
 	.chip:focus-visible::before { inset: -5px; background: none; border: 3px solid var(--highlight-mark); }
 
 	/* No boxes. A field is the value itself, editable where it stands. */
-	input[type=text] { background: transparent; border: 0; padding: 0; color: inherit; }
-	input[type=text].hex { width: 72px; text-transform: lowercase; }
-	input[type=text].wide { flex: 1 1 0; min-width: 0; }
-	input::placeholder { color: inherit; opacity: .35; }
+	#toolbar input[type=text] { background: transparent; border: 0; padding: 0; color: inherit; }
+	#toolbar input[type=text].hex { width: 72px; text-transform: lowercase; }
+	#toolbar input[type=text].wide { flex: 1 1 0; min-width: 0; }
+	#toolbar input::placeholder { color: inherit; opacity: .35; }
 
-	input[type=range] {
+	#toolbar input[type=range] {
 		-webkit-appearance: none;
 		appearance: none;
 		background: transparent;
@@ -85,10 +85,10 @@
 		margin: 0;
 		width: clamp(72px, 8vw, 92px);
 	}
-	input[type=range]::-webkit-slider-runnable-track { height: 1px; background: var(--line-strong); }
-	input[type=range]::-moz-range-track { height: 1px; background: var(--line-strong); }
-	input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 3px; height: 13px; background: currentColor; margin-top: -6px; cursor: pointer; }
-	input[type=range]::-moz-range-thumb { width: 3px; height: 13px; background: currentColor; border: 0; cursor: pointer; }
+	#toolbar input[type=range]::-webkit-slider-runnable-track { height: 1px; background: var(--line-strong); }
+	#toolbar input[type=range]::-moz-range-track { height: 1px; background: var(--line-strong); }
+	#toolbar input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 3px; height: 13px; background: currentColor; margin-top: -6px; cursor: pointer; }
+	#toolbar input[type=range]::-moz-range-thumb { width: 3px; height: 13px; background: currentColor; border: 0; cursor: pointer; }
 	.value { min-width: 34px; text-align: right; opacity: .85; font-variant-numeric: tabular-nums; }
 
 	/* A chip shows the colour of the hex field beside it and, pressed, opens

@@ -164,7 +164,7 @@
 	.key-arrow { width: 0.6em; height: calc(0.6em * 24 / 23); fill: currentColor; }
 	.chord { white-space: nowrap; }
 
-	/* The remark is content: one centred line at the node's normal 14px,
+	/* The remark is content: one centred line at the node's normal 12px,
 		independent of panel size or node styling. Only the empty prompt's word
 		is underlined. The ground covers nodes behind it, the native text input
 		scrolls horizontally while editing, and the font never shrinks.
@@ -189,7 +189,7 @@
 		border: 0;
 		background: var(--ground);
 		color: var(--ink);
-		font-size: 14px;
+		font-size: 12px;
 		line-height: var(--base-line-height);
 		text-align: center;
 		opacity: 1;
@@ -200,7 +200,7 @@
 		not a field-wide rule or box. Written content stays on the canvas ground. */
 	#remark:focus-visible + #remark-prompt { background: var(--highlight-mark); opacity: 1; }
 	#remark-prompt {
-		font-size: 14px;
+		font-size: 12px;
 		position: absolute;
 		top: 0;
 		left: 50%;
@@ -292,11 +292,18 @@
 	.outline-fold { position: relative; display: grid; place-items: center; background: none; border: 0; padding: 0; color: inherit; cursor: pointer; opacity: .55; }
 	.outline-fold:hover, .outline-fold:focus-visible { opacity: 1; }
 	.outline-fold svg { width: 12px; height: 12px; }
-	.outline-text { position: relative; min-width: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+	.outline-content { position: relative; flex: 1; min-width: 0; }
+	.outline-text, .outline-remark { display: block; white-space: pre-wrap; overflow-wrap: anywhere; }
+	/* Legacy remarks keep their line breaks for reading, not for input.
+		Hierarchy comes from spacing, not smaller or faded ink: full interface
+		ink reads on every custom canvas and on the selection band alike.
+		Behaviour (by eye): each remark belongs to the title above it. */
+	.outline-remark { margin: 4px 0; }
 	.outline-text.placeholder { color: var(--ink-held); }
 	.outline-field {
 		position: relative;
-		flex: 1;
+		display: block;
+		width: 100%;
 		min-width: 0;
 		margin: 0;
 		padding: 0;

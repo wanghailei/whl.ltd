@@ -9,8 +9,8 @@ import { colourStyleFor } from "./colour-styles.js"
 	size at every level, the central node too, and every branch an elbow.
 	Colours always come from the theme. */
 const BASE = {
-	root: NODE.style( { shape: "pill", borderWidth: 0, font: "mono", fontSize: 14 } ),
-	node: NODE.style( { shape: "pill", borderWidth: 0, font: "mono", fontSize: 14 } ),
+	root: NODE.style( { shape: "pill", borderWidth: 0, font: "mono", fontSize: 12 } ),
+	node: NODE.style( { shape: "pill", borderWidth: 0, font: "mono", fontSize: 12 } ),
 	/* 1.25 wide, thinner than the 2 it was, at the master's word (2026-11-12). */
 	branch: BRANCH.style( { shape: "elbow", width: 1.25, dash: "solid" } ),
 	/* Dotted in round dots, and 1.5 wide, at the master's word (2026-11-12):

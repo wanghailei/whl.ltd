@@ -100,18 +100,24 @@ export function highlightOn( highlight, ground, { reach = 1, holdsWords = true }
 	spreads widest, still showed 1.98 on white. */
 export const GLOW_REACH = 0.75
 
-/* At minimum zoom, the compensated stroke stays 1.5 screen pixels wide,
-	but the node covers part of its core as the gap shrinks. Chromium raster
-	pairs at quarter-pixel pan phases fell below 2 to 1 with reach 0.75.
-	Allow for 0.4 retained alpha there, returning continuously to the existing
-	0.75 at half size, so normal-size colours and strengths stay unchanged. */
+/* At half size, Firefox's subpixel blur left pale yellow on white at
+	1.68 to 1 with reach 0.75. Calibrate colour, not stroke or blur width,
+	for the strength retained by that thin raster. With the smaller 12px
+	default pills, half-size reach 0.55 left Chromium's grey on grey at
+	1.979 to 1 at 80% zoom (#40). Allow half the strength through at half zoom,
+	rising continuously to the unchanged full-size reach. At minimum zoom,
+	the compensated stroke stays 1.5 screen pixels wide, but the node covers
+	part of its core as the gap shrinks: quarter-pixel pan phases need 0.4.
+	Both ranges meet continuously; stroke and blur widths stay unchanged. */
+const HALF_GLOW_REACH = 0.5
 const SMALL_GLOW_REACH = 0.4
 
 /* How the selection's glow is drawn on a ground: as a mark in the highlight,
 	for the share of it its blur and coverage let through, with no words on it. */
 export function glowOn( highlight, ground, zoom = 1 ){
-	const small = Math.max( 0, Math.min( 1, ( 0.5 - zoom ) / 0.4 ) )
-	const reach = GLOW_REACH - ( GLOW_REACH - SMALL_GLOW_REACH ) * small
+	const small = Math.max( 0, Math.min( 1, ( zoom - 0.1 ) / 0.4 ) )
+	const large = Math.max( 0, Math.min( 1, ( zoom - 0.5 ) / 0.5 ) )
+	const reach = SMALL_GLOW_REACH + ( HALF_GLOW_REACH - SMALL_GLOW_REACH ) * small + ( GLOW_REACH - HALF_GLOW_REACH ) * large
 	return highlightOn( highlight, ground, { reach, holdsWords: false } )
 }
 

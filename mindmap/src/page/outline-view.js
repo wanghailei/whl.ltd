@@ -8,8 +8,8 @@ const CHEVRONS = {
 }
 const SVG = "http://www.w3.org/2000/svg"
 
-/* The outline: the map as an indented list in the left column, one line a
-	shown node, in the map's order, set in by its depth, at the master's word
+/* The outline: the map as an indented list in the left column, one row a
+	shown node, its title then its remark, in the map's order, set in by its depth, at the master's word
 	(2026-11-12, 23:07).
 
 	Pre-flight answers. The outline owns no state of the map's: it is drawn
@@ -27,6 +27,7 @@ export class OutlineView {
 		this.actions = actions
 		this.order = []
 		this.writing = null
+		this.deferredEditor = null
 		rows.addEventListener( "pointerdown", event => this.press( event ) )
 		rows.addEventListener( "click", event => this.pressFromKeyboard( event ) )
 		rows.addEventListener( "dblclick", event => {
@@ -43,7 +44,10 @@ export class OutlineView {
 	/* Every shown node's line, the selected ones marked and the first of
 		 them kept in sight; while words are written, nothing is drawn afresh. */
 	show( editor ){
-		if( this.isWriting ) return
+		if( this.isWriting ){
+			this.deferredEditor = editor
+			return
+		}
 		this.order = [ ...editor.map.root.walkShown() ]
 		this.rows.replaceChildren( ...this.order.map( topic => this.line( topic, editor.selection.includes( topic ) ) ) )
 		this.rows.querySelector( ".selected" )?.scrollIntoView( { block: "nearest" } )
@@ -99,8 +103,13 @@ export class OutlineView {
 		const writing = this.writing
 		if( !writing ) return
 		this.writing = null
+		const deferred = this.deferredEditor
+		this.deferredEditor = null
 		writing.field.replaceWith( writing.words )
 		writing.done( { how, text: writing.field.value } )
+		/* Cancel and an unchanged title emit no map change. Replay the deferred
+			show even then; if done opened the next title, show defers again. */
+		if( deferred ) this.show( deferred )
 	}
 
 	// ── Inside ──────────────────────────────────────────────────────
@@ -128,7 +137,7 @@ export class OutlineView {
 		this.rows.querySelector( `.outline-row[data-topic="${ CSS.escape( id ) }"] .outline-fold` )?.focus()
 	}
 
-	/* One node's line: its fold mark, if it has children, and its words. */
+	/* One node's row: a fold mark or spacer beside its title and remark. */
 	line( topic, selected ){
 		const row = this.rows.ownerDocument.createElement( "div" )
 		row.className = "outline-row" + ( selected ? " selected" : "" )
@@ -138,8 +147,24 @@ export class OutlineView {
 		row.setAttribute( "aria-level", topic.depth + 1 )
 		row.setAttribute( "aria-selected", String( selected ) )
 		if( topic.children.length > 0 ) row.setAttribute( "aria-expanded", String( !topic.folded ) )
-		row.append( topic.children.length > 0 ? this.foldMark( topic ) : this.space(), this.words( topic ) )
+		row.append( topic.children.length > 0 ? this.foldMark( topic ) : this.space(), this.content( topic ) )
 		return row
+	}
+
+	/* The title alone is replaced by write(); the remark remains read-only.
+		Both share a column so wrapping and title editing keep their left edge. */
+	content( topic ){
+		const document = this.rows.ownerDocument
+		const content = document.createElement( "div" )
+		content.className = "outline-content"
+		content.append( this.words( topic ) )
+		if( topic.remark !== "" ){
+			const remark = document.createElement( "span" )
+			remark.className = "outline-remark"
+			remark.textContent = topic.remark
+			content.append( remark )
+		}
+		return content
 	}
 
 	foldMark( topic ){
