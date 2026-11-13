@@ -1,6 +1,7 @@
 /* The interface's two tongues, English and Chinese. The Chinese is
 	Traditional, never Simplified, as on every app on whl.ltd, at the master's
-	rule (2026-11-12, 19:58).
+	rule (2026-11-12, 19:58). Its software terminology follows Mainland
+	China usage, at his word (2026-11-13, 12:41), independently of script.
 
 	Words in the markup carry their Chinese on the element, as in Alluvial —
 	data-cn for text, data-cn-placeholder for a placeholder, data-cn-title for
@@ -39,20 +40,20 @@ const WORDS = {
 	cn: {
 		remark: () => REMARK.cn,
 		nodeHeading: ( { selected } ) => selected === 1 ? "節點" : selected + " 個節點",
-		notSaved: () => "瀏覽器不肯保存這份草稿。請用「儲存」把地圖存成檔案。",
-		notAMap: () => "這個檔案不是 Mindmap 地圖，也不是 Markdown 大綱。請開啟 .mindmap.json 檔案或 .md 大綱。",
-		newer: ( { version } ) => "這張地圖由較新的 Mindmap 儲存（檔案版本 " + version + "）。請在較新的 Mindmap 開啟。",
-		broken: () => "這個地圖檔沒有中心節點，無法開啟。請開啟它的另一份副本。",
-		emptyOutline: () => "這份大綱沒有標題或清單項目可做成地圖。請開啟至少有一個項目的大綱。",
-		joinPick: () => "點選要連到的節點。按 Esc 取消。",
-		joinSelect: () => "選一個或兩個節點，再按「新增」以輔助線相連。",
-		defaultKept: () => "已設為預設：新地圖將以此樣式開始。",
-		defaultRefused: () => "瀏覽器不肯保存預設。這張地圖已套用，新地圖則不會。",
-		exportFailed: ( { kind } ) => "這個瀏覽器無法產生 " + kind + "。SVG 不需繪成像素，可以改試它；或把很大的地圖收起一部分再試。",
-		notAColour: ( { typed } ) => "「" + typed + "」不是顏色。請寫成 #rrggbb 形式的十六進位色碼；填色也可寫 none 表示無填色。",
-		draftSetAside: () => "存在這個瀏覽器的地圖無法開啟——可能來自較新的 Mindmap——已原封不動另存一旁，並開了一張新地圖。把它存成檔案，便可在製作它的 Mindmap 中開啟。",
-		draftLost: () => "存在這個瀏覽器的地圖無法開啟，瀏覽器也不肯另存一份，所以這張新地圖已取代它。請立刻把它存成檔案保留。",
-		saveSetAside: () => "存成檔案",
+		notSaved: () => "瀏覽器無法保存此草稿。請使用「保存」將導圖保存為文件。",
+		notAMap: () => "此文件不是 Mindmap 導圖或 Markdown 大綱。請打開 .mindmap.json 文件或 .md 大綱。",
+		newer: ( { version } ) => "此導圖由較新版本的 Mindmap 保存（文件版本 " + version + "）。請使用較新版本的 Mindmap 打開。",
+		broken: () => "此導圖文件沒有中心節點，無法打開。請打開另一份副本。",
+		emptyOutline: () => "此大綱沒有可轉為導圖的標題或列表項。請打開至少包含一項的大綱。",
+		joinPick: () => "點擊要連接的節點。按 Esc 取消。",
+		joinSelect: () => "請選擇一個或兩個節點，再點擊「添加」，用輔助線連接。",
+		defaultKept: () => "已設為默認：新建導圖將使用此樣式。",
+		defaultRefused: () => "瀏覽器無法保存默認樣式。當前導圖已應用此樣式，新建導圖不會使用。",
+		exportFailed: ( { kind } ) => "此瀏覽器無法導出 " + kind + "。SVG 無需光柵化，請嘗試導出 SVG，或收起大型導圖的部分分支後重試。",
+		notAColour: ( { typed } ) => "「" + typed + "」不是有效顏色。請輸入 #rrggbb 格式的十六進制顏色代碼；填充也可輸入 none，表示無填充。",
+		draftSetAside: () => "此瀏覽器中保存的導圖無法打開，可能來自較新版本的 Mindmap。原草稿已原樣另存，並已新建導圖。請將原草稿保存為文件，再使用創建它的 Mindmap 打開。",
+		draftLost: () => "此瀏覽器中保存的導圖無法打開，且無法另存副本，瀏覽器中的原草稿已被新建導圖替換。請立即點擊「保存為文件」，保存原草稿。",
+		saveSetAside: () => "保存為文件",
 		foldBranch: () => "收起",
 		openBranch: () => "展開",
 	},

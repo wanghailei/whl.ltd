@@ -42,9 +42,9 @@
 <!-- The map. The stage takes every pointer and wheel; the SVG draws the map
 	inside one group the view moves and scales. -->
 <div id="stage">
-<svg id="map" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="The mind map" data-cn-aria-label="心智圖"><g id="viewport"></g></svg>
+<svg id="map" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="The mind map" data-cn-aria-label="思維導圖"><g id="viewport"></g></svg>
 <div id="marquee" class="hidden"></div>
-<textarea id="text-editor" class="hidden" spellcheck="false" aria-label="Node text" data-cn-aria-label="節點文字"></textarea>
+<textarea id="text-editor" class="hidden" spellcheck="false" aria-label="Node text" data-cn-aria-label="節點文本"></textarea>
 </div>
 
 <!-- The toggles, the notices, the remark and the foot lie over the canvas.
@@ -52,16 +52,18 @@
 	children take them back. -->
 <div id="foreground">
 <div id="lead">
+<!-- HELP is always the title line's last button, at the master's word
+	(2026-11-13, 12:38, #29): a button added later goes before it. -->
 <div id="title-line"><div id="title"></div><div id="tools">
-<button id="language" title="Interface language" data-cn-title="介面語言" aria-label="Interface language" data-cn-aria-label="介面語言"><span id="language-en" class="on">EN</span><span>/</span><span id="language-cn">CN</span></button>
-<button id="appearance" title="Light or dark map" data-cn-title="淺色或深色地圖" aria-label="Light or dark map" data-cn-aria-label="淺色或深色地圖"><span id="appearance-light" data-cn="淺">LIGHT</span><span>/</span><span id="appearance-dark" class="on" data-cn="深">DARK</span></button>
-<button id="view" title="Show or hide the control panel" data-cn-title="顯示或隱藏操作面板" aria-label="Show or hide the control panel" data-cn-aria-label="顯示或隱藏操作面板"><span id="view-full" data-cn="全螢幕">FULLSCREEN</span><span>/</span><span id="view-panel" class="on" data-cn="面板">PANEL</span></button>
-<button id="help-button" title="Open or fold the help" data-cn-title="開啟或收起幫助" aria-label="Open or fold the help" data-cn-aria-label="開啟或收起幫助" data-cn="幫助">HELP</button>
-<button id="outline-button" title="Open or fold the outline" data-cn-title="開啟或收起大綱" aria-label="Open or fold the outline" data-cn-aria-label="開啟或收起大綱" data-cn="大綱">OUTLINE</button>
+<button id="language" title="Interface language" data-cn-title="界面語言" aria-label="Interface language" data-cn-aria-label="界面語言"><span id="language-en" class="on">EN</span><span>/</span><span id="language-cn">CN</span></button>
+<button id="appearance" title="Light or dark map" data-cn-title="淺色或深色導圖" aria-label="Light or dark map" data-cn-aria-label="淺色或深色導圖"><span id="appearance-light" data-cn="淺">LIGHT</span><span>/</span><span id="appearance-dark" class="on" data-cn="深">DARK</span></button>
+<button id="view" title="Show or hide the control panel" data-cn-title="顯示或隱藏操作面板" aria-label="Show or hide the control panel" data-cn-aria-label="顯示或隱藏操作面板"><span id="view-full" data-cn="全屏">FULLSCREEN</span><span>/</span><span id="view-panel" class="on" data-cn="面板">PANEL</span></button>
+<button id="outline-button" title="Open or fold the outline" data-cn-title="展開或收起大綱" aria-label="Open or fold the outline" data-cn-aria-label="展開或收起大綱" data-cn="大綱">OUTLINE</button>
+<button id="help-button" title="Open or fold the help" data-cn-title="展開或收起幫助" aria-label="Open or fold the help" data-cn-aria-label="展開或收起幫助" data-cn="幫助">HELP</button>
 </div></div>
 <!-- The find field, under the title line while Cmd+F has it open: the words
 	to find, and which match of how many was gone to. -->
-<div id="find" class="hidden"><input id="find-field" type="text" spellcheck="false" autocomplete="off" placeholder="Find" data-cn-placeholder="搜尋" aria-label="Find nodes by their words or remark" data-cn-aria-label="以文字或備註搜尋節點"><span id="find-count" aria-live="polite"></span></div>
+<div id="find" class="hidden"><input id="find-field" type="text" spellcheck="false" autocomplete="off" placeholder="Find" data-cn-placeholder="查找" aria-label="Find nodes by their words or remark" data-cn-aria-label="按文本或備註查找節點"><span id="find-count" aria-live="polite"></span></div>
 <div id="note" class="hidden" role="status"></div>
 </div>
 
@@ -79,7 +81,7 @@
 	each separator, so a folded line never starts with one. The arrows of the
 	reorder keys are the symbols above, named for screen readers. -->
 <div id="foot-line">
-<div id="keys"><span class="hint" data-cn="TAB 子節點">TAB child</span>&nbsp;· <span class="hint" data-cn="SHIFT+TAB 父節點">SHIFT+TAB parent</span>&nbsp;· <span class="hint" data-cn="ENTER 同級節點">ENTER sibling</span>&nbsp;· <span class="hint" data-cn="DELETE 刪除">DELETE delete</span>&nbsp;· <span class="hint" data-cn="方向鍵 切換節點">ARROWS move between nodes</span>&nbsp;· <span class="hint">ALT+<svg class="key-arrow" role="img" aria-label="up" data-cn-aria-label="上"><use href="#arrow-up"/></svg><svg class="key-arrow" role="img" aria-label="down" data-cn-aria-label="下"><use href="#arrow-down"/></svg> <span data-cn="調整順序">reorder</span></span>&nbsp;· <span class="hint" data-cn="CMD+C/X/V 複製、剪下、貼上">CMD+C/X/V copy, cut, paste</span>&nbsp;· <span class="hint" data-cn="CMD+F 搜尋">CMD+F find</span>&nbsp;· <span class="hint" data-cn="CMD+Z 復原">CMD+Z undo</span>&nbsp;· <span class="hint" data-cn="CMD+SHIFT+Z 重做">CMD+SHIFT+Z redo</span>&nbsp;· <span class="hint" data-cn="CMD+0 置中">CMD+0 centre</span></div>
+<div id="keys"><span class="hint" data-cn="TAB 子節點">TAB child</span>&nbsp;· <span class="hint" data-cn="SHIFT+TAB 父節點">SHIFT+TAB parent</span>&nbsp;· <span class="hint" data-cn="ENTER 同級節點">ENTER sibling</span>&nbsp;· <span class="hint" data-cn="DELETE 刪除">DELETE delete</span>&nbsp;· <span class="hint" data-cn="方向鍵 切換節點">ARROWS move between nodes</span>&nbsp;· <span class="hint">ALT+<svg class="key-arrow" role="img" aria-label="up" data-cn-aria-label="上"><use href="#arrow-up"/></svg><svg class="key-arrow" role="img" aria-label="down" data-cn-aria-label="下"><use href="#arrow-down"/></svg> <span data-cn="調整順序">reorder</span></span>&nbsp;· <span class="hint" data-cn="CMD+C/X/V 複製、剪切、粘貼">CMD+C/X/V copy, cut, paste</span>&nbsp;· <span class="hint" data-cn="CMD+F 查找">CMD+F find</span>&nbsp;· <span class="hint" data-cn="CMD+Z 撤銷">CMD+Z undo</span>&nbsp;· <span class="hint" data-cn="CMD+SHIFT+Z 重做">CMD+SHIFT+Z redo</span>&nbsp;· <span class="hint" data-cn="CMD+0 居中">CMD+0 centre</span></div>
 </div>
 </div>
 </div>
@@ -97,11 +99,11 @@
 
 <!-- File: the map's own file in and out. -->
 <section class="panel">
-	<h2 data-cn="檔案">File</h2>
+	<h2 data-cn="文件">File</h2>
 	<div class="control-row">
 		<button class="word" data-command="new" data-cn="新建">New</button>
-		<button class="word" data-command="open" data-cn="開啟">Open</button>
-		<button class="word" data-command="save" data-cn="儲存">Save</button>
+		<button class="word" data-command="open" data-cn="打開">Open</button>
+		<button class="word" data-command="save" data-cn="保存">Save</button>
 	</div>
 </section>
 
@@ -118,9 +120,9 @@
 
 <!-- The map as a whole: its layout, its theme and the canvas it stands on. -->
 <section class="panel">
-	<h2 data-cn="佈局">Layout</h2>
+	<h2 data-cn="布局">Layout</h2>
 	<div class="control-row group" data-map="layout">
-		<button class="word" data-value="right" data-cn="右展">Right</button>
+		<button class="word" data-value="right" data-cn="向右">Right</button>
 		<button class="word" data-value="both" data-cn="兩側">Both</button>
 		<button class="word" data-value="down" data-cn="向下">Down</button>
 	</div>
@@ -146,25 +148,25 @@
 	</div>
 	<div class="control-row">
 		<span class="label" data-cn="畫布">Canvas</span>
-		<button type="button" class="chip" data-for="canvas-colour" title="Pick" data-cn-title="取色" aria-label="Pick the canvas colour" data-cn-aria-label="為畫布取色"></button>
+		<button type="button" class="chip" data-for="canvas-colour" title="Pick" data-cn-title="選擇顏色" aria-label="Pick the canvas colour" data-cn-aria-label="選擇畫布顏色"></button>
 		<input type="text" class="hex" id="canvas-colour" data-setting="canvas" spellcheck="false" aria-label="Canvas colour" data-cn-aria-label="畫布顏色">
 	</div>
 </section>
 
 <!-- View: how large the map is shown, never how large it is exported. -->
 <section class="panel">
-	<h2 data-cn="檢視">View</h2>
+	<h2 data-cn="視圖">View</h2>
 	<div class="control-row">
 		<span class="label" data-cn="縮放">Zoom</span>
 		<button class="word" data-command="zoom-out" title="Zoom out by 10%" data-cn-title="縮小 10%" aria-label="Zoom out by 10%" data-cn-aria-label="縮小 10%">−</button>
 		<button class="word" data-command="zoom-in" title="Zoom in by 10%" data-cn-title="放大 10%" aria-label="Zoom in by 10%" data-cn-aria-label="放大 10%">+</button>
 		<span class="value" id="zoom-value"></span>
-		<button class="word" data-command="centre" data-cn="置中">Centre</button>
+		<button class="word" data-command="centre" data-cn="居中">Centre</button>
 	</div>
 	<div class="control-row">
-		<span class="label" data-cn="醒目色">Highlight</span>
-		<button type="button" class="chip" data-for="highlight-colour" title="Pick" data-cn-title="取色" aria-label="Pick the highlight colour" data-cn-aria-label="為醒目色取色"></button>
-		<input type="text" class="hex" id="highlight-colour" data-setting="highlight" spellcheck="false" aria-label="Highlight colour" data-cn-aria-label="醒目色">
+		<span class="label" data-cn="高亮色">Highlight</span>
+		<button type="button" class="chip" data-for="highlight-colour" title="Pick" data-cn-title="選擇顏色" aria-label="Pick the highlight colour" data-cn-aria-label="選擇高亮色"></button>
+		<input type="text" class="hex" id="highlight-colour" data-setting="highlight" spellcheck="false" aria-label="Highlight colour" data-cn-aria-label="高亮色">
 	</div>
 </section>
 
@@ -184,7 +186,7 @@
 		<button class="word" data-value="arc" data-cn="弧線">Arc</button>
 	</div>
 	<div class="control-row">
-		<button class="word" data-command="add-line" data-cn="新增">Add</button>
+		<button class="word" data-command="add-line" data-cn="添加">Add</button>
 	</div>
 	<div id="line-rows">
 		<div class="control-row">
@@ -193,7 +195,7 @@
 		</div>
 		<div class="control-row">
 			<span class="label" data-cn="顏色">Colour</span>
-			<button type="button" class="chip" data-for="line-colour" title="Pick" data-cn-title="取色" aria-label="Pick the line colour" data-cn-aria-label="為輔助線取色"></button>
+			<button type="button" class="chip" data-for="line-colour" title="Pick" data-cn-title="選擇顏色" aria-label="Pick the line colour" data-cn-aria-label="選擇輔助線顏色"></button>
 			<input type="text" class="hex" id="line-colour" data-style="line" data-property="colour" spellcheck="false" aria-label="Line colour" data-cn-aria-label="輔助線顏色">
 		</div>
 		<div class="control-row stepper" id="line-width" data-style="line" data-property="width" data-step="0.25">
@@ -208,7 +210,7 @@
 			<button class="word" data-value="dotted" data-cn="點線">Dotted</button>
 		</div>
 		<div class="control-row">
-			<button class="word" data-command="default-line" data-cn="設為預設">Set as default</button>
+			<button class="word" data-command="default-line" data-cn="設為默認">Set as default</button>
 			<button class="word" data-command="delete-line" data-cn="刪除">Delete</button>
 		</div>
 	</div>
@@ -218,19 +220,19 @@
 <section class="panel" id="node-panel">
 	<h2 id="node-heading">Node</h2>
 	<div class="control-row group" data-style="node" data-property="shape">
-		<button class="word" data-value="box" data-cn="方">Box</button>
+		<button class="word" data-value="box" data-cn="矩形">Box</button>
 		<button class="word" data-value="round" data-cn="圓角">Round</button>
 		<button class="word" data-value="pill" data-cn="膠囊">Pill</button>
 		<button class="word" data-value="none" data-cn="無">None</button>
 	</div>
 	<div class="control-row">
-		<span class="label" data-cn="填色">Fill</span>
-		<button type="button" class="chip" data-for="node-fill" title="Pick" data-cn-title="取色" aria-label="Pick the fill" data-cn-aria-label="為填色取色"></button>
-		<input type="text" class="hex" id="node-fill" data-style="node" data-property="fill" spellcheck="false" aria-label="Fill" data-cn-aria-label="填色">
+		<span class="label" data-cn="填充">Fill</span>
+		<button type="button" class="chip" data-for="node-fill" title="Pick" data-cn-title="選擇顏色" aria-label="Pick the fill" data-cn-aria-label="選擇填充顏色"></button>
+		<input type="text" class="hex" id="node-fill" data-style="node" data-property="fill" spellcheck="false" aria-label="Fill" data-cn-aria-label="填充">
 	</div>
 	<div class="control-row">
 		<span class="label" data-cn="邊框">Border</span>
-		<button type="button" class="chip" data-for="node-border" title="Pick" data-cn-title="取色" aria-label="Pick the border" data-cn-aria-label="為邊框取色"></button>
+		<button type="button" class="chip" data-for="node-border" title="Pick" data-cn-title="選擇顏色" aria-label="Pick the border" data-cn-aria-label="選擇邊框顏色"></button>
 		<input type="text" class="hex" id="node-border" data-style="node" data-property="border" spellcheck="false" aria-label="Border" data-cn-aria-label="邊框">
 	</div>
 	<div class="control-row stepper" id="node-border-width" data-style="node" data-property="borderWidth" data-step="1">
@@ -245,17 +247,17 @@
 		<button class="word" data-value="serif" data-cn="襯線">Serif</button>
 	</div>
 	<div class="control-row">
-		<span class="label" data-cn="字級">Size</span>
-		<input type="range" id="node-font-size" data-style="node" data-property="fontSize" min="8" max="72" step="1" aria-label="Font size" data-cn-aria-label="字級">
+		<span class="label" data-cn="字號">Size</span>
+		<input type="range" id="node-font-size" data-style="node" data-property="fontSize" min="8" max="72" step="1" aria-label="Font size" data-cn-aria-label="字號">
 		<span class="value" data-shows="node-font-size"></span>
 	</div>
 	<div class="control-row">
-		<span class="label" data-cn="字色">Text</span>
-		<button type="button" class="chip" data-for="node-text-colour" title="Pick" data-cn-title="取色" aria-label="Pick the text colour" data-cn-aria-label="為字色取色"></button>
-		<input type="text" class="hex" id="node-text-colour" data-style="node" data-property="textColour" spellcheck="false" aria-label="Text colour" data-cn-aria-label="字色">
+		<span class="label" data-cn="文字顏色">Text</span>
+		<button type="button" class="chip" data-for="node-text-colour" title="Pick" data-cn-title="選擇顏色" aria-label="Pick the text colour" data-cn-aria-label="選擇文字顏色"></button>
+		<input type="text" class="hex" id="node-text-colour" data-style="node" data-property="textColour" spellcheck="false" aria-label="Text colour" data-cn-aria-label="文字顏色">
 	</div>
 	<div class="control-row">
-		<button class="word" data-command="default-node" data-cn="設為預設">Set as default</button>
+		<button class="word" data-command="default-node" data-cn="設為默認">Set as default</button>
 		<button class="word" data-command="clear-style" data-cn="清除">Clear</button>
 	</div>
 </section>
@@ -270,7 +272,7 @@
 	</div>
 	<div class="control-row">
 		<span class="label" data-cn="顏色">Colour</span>
-		<button type="button" class="chip" data-for="branch-colour" title="Pick" data-cn-title="取色" aria-label="Pick the branch colour" data-cn-aria-label="為分支取色"></button>
+		<button type="button" class="chip" data-for="branch-colour" title="Pick" data-cn-title="選擇顏色" aria-label="Pick the branch colour" data-cn-aria-label="選擇分支顏色"></button>
 		<input type="text" class="hex" id="branch-colour" data-style="branch" data-property="colour" spellcheck="false" aria-label="Branch colour" data-cn-aria-label="分支顏色">
 	</div>
 	<div class="control-row stepper" id="branch-width" data-style="branch" data-property="width" data-step="0.25">
@@ -301,7 +303,7 @@
 	<button id="picker-close" type="button" title="Close" data-cn-title="關閉" aria-label="Close" data-cn-aria-label="關閉"><svg viewBox="0 0 32 32" fill="currentColor" aria-hidden="true"><path d="M24 9.4 22.6 8 16 14.6 9.4 8 8 9.4 14.6 16 8 22.6 9.4 24 16 17.4 22.6 24 24 22.6 17.4 16z"/></svg></button>
 	<div id="hue-wrap"><canvas id="hue" width="176" height="14"></canvas><div id="hue-dot"></div></div>
 	<div id="field-wrap"><canvas id="field" width="132" height="88"></canvas><div id="dot"></div></div>
-	<div class="picker-row"><input type="text" id="picker-hex" spellcheck="false" aria-label="Hex" data-cn-aria-label="十六進位色碼"></div>
+	<div class="picker-row"><input type="text" id="picker-hex" spellcheck="false" aria-label="Hex" data-cn-aria-label="十六進制顏色代碼"></div>
 </div>
 
 <input type="file" id="open-file" accept=".json,.md,.markdown,.txt,application/json,text/markdown,text/plain" hidden>
