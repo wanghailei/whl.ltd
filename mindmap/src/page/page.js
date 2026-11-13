@@ -26,7 +26,7 @@ import { Search } from "../editor/search.js"
 	step if the release holds any feature, otherwise one patch step; the major
 	is the master's. A commit leaves it as it is; the changes since gather
 	under CHANGELOG.md's Unreleased heading, which the release then numbers. */
-const VERSION = "0.42.0"
+const VERSION = "0.42.1"
 /* How long a notice stays, unless another takes its place. */
 const NOTICE_TIME = 7000
 /* The notice for each reason a file would not open. */
