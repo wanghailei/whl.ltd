@@ -25,7 +25,7 @@ import { Search } from "../editor/search.js"
 	commit, and it is always the newest version CHANGELOG.md names, its first
 	entry; TAI's check-commits holds every commit to this (bin/check,
 	.check-commits.json). */
-const VERSION = "0.38.10"
+const VERSION = "0.38.4"
 /* How long a notice stays, unless another takes its place. */
 const NOTICE_TIME = 7000
 /* The notice for each reason a file would not open. */
