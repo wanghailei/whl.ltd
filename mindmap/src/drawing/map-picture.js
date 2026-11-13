@@ -106,10 +106,13 @@ export class MapPicture {
 			this.markup() + "</svg>\n"
 	}
 
-	/* Everything drawn, with room round it, in whole pixels. */
+	/* Everything drawn, with room round it, in whole pixels: each label by
+		 its own measured size, as a box 60 by 20 kept for every label cut the
+		 end off long ones near the map's edge (found in review, 2026-11-12). */
 	get frame(){
 		const points = this.lineShapes.flatMap( shape => [ ...shape.waypoints, shape.label ] ).map( point => new Box( point.x - 30, point.y - 10, 60, 20 ) )
-		const drawn = Box.enclosing( [ this.arrangement.bounds, ...points ] ).grown( FRAME_MARGIN )
+		const labels = this.lineShapes.filter( shape => shape.labelHalf ).map( shape => Box.around( shape.label, 2 * shape.labelHalf.x, 2 * shape.labelHalf.y ) )
+		const drawn = Box.enclosing( [ this.arrangement.bounds, ...points, ...labels ] ).grown( FRAME_MARGIN )
 		return new Box( Math.floor( drawn.x ), Math.floor( drawn.y ), Math.ceil( drawn.width ), Math.ceil( drawn.height ) )
 	}
 
@@ -183,15 +186,25 @@ export class MapPicture {
 		return { line, style, start: course.start, end: course.end, waypoints: course.points, path: course.path, label: label.point, labelHalf: label.half }
 	}
 
-	/* A node's tail, where an auxiliary line to another node leaves or meets
-		 it, the way out of it, and the node's box. The central node has no
-		 parent and grows every way, so a line leaves it the way the node it
-		 joins grows, as a branch does: in BOTH, a line to a node on the left
-		 left its right end and ran round the whole right half of the map
-		 (found in use, 2026-11-13). */
+	/* Where an auxiliary line to another node leaves or meets a node, the way
+		 out of it, and the node's box: its tail, the end the way it grows.
+		 Two nodes growing opposite ways, one on each side of BOTH, are joined
+		 at the ends facing the central node instead, at the master's word
+		 (2026-11-13, 07:24): their tails face away from each other, and every
+		 way between them ran round the whole map. */
 	tailOf( topic, other ){
-		const outward = this.arrangement.directionOf( topic.isRoot ? other : topic ), box = this.arrangement.boxOf( topic )
+		const grows = this.growthOf( topic, other ), facing = grows.dot( this.growthOf( other, topic ) ) < 0
+		const outward = facing ? grows.times( -1 ) : grows, box = this.arrangement.boxOf( topic )
 		return { point: this.faces.of( topic ).anchor( box, outward ), outward, box }
+	}
+
+	/* The way a node grows, as a line to another node sees it. The central
+		 node has no parent and grows every way, so a line leaves it the way the
+		 node it joins grows, as a branch does: in BOTH, a line to a node on the
+		 left left its right end and ran round the whole right half of the map
+		 (found in use, 2026-11-13). */
+	growthOf( topic, other ){
+		return this.arrangement.directionOf( topic.isRoot ? other : topic )
 	}
 
 	/* Where a line's label stands, and how far it reaches from there, as its
@@ -226,11 +239,11 @@ export class MapPicture {
 	}
 
 	/* A line's label at its middle, haloed in the background so it reads over whatever it crosses; pressing it selects the line. */
-	labelMarkup( { line, style, label } ){
+	labelMarkup( { line, label } ){
 		if( !line.label ) return ""
 		return "<g" + attributes( { class: "line", "data-line": line.id } ) + "><text" + attributes( {
 			class: "line-label", x: label.x, y: label.y, "text-anchor": "middle", "dominant-baseline": "central",
-			"font-family": fontFamily( "mono" ), "font-size": LABEL_SIZE, fill: style.get( "colour" ),
+			"font-family": fontFamily( "mono" ), "font-size": LABEL_SIZE, fill: this.look.labelColour( line ),
 			stroke: this.look.background, "stroke-width": 4, "paint-order": "stroke", "stroke-linejoin": "round",
 		} ) + ">" + escaped( line.label ) + "</text></g>"
 	}

@@ -69,6 +69,12 @@ export function shapeFor( name ){
 	return SHAPES[ name ] ?? SHAPES.pill
 }
 
+/* The fill a node in this style shows, or null where its shape shows none or it has none. */
+export function shownFill( style ){
+	const fill = style.get( "fill" )
+	return shapeFor( style.get( "shape" ) ).showsFill && fill !== "none" ? fill : null
+}
+
 function paint( style ){
 	return { fill: style.get( "fill" ), stroke: style.get( "borderWidth" ) > 0 ? style.get( "border" ) : "none", "stroke-width": style.get( "borderWidth" ) }
 }

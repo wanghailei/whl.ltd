@@ -1,5 +1,5 @@
 import { Point, Box } from "../layout/geometry.js"
-import { shapeFor } from "./shapes.js"
+import { shapeFor, shownFill } from "./shapes.js"
 import { fontFamily } from "./fonts.js"
 import { attributes, escaped } from "./markup.js"
 
@@ -54,6 +54,11 @@ export class Face {
 
 	glow( box ){
 		return this.shape.glow( box )
+	}
+
+	/* What its words stand on: the fill it shows, or else the ground under it. */
+	backdrop( ground ){
+		return shownFill( this.style ) ?? ground
 	}
 
 	/* Where the words and marks stand in the node's box: in its middle. */

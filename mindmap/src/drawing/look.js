@@ -1,7 +1,7 @@
 import { NODE, BRANCH, LINE } from "../model/style.js"
 import { Theme } from "./themes.js"
-import { inkOver, isLightColour } from "./colour.js"
-import { shapeFor } from "./shapes.js"
+import { inkOver, isLightColour, contrast } from "./colour.js"
+import { shownFill } from "./shapes.js"
 import { colourStyleFor } from "./colour-styles.js"
 
 /* What every value falls back to when nothing above has set it: the house's
@@ -17,6 +17,10 @@ const BASE = {
 		 halved to 0.75 first, it was too thin to read once dotted. */
 	line: LINE.style( { width: 1.5, dash: "dotted" } ),
 }
+/* WCAG's measures for what is drawn straight onto the canvas: words read at
+	4.5 to 1 against it, and a line or an outline is seen at 3 to 1. */
+const WORDS_READ = 4.5
+const MARKS_SEEN = 3
 
 /* How each thing on the map looks, every value settled. The one place the
 	order is kept:
@@ -34,7 +38,15 @@ const BASE = {
 
 	The theme is taken in the map's appearance, light or dark; a canvas
 	colour of the map's own stands in for the theme's background, and then
-	the appearance is the canvas's own, so the nodes follow it. */
+	the appearance is the canvas's own, so the nodes follow it.
+
+	Whatever is drawn straight onto the canvas — a branch, an auxiliary line
+	and its label, a node's border, the words of a node that shows no fill
+	— reads on it by WCAG's measure, whoever chose its colour: where it falls
+	short, it is drawn in the canvas's own ink, black or white, whichever
+	reads better (found in use, 2026-11-13: lines, outlines and words given
+	black by hand vanished on a black canvas). The canvas and the fills keep
+	the colours chosen. */
 export class Look {
 	constructor( map ){
 		this.map = map
@@ -54,8 +66,9 @@ export class Look {
 	node( topic ){
 		const chosen = topic.style.over( this.inheritedFill( topic ) ).over( this.map.style.forTopic( topic ) )
 		const style = chosen.over( this.scheme.node( topic, this.colours ) ).over( topic.isRoot ? BASE.root : BASE.node )
-		if( chosen.get( "textColour" ) !== undefined ) return style
-		return style.with( { textColour: inkOver( this.shownFill( style ) ?? this.background ) } )
+		const fill = shownFill( style ), words = chosen.get( "textColour" ) ?? inkOver( fill ?? this.background )
+		const border = style.get( "borderWidth" ) > 0 ? this.onCanvas( style.get( "border" ), MARKS_SEEN ) : style.get( "border" )
+		return style.with( { textColour: fill ? words : this.onCanvas( words, WORDS_READ ), border } )
 	}
 
 	/* The fill a node takes when it has none of its own: its branch's. */
@@ -63,22 +76,26 @@ export class Look {
 		return NODE.style( { fill: topic.branchFill } )
 	}
 
-	/* The fill a node shows, or null where its shape shows none or it has none. */
-	shownFill( style ){
-		const fill = style.get( "fill" )
-		return shapeFor( style.get( "shape" ) ).showsFill && fill !== "none" ? fill : null
-	}
-
 	branch( topic ){
 		const chosen = topic.branch.over( this.map.style.branch )
 		const given = chosen.over( this.scheme.branch( topic, this.colours ) ).over( BASE.branch )
-		if( chosen.get( "colour" ) !== undefined || topic.isRoot ) return given
-		const to = this.shownFill( this.node( topic ) )
-		return to ? given.with( { colour: to } ) : given
+		const to = chosen.get( "colour" ) !== undefined || topic.isRoot ? null : shownFill( this.node( topic ) )
+		return given.with( { colour: this.onCanvas( to ?? given.get( "colour" ), MARKS_SEEN ) } )
 	}
 
 	line( line ){
-		return line.style.over( this.map.style.line ).over( this.scheme.line() ).over( BASE.line )
+		const style = line.style.over( this.map.style.line ).over( this.scheme.line() ).over( BASE.line )
+		return style.with( { colour: this.onCanvas( style.get( "colour" ), MARKS_SEEN ) } )
+	}
+
+	/* The colour of a line's label: its line's, where words read in it. */
+	labelColour( line ){
+		return this.onCanvas( this.line( line ).get( "colour" ), WORDS_READ )
+	}
+
+	/* A colour drawn straight onto the canvas, or the canvas's own ink where it reads there below this measure. */
+	onCanvas( colour, least ){
+		return contrast( colour, this.background ) >= least ? colour : inkOver( this.background )
 	}
 
 	get background(){
@@ -88,5 +105,10 @@ export class Look {
 	/* Whether the ground is light, which turns the interface's ink black. */
 	get isLight(){
 		return isLightColour( this.background )
+	}
+
+	/* The ink the interface's words, the remark's among them, are written in on this ground. */
+	get ink(){
+		return inkOver( this.background )
 	}
 }

@@ -136,7 +136,6 @@ export class TextEditor {
 		const zoom = this.view.zoom
 		const words = face.wordsIn( box )
 		const corner = this.view.toStage( new Point( words.left, words.top ) )
-		const fill = face.style.get( "fill" )
 		this.field.placeholder = face.placeholder
 		Object.assign( this.field.style, {
 			left: corner.x + "px",
@@ -145,7 +144,10 @@ export class TextEditor {
 			fontSize: face.font.size * zoom + "px",
 			lineHeight: face.lineHeight * zoom + "px",
 			color: face.style.get( "textColour" ),
-			background: fill === "none" ? ground : fill,
+			/* What the drawn words stand on: a node whose shape shows no fill
+				 stood its field on the stored fill, white words on white (found in
+				 audit, 2026-11-13). */
+			background: face.backdrop( ground ),
 		} )
 	}
 

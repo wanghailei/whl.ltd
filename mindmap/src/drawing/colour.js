@@ -18,8 +18,14 @@ export function rgbToHex( red, green, blue ){
 	return "#" + byte( red ) + byte( green ) + byte( blue )
 }
 
-/* The two inks words are written in when nothing has chosen their colour. */
+/* The two inks words are written in when nothing has chosen their colour,
+	and the deepest black, for the few colours neither reads on: greys round
+	#777777, where near-black and white both fall short of 4.5 to 1 (found in
+	audit, 2026-11-13), and pure black reaches 4.58 or better. */
 const INKS = [ "#111111", "#ffffff" ]
+const DEEPEST = "#000000"
+/* WCAG's measure for words to read. */
+const WORDS_READ = 4.5
 
 /* The contrast of two colours as WCAG measures it, from 1 to 21: words need
 	4.5 to read, a line 3 to be seen. */
@@ -29,15 +35,17 @@ export function contrast( first, second ){
 }
 
 /* The ink that reads over a colour: whichever of near-black and white has
-	the greater contrast with it. A threshold on plain lightness chose white
-	over mid-greys that black reads far better on (found in use, 2026-11-12). */
+	the greater contrast with it, or the deepest black where neither reads.
+	A threshold on plain lightness chose white over mid-greys that black
+	reads far better on (found in use, 2026-11-12). */
 export function inkOver( hex ){
-	return contrast( INKS[ 0 ], hex ) >= contrast( INKS[ 1 ], hex ) ? INKS[ 0 ] : INKS[ 1 ]
+	const ink = contrast( INKS[ 0 ], hex ) >= contrast( INKS[ 1 ], hex ) ? INKS[ 0 ] : INKS[ 1 ]
+	return contrast( ink, hex ) >= WORDS_READ ? ink : DEEPEST
 }
 
 /* Whether a colour is light: black reads better on it than white. */
 export function isLightColour( hex ){
-	return inkOver( hex ) === INKS[ 0 ]
+	return inkOver( hex ) !== INKS[ 1 ]
 }
 
 /* Relative luminance, WCAG's: the channels made linear, then weighted. */

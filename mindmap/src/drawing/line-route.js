@@ -48,8 +48,10 @@ const MOST_LINES = 240
 export class LineRoute {
 	constructor( boxes ){
 		this.boxes = boxes
-		/* The nodes as the search avoids them: first with room kept round each, then as they stand. */
-		this.margins = [ CLEARANCE, 0 ].map( clearance => boxes.map( box => box.grown( clearance ) ) )
+		/* The nodes as the search avoids them, a set for each room it tries
+			 to keep in turn: first grown by the room kept round each, then as
+			 they stand. Named margins before, which they are not (#4). */
+		this.obstacleSets = [ CLEARANCE, 0 ].map( clearance => ( { keepsRoom: clearance > 0, obstacles: boxes.map( box => box.grown( clearance ) ) } ) )
 	}
 
 	/* The waypoints from the start, leaving along `outward`, to the end,
@@ -69,16 +71,17 @@ export class LineRoute {
 	/* The turning points between the stubs, leaving the first the way it
 		 heads and reaching the last the way it must go on: none where the way
 		 is straight and clear, else the shortest way round, with room kept
-		 where it can be. */
+		 where it can be. Where there is no way at all, the one turn runs over
+		 whatever stands between, keeping no room, and says so: it said it
+		 kept room (found in review, 2026-11-12, #4). */
 	middle( first, heading, last, onward ){
-		for( const [ index, margin ] of this.margins.entries() ){
-			const obstacles = margin.map( box => cutBack( cutBack( box, first ), last ) )
-			const keepsRoom = index === 0
+		for( const { keepsRoom, obstacles: grown } of this.obstacleSets ){
+			const obstacles = grown.map( box => cutBack( cutBack( box, first ), last ) )
 			if( ( first.x === last.x || first.y === last.y ) && isClear( first, last, obstacles ) ) return { turns: [], keepsRoom }
 			const turns = new Lattice( obstacles, [ first, last ] ).way( first, heading, last, onward )
 			if( turns ) return { turns, keepsRoom }
 		}
-		return { turns: first.x === last.x || first.y === last.y ? [] : [ heading.isLevel ? new Point( last.x, first.y ) : new Point( first.x, last.y ) ], keepsRoom: true }
+		return { turns: first.x === last.x || first.y === last.y ? [] : [ heading.isLevel ? new Point( last.x, first.y ) : new Point( first.x, last.y ) ], keepsRoom: false }
 	}
 }
 

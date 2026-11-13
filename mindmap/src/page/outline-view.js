@@ -28,6 +28,7 @@ export class OutlineView {
 		this.order = []
 		this.writing = null
 		rows.addEventListener( "pointerdown", event => this.press( event ) )
+		rows.addEventListener( "click", event => this.pressFromKeyboard( event ) )
 		rows.addEventListener( "dblclick", event => {
 			const row = event.target.closest( ".outline-row" )
 			if( row && !event.target.closest( ".outline-fold, .outline-field" ) ) this.actions.edit( row.dataset.topic )
@@ -112,6 +113,19 @@ export class OutlineView {
 		if( !row ) return
 		if( event.target.closest( ".outline-fold" ) ) this.actions.fold( row.dataset.topic )
 		else this.actions.press( row.dataset.topic, event.shiftKey || event.metaKey || event.ctrlKey )
+	}
+
+	/* A fold mark pressed from the keyboard, by Enter or Space, a click with
+		 no pointer behind it, folds or opens its own line's node, and the new
+		 mark of that line, drawn afresh, keeps the focus, so it is pressed
+		 again. A fold mark the keyboard reached holds its keys (keyboard.js),
+		 and folded only at a pointer's press (found in audit, 2026-11-13). */
+	pressFromKeyboard( event ){
+		const row = event.target.closest( ".outline-fold" )?.closest( ".outline-row" )
+		if( !row || event.detail !== 0 ) return
+		const id = row.dataset.topic
+		this.actions.fold( id )
+		this.rows.querySelector( `.outline-row[data-topic="${ CSS.escape( id ) }"] .outline-fold` )?.focus()
 	}
 
 	/* One node's line: its fold mark, if it has children, and its words. */

@@ -7,7 +7,7 @@ import { MapPicture } from "../drawing/map-picture.js"
 import { CanvasMeasure } from "./canvas-measure.js"
 import { CanvasView } from "./canvas-view.js"
 import { TextEditor } from "./text-editor.js"
-import { Keyboard } from "./keyboard.js"
+import { Keyboard, holdsItsKeys } from "./keyboard.js"
 import { Pointer } from "./pointer.js"
 import { Panel } from "./panel.js"
 import { ColourPicker } from "./colour-picker.js"
@@ -20,12 +20,12 @@ import { OutlineView } from "./outline-view.js"
 import { FindBar } from "./find-bar.js"
 import { Search } from "../editor/search.js"
 
-/* The version: a feature change is a minor, a fix or small tweak a patch,
-	the major the master's. Every change raises it one step in its own
-	commit, and it is always the newest version CHANGELOG.md names, its first
-	entry; TAI's check-commits holds every commit to this (bin/check,
-	.check-commits.json). */
-const VERSION = "0.38.4"
+/* The version of the last release: it rises once per release, when the
+	release is published, at the master's word (2026-11-13, 07:54): one minor
+	step if the release holds any feature, otherwise one patch step; the major
+	is the master's. A commit leaves it as it is; the changes since gather
+	under CHANGELOG.md's Unreleased heading, which the release then numbers. */
+const VERSION = "0.39.0"
 /* How long a notice stays, unless another takes its place. */
 const NOTICE_TIME = 7000
 /* The notice for each reason a file would not open. */
@@ -199,6 +199,9 @@ class Page {
 		} else this.view.mark( this.editor )
 		this.document.documentElement.style.setProperty( "--ground", this.picture.look.background )
 		this.document.documentElement.classList.toggle( "ink-dark", this.picture.look.isLight )
+		/* The ink itself the look's, which reads on any ground at 4.5 to 1:
+			 near-black fell short on greys round #777777 (found in audit, 2026-11-13). */
+		this.document.documentElement.style.setProperty( "--ink", this.picture.look.ink )
 		this.panel.sync( { editor: this.editor, look: this.picture.look, zoom: this.view.zoom, highlight: this.highlight() } )
 		if( this.shown?.outline ) this.outline.show( this.editor )
 		this.markFound()
@@ -223,18 +226,22 @@ class Page {
 	}
 
 	/* The waiting text field goes over the selected node, unless another
-		 field — of the panel, or the remark — is being typed in, or words are
-		 being written already. While the user works in the outline, the
-		 outline holds the keyboard's focus instead. */
+		 field — of the panel, or the remark — is being typed in, or a button
+		 the keyboard has reached holds the focus, or words are being written
+		 already. While the user works in the outline, the outline holds the
+		 keyboard's focus instead. A button pressed from the keyboard keeps the
+		 focus, so the keyboard goes on through the panel (found in audit,
+		 2026-11-12); one clicked has let it go first (keyboard.js), and the
+		 keys come back to the map. */
 	armKeyboard(){
 		if( !this.picture || this.textEditor.isOpen || this.outline.isWriting ) return
 		const focus = this.editor.focus
 		const box = focus && this.picture.arrangement.boxOf( focus )
 		const active = this.document.activeElement
-		const typing = active !== this.textField && active?.matches?.( "input, textarea, select" )
-		if( !box || typing || this.inOutline ){
+		const held = active !== this.textField && holdsItsKeys( active )
+		if( !box || held || this.inOutline ){
 			this.textEditor.disarm()
-			if( this.inOutline && !typing ) this.outline.focus()
+			if( this.inOutline && !held ) this.outline.focus()
 			return
 		}
 		const map = this.editor.map
@@ -250,12 +257,18 @@ class Page {
 		 the node is as wide as what is typed (found in use, 2026-11-12: it kept
 		 its placeholder's width); the map itself changes only when the writing
 		 is kept. The node is always in the map drawn: a map is replaced only
-		 after the field is settled, which ends the writing. */
+		 after the field is settled, which ends the writing. As the node grows,
+		 the map moves just enough to keep it all in sight, as it does when the
+		 writing opens (found in use, 2026-11-12: a node's words ran it past
+		 the canvas's edge, under the panel); the field moves with the map. A
+		 node grown larger than the canvas keeps its end in sight, where the
+		 words go in. */
 	drawWhileWriting( topic, text ){
 		this.picture = new MapPicture( this.editor.map, { measure: this.measure, placeholder: CENTRAL_PLACEHOLDER, writing: { topic, text } } )
 		this.view.show( this.picture, this.editor )
 		this.drawnWhileWriting = true
 		this.textEditor.follow( this.picture.faces.of( topic ), this.picture.arrangement.boxOf( topic ) )
+		this.reveal( topic, { keep: "end" } )
 	}
 
 	/* The colour the selection glows in: the one picked and kept, or the stylesheet's own. */
@@ -270,11 +283,12 @@ class Page {
 	}
 
 	/* Brings a node into sight, clear of the remark at the canvas's foot,
-		 which would otherwise hide the node it belongs to. */
-	reveal( topic ){
+		 which would otherwise hide the node it belongs to; a node larger than
+		 the canvas keeps the edge `keep` names in sight (canvas-view.js). */
+	reveal( topic, { keep = "start" } = {} ){
 		const remark = this.element( "remark-area" )
 		const below = remark.classList.contains( "hidden" ) ? 0 : this.stage.getBoundingClientRect().bottom - remark.getBoundingClientRect().top
-		this.view.reveal( topic, { below } )
+		this.view.reveal( topic, { below, keep } )
 	}
 
 	/* Scrolls the panel so a control's row is in sight: a line or a branch

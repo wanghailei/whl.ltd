@@ -26,8 +26,10 @@ export class Rasteriser {
 		 The drawing is handed over by a Blob address, which has none of a data
 		 address's limits on size. After the picture decodes, two frames pass
 		 before it is drawn: a browser may finish loading the face inside an
-		 SVG picture after the picture says it is ready (not seen in Chromium;
-		 Firefox and Safari are not tested). */
+		 SVG picture after the picture says it is ready. Not seen in Playwright's
+		 Chromium, WebKit or Firefox, even without the wait: a session's first
+		 PNG matched a later one in each (#1, 2026-11-13). The wait is kept for
+		 Safari itself, which Playwright's WebKit stands in for but is not. */
 	async draw( picture ){
 		const frame = picture.frame
 		const scale = Math.min( SHARPNESS, LARGEST_SIDE / frame.width, LARGEST_SIDE / frame.height, Math.sqrt( LARGEST_AREA / ( frame.width * frame.height ) ) )

@@ -1,7 +1,8 @@
 /* The keyboard map, in one place: which key does what, as SPEC.md's table
 	says. Keys are turned into the page's named actions; what an action does
 	is the page's. Keys typed into a field — of the panel, or the remark —
-	stay with the field.
+	stay with the field, and so do keys pressed on a button the keyboard
+	has reached: Enter and Space press it, Tab moves on.
 
 	Cmd on the Mac and Ctrl elsewhere are taken alike, so the same map serves
 	both; a page can take over the browser's own Cmd+S, Cmd+O, Cmd+A, Cmd+F
@@ -17,12 +18,24 @@ export class Keyboard {
 	constructor( { document, actions } ){
 		this.actions = actions
 		document.addEventListener( "keydown", event => this.press( event ) )
+		document.addEventListener( "click", event => this.letGo( event ), { capture: true } )
+	}
+
+	/* A button pressed with the pointer gives up the focus before it acts, so
+		 only a button the keyboard reached holds its keys: Chrome leaves a
+		 clicked button focused, and with no node selected to take the keys
+		 back, Cmd+Z after choosing ARC went nowhere (found in test,
+		 2026-11-13). A press from the keyboard is a click with no pointer
+		 behind it, its detail 0, and keeps the focus. */
+	letGo( event ){
+		const button = event.target instanceof Element ? event.target.closest( "button" ) : null
+		if( button && event.detail > 0 && button === button.ownerDocument.activeElement ) button.blur()
 	}
 
 	/* A key an input method is composing with is the input method's. */
 	press( event ){
 		if( event.isComposing || event.keyCode === 229 ) return
-		if( typingInField( event.target ) ) return
+		if( holdsItsKeys( event.target ) ) return
 		const action = this.actionFor( event )
 		if( !action ) return
 		event.preventDefault()
@@ -61,7 +74,13 @@ export class Keyboard {
 	}
 }
 
-/* The text field waiting unseen over a node is not a field being typed in: its keys are the map's. */
-function typingInField( target ){
-	return target instanceof Element && ( target.closest( "input, textarea:not(.armed), select, [contenteditable]" ) !== null )
+/* Whether a control holds its own keys: a field being typed in, or a
+	button the keyboard has reached, of the panel, the title line or a
+	notice; a button the pointer pressed has let the focus go (letGo). A
+	focused button took Enter as ADD SIBLING, Space as FOLD and Tab as ADD
+	CHILD, and was never pressed (found in audit, 2026-11-12). The text
+	field waiting unseen over a node is not a field being typed in: its
+	keys are the map's. */
+export function holdsItsKeys( target ){
+	return target instanceof Element && ( target.closest( "input, textarea:not(.armed), select, button, [contenteditable]" ) !== null )
 }

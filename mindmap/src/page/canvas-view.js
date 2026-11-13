@@ -132,14 +132,18 @@ export class CanvasView {
 
 	/* Keeps a node in sight: when it has gone past an edge, the map is moved
 		 just enough to bring it back. `below` is how much of the canvas's foot
-		 something else covers, which the node is kept clear of too. */
-	reveal( topic, { below = 0 } = {} ){
+		 something else covers, which the node is kept clear of too. A node
+		 larger than the room keeps one edge in sight, the one `keep` names:
+		 its start, or the end where words being written go in. Moved by both
+		 edges at once, such a node swung back and forth at every character
+		 (found in audit, 2026-11-13). */
+	reveal( topic, { below = 0, keep = "start" } = {} ){
 		const box = this.picture?.arrangement.boxOf( topic )
 		if( !box ) return
 		const topLeft = this.toStage( new Point( box.left, box.top ) ), bottomRight = this.toStage( new Point( box.right, box.bottom ) )
 		const margin = 24
-		const across = Math.max( 0, margin - topLeft.x ) - Math.max( 0, bottomRight.x - ( this.stage.clientWidth - margin ) )
-		const down = Math.max( 0, margin - topLeft.y ) - Math.max( 0, bottomRight.y - ( this.stage.clientHeight - margin - below ) )
+		const across = intoRoom( topLeft.x, bottomRight.x, margin, this.stage.clientWidth - margin, keep )
+		const down = intoRoom( topLeft.y, bottomRight.y, margin, this.stage.clientHeight - margin - below, keep )
 		if( across !== 0 || down !== 0 ) this.panBy( across, down )
 	}
 
@@ -147,4 +151,12 @@ export class CanvasView {
 		this.viewport.setAttribute( "transform", `translate(${ this.offset.x } ${ this.offset.y }) scale(${ this.zoom })` )
 		for( const listener of this.listeners ) listener()
 	}
+}
+
+/* How far to move a span, from `low` to `high` on one axis, to bring it
+	into the room from `from` to `to`: just enough where it fits, and where it
+	does not, so that the edge to keep, its start or its end, meets the room's. */
+function intoRoom( low, high, from, to, keep ){
+	if( high - low > to - from ) return keep === "end" ? to - high : from - low
+	return Math.max( 0, from - low ) - Math.max( 0, high - to )
 }
