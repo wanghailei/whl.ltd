@@ -21,6 +21,8 @@ const BASE = {
 	4.5 to 1 against it, and a line or an outline is seen at 3 to 1. */
 const WORDS_READ = 4.5
 const MARKS_SEEN = 3
+/* How wide the edge is that a node is drawn with where its fill alone would not be seen on the canvas: a border's narrowest step. */
+const EDGE_WIDTH = 1
 
 /* How each thing on the map looks, every value settled. The one place the
 	order is kept:
@@ -46,7 +48,8 @@ const MARKS_SEEN = 3
 	short, it is drawn in the canvas's own ink, black or white, whichever
 	reads better (found in use, 2026-11-13: lines, outlines and words given
 	black by hand vanished on a black canvas). The canvas and the fills keep
-	the colours chosen. */
+	the colours chosen; a filled node whose fill would not be seen on the
+	canvas is drawn with an edge in its ink instead (nodeAsDrawn). */
 export class Look {
 	constructor( map ){
 		this.map = map
@@ -69,6 +72,20 @@ export class Look {
 		const fill = shownFill( style ), words = chosen.get( "textColour" ) ?? inkOver( fill ?? this.background )
 		const border = style.get( "borderWidth" ) > 0 ? this.onCanvas( style.get( "border" ), MARKS_SEEN ) : style.get( "border" )
 		return style.with( { textColour: fill ? words : this.onCanvas( words, WORDS_READ ), border } )
+	}
+
+	/* A node as it is drawn: its look, edged in the canvas's own ink where it
+		 shows a fill standing below 3 to 1 against the canvas and has no border
+		 to show its shape (found in review, 2026-11-13: in Mono's LEVEL and
+		 RAINBOW, grey pills vanished into a mid-grey or orange canvas, #8e8e8e
+		 at 1.07 to 1 on #e85d04). The fill keeps its colour, and its words read
+		 on it as ever. The edge is the drawing's, not the node's: the panel
+		 shows the node's look, its own border none, so the edge is never a
+		 border the user did not give and could not take away. */
+	nodeAsDrawn( topic ){
+		const style = this.node( topic ), fill = shownFill( style )
+		const unseen = fill && !( style.get( "borderWidth" ) > 0 ) && contrast( fill, this.background ) < MARKS_SEEN
+		return unseen ? style.with( { border: inkOver( this.background ), borderWidth: EDGE_WIDTH } ) : style
 	}
 
 	/* The fill a node takes when it has none of its own: its branch's. */

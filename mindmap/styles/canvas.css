@@ -33,10 +33,13 @@
 	/* The selection is a thin, soft glow round the node's own shape, in the
 		highlight colour at 40% strength whatever that colour is, at the
 		master's word (2026-11-12): at 6 wide and half strength it was too
-		thick and too opaque. A selected line or branch glows the same way.
-		Behaviour (by eye): the glow reads as soft, not as a box, and is
-		still seen on a white canvas. */
-	.halo, .line-halo, .branch-halo { display: none; fill: none; stroke: var(--highlight); stroke-opacity: .4; pointer-events: none; }
+		thick and too opaque. Where 40% is not seen on the canvas, as pale
+		yellow on white, it is stronger, or a shade of the highlight that is,
+		at the master's word (2026-11-13, 10:04): the highlight as it is drawn
+		on the ground, its blur allowed for (--glow-mark, page.js). A selected line or branch
+		glows the same way.
+		Behaviour (by eye): the glow reads as soft, not as a box. */
+	.halo, .line-halo, .branch-halo { display: none; fill: none; stroke: var(--glow-mark); stroke-opacity: var(--glow-strength); pointer-events: none; }
 	.halo { stroke-width: 3; filter: blur(1px); }
 	.topic.selected .halo { display: inline; }
 	.topic.drop-target .halo { display: inline; stroke-dasharray: 4 3; }
@@ -44,7 +47,7 @@
 		highlight, and the one gone to, being selected, glows stronger.
 		Behaviour (by eye): the one gone to stands out among the others found. */
 	.topic.found .halo { display: inline; }
-	.topic.found.selected .halo { stroke-opacity: .9; stroke-width: 4; }
+	.topic.found.selected .halo { stroke-opacity: max(.9, var(--glow-strength)); stroke-width: 4; }
 	/* While a node is dragged between two siblings, a short line in the
 		interface's ink marks the gap it would go into.
 		Behaviour (by eye): the marker reads on light and dark canvases alike. */

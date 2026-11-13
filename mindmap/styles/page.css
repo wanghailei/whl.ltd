@@ -32,13 +32,18 @@
 
 	/* ── Over the canvas ──────────────────────────────────────────────────
 		The layer takes no pointer events, so the map below takes them; its
-		children take them back, which also makes their text selectable. */
+		children take them back, which also makes their text selectable. One
+		column, as wide as the canvas and never wider, so what lies over the
+		canvas folds within it: the title line stood in a column of its own,
+		twice the panel's width, and ran past the canvas's edge, which cut
+		OUTLINE to OUTLI with HELP open at 1440 wide (found in review,
+		2026-11-13). */
 	#foreground {
 		position: absolute;
 		inset: 0;
 		z-index: var(--z-foreground);
 		display: grid;
-		grid-template-columns: var(--panel-width-wide) 1fr;
+		grid-template-columns: minmax(0, 1fr);
 		grid-template-rows: auto 1fr auto;
 		gap: var(--base-edge-gap);
 		padding: var(--base-edge-gap);
@@ -52,25 +57,32 @@
 	#foreground > #foot, #foot-line { pointer-events: none; }
 	#remark-area { pointer-events: auto; }
 
+	/* The lead spans the canvas, but only what is in it takes the pointer, so
+		the map beside the title line can still be pressed. */
 	#lead {
-		grid-column: 1;
 		grid-row: 1;
 		margin: calc(var(--page-margin) - var(--base-edge-gap));
 		-webkit-user-select: text;
 		user-select: text;
+		pointer-events: none;
 	}
+	#lead > * { pointer-events: auto; }
 
 	/* The title line: the name and version, then the toggles five characters
-		on and five apart — a flex row, so nothing is measured. */
-	#title-line { display: flex; gap: 5ch; margin-bottom: calc(var(--base-line-height) * var(--base-font-size)); }
-	/* The name is one line whatever the column is wide: it may run past it over the canvas, never fold. */
+		on and five apart — a flex row, so nothing is measured. As wide as what
+		it holds, it is one line wherever the canvas is wide enough for it;
+		where it is not, it folds between the name and the toggles, and then
+		between toggles, a line under another, as the foot's hints fold, and
+		no button is cut at the canvas's edge. */
+	#title-line { display: flex; flex-wrap: wrap; column-gap: 5ch; width: fit-content; margin-bottom: calc(var(--base-line-height) * var(--base-font-size)); }
+	/* The name is one line, never folded: the title line folds after it instead. */
 	#title { font-weight: 500; white-space: nowrap; }
 	/* The version shares the title's line but not its voice: a stamp, not part of the name. */
 	#version { font-weight: 400; opacity: .4; }
 
 	/* The toggles are two words with a slash between, the live one in full
 		ink; HELP is one word, in full ink while the help is open. */
-	#tools { display: flex; gap: 5ch; }
+	#tools { display: flex; flex-wrap: wrap; column-gap: 5ch; }
 	#language, #appearance, #view, #help-button, #outline-button {
 		line-height: var(--base-line-height);
 		background: none;
@@ -81,6 +93,10 @@
 	}
 	#language span, #appearance span, #view span, #help-button, #outline-button { opacity: .42; }
 	#language span.on, #appearance span.on, #view span.on, #help-button.on, #outline-button.on { opacity: 1; }
+	/* HELP and OUTLINE come up to full ink while the keyboard is on them, as
+		their band is held back with them (base.css); a toggle's two words keep
+		their strengths on its band, so it still says which is live. */
+	#help-button:focus-visible, #outline-button:focus-visible { opacity: 1; }
 
 	/* The find field: its words on the map's own ground, a hairline under
 		them as under the remark, and which match of how many beside it, held back. */
@@ -111,7 +127,6 @@
 	}
 
 	#foot {
-		grid-column: 1 / 3;
 		grid-row: 3;
 		align-self: end;
 		margin: calc(var(--page-margin) - var(--base-edge-gap));
@@ -204,7 +219,7 @@
 		opacity: .55;
 		margin-bottom: calc(var(--base-line-height) * var(--base-font-size));
 	}
-	.sheet-close:hover { opacity: 1; }
+	.sheet-close:hover, .sheet-close:focus-visible { opacity: 1; }
 	.sheet-close svg { display: block; width: 16px; height: 16px; }
 	#help-text p { margin: 0 0 calc(var(--base-line-height) * var(--base-font-size)); }
 	/* Each task's question, a small heading held back as a panel section's
@@ -215,7 +230,8 @@
 		Like the help, the body is as wide as the open column, so its lines
 		hold still while it slides. A line is a node's words, set in from the
 		left two characters a level, after the mark that folds its children;
-		the selected lines glow as selected nodes do, in the highlight at 40%. */
+		the selected lines glow as selected nodes do, in the highlight as it is
+		drawn on the ground (--highlight-mark). */
 	#outline .body {
 		width: var(--outline-column);
 		height: 100%;
@@ -237,13 +253,12 @@
 		content: "";
 		position: absolute;
 		inset: 0 calc(-1 * var(--page-margin) / 2);
-		background: var(--highlight);
-		opacity: .4;
+		background: var(--highlight-mark);
 		pointer-events: none;
 	}
 	.outline-fold, .outline-space { flex: none; width: 2ch; height: calc(var(--base-line-height) * 1em); }
 	.outline-fold { position: relative; display: grid; place-items: center; background: none; border: 0; padding: 0; color: inherit; cursor: pointer; opacity: .55; }
-	.outline-fold:hover { opacity: 1; }
+	.outline-fold:hover, .outline-fold:focus-visible { opacity: 1; }
 	.outline-fold svg { width: 12px; height: 12px; }
 	.outline-text { position: relative; min-width: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
 	.outline-text.placeholder { color: var(--ink-held); }

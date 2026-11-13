@@ -48,6 +48,64 @@ export function isLightColour( hex ){
 	return inkOver( hex ) !== INKS[ 1 ]
 }
 
+/* A colour laid over a ground at a share of its strength, as the browser
+	lays a colour drawn at that opacity: what the eye sees. */
+export function laidOver( ground, colour, share ){
+	const [ under, over ] = [ hexToRgb( ground ), hexToRgb( colour ) ]
+	return rgbToHex( ...under.map( ( channel, at ) => channel + share * ( over[ at ] - channel ) ) )
+}
+
+/* The strength the selection's glow was set at, at the master's word
+	(2026-11-12): at twice the width and half strength it was too heavy. */
+const HIGHLIGHT_SOFT = 0.4
+/* How far a mark in the highlight stands from the ground it is laid on, at the least. */
+const HIGHLIGHT_SEEN = 2
+
+/* How a mark in the highlight is drawn on a ground — the selection's glow,
+	a selected line of the outline, the band under a button the keyboard has
+	reached — as a colour and the strength it is laid over the ground at.
+	The highlight at 40%, soft, wherever that is seen there at 2 to 1, as
+	pale yellow is on a dark canvas, at 3.1; else stronger, a twentieth at a
+	time; and where not even the highlight at full strength is seen, as pale
+	yellow on white, at 1.24, the nearest shade of it, lighter or darker, that
+	is (found in use, 2026-11-13: pale yellow at 40% all but vanished on a
+	white canvas, at 1.08 to 1). Whichever it is, the interface's words read
+	on it at 4.5 to 1, as they stand on its bands: on mid-greys a shade
+	darker than the highlight read too dark for them. Every grey and every
+	colour of the house palette, as a ground, has such a mark for every
+	highlight tried (look.test.js). `reach` is the share of a mark's
+	strength that reaches the eye where it is strongest: all of it for a band,
+	less for a glow its blur softens (found in audit, 2026-11-13: a glow
+	checked as a band stood at 1.78 to 1 on the screen). A mark that `holdsWords`
+	not, as a glow, need not let them read on it. */
+export function highlightOn( highlight, ground, { reach = 1, holdsWords = true } = {} ){
+	const fits = band => contrast( band, ground ) >= HIGHLIGHT_SEEN && ( !holdsWords || contrast( inkOver( ground ), band ) >= WORDS_READ )
+	for( let twentieths = HIGHLIGHT_SOFT * 20; twentieths <= 20; twentieths++ ){
+		if( fits( laidOver( ground, highlight, reach * twentieths / 20 ) ) ) return { colour: highlight, strength: twentieths / 20 }
+	}
+	const [ lightness, chroma, hue ] = hexToLch( highlight )
+	for( let hundredths = 1; hundredths <= 100; hundredths++ ){
+		for( const way of [ 1, -1 ] ){
+			const shade = lchToHex( [ lightness + way * hundredths / 100, chroma, hue ] )
+			if( fits( laidOver( ground, shade, reach ) ) ) return { colour: shade, strength: 1 }
+		}
+	}
+	return { colour: highlight, strength: HIGHLIGHT_SOFT }
+}
+
+/* The share of the selection's glow's strength that reaches the eye at its
+	middle: its blur, a pixel (canvas.css), softens a stroke three wide, and a
+	glow drawn as a band at 2 to 1 showed at 1.78 at its strongest pixel in
+	Chromium (found in audit, 2026-11-13); at 0.8, Firefox, whose blur
+	spreads widest, still showed 1.98 on white. */
+export const GLOW_REACH = 0.75
+
+/* How the selection's glow is drawn on a ground: as a mark in the highlight,
+	for the share of it its blur lets through, with no words on it. */
+export function glowOn( highlight, ground ){
+	return highlightOn( highlight, ground, { reach: GLOW_REACH, holdsWords: false } )
+}
+
 /* Relative luminance, WCAG's: the channels made linear, then weighted. */
 function luminance( hex ){
 	const rgb = ( hexToRgb( hex ) || [ 0, 0, 0 ] ).map( channel => srgbToLinear( channel / 255 ) )

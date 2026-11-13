@@ -58,6 +58,8 @@ export class Keyboard {
 			if( lower === "v" ) return actions.paste
 			if( lower === "f" ) return actions.find
 			if( key === "0" ) return actions.centre
+			/* Cmd+. folds and opens, at the master's word (2026-11-13, 10:08), as Space now edits. */
+			if( key === "." ) return actions.fold
 			return null
 		}
 		/* Alt with ↑ or ↓ moves the node among its siblings, at the master's word (2026-11-12, 23:07). */
@@ -65,7 +67,10 @@ export class Keyboard {
 		if( key === "Tab" ) return event.shiftKey ? actions.addParent : actions.addChild
 		if( key === "Enter" ) return actions.addSibling
 		if( key === "Delete" || key === "Backspace" ) return actions.deleteSelected
-		if( key === " " ) return actions.fold
+		/* Space opens the selected node's words where it stands, keeping them, as a
+			 double-click does, at the master's word (2026-11-13, 10:08): F2, the
+			 usual key, is a media key on a Mac's keyboard. */
+		if( key === " " ) return () => actions.edit()
 		if( key === "Escape" ) return actions.escape
 		if( ARROWS[ key ] ) return () => actions.move( ARROWS[ key ] )
 		/* Any other single character starts the text afresh with it. */

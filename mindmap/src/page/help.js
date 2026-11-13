@@ -37,8 +37,8 @@ const TASKS = [
 		cn: [ "我想一口氣打出一串節點，怎麼做？", "打完一個節點的文字後按 ENTER，下方隨即開出下一個同級節點。在空的那個按 ESC 即結束。" ],
 	},
 	{
-		en: [ "I want to change a node's words. How?", "Double-click it and type: ENTER keeps the words and opens a sibling below, SHIFT+ENTER starts a new line, ESC throws the change away, and a click elsewhere keeps them. Or select it and type to write them afresh." ],
-		cn: [ "我想改節點的文字，怎麼做？", "雙擊節點後打字：ENTER 保留並在下方開出同級節點，SHIFT+ENTER 換行，ESC 放棄，點別處即保留。選取後直接打字則重寫文字。" ],
+		en: [ "I want to change a node's words. How?", "Double-click it, or select it and press SPACE, and type after its words: ENTER keeps them and opens a sibling below, SHIFT+ENTER starts a new line, ESC throws the change away. Or select it and type to write them afresh." ],
+		cn: [ "我想改節點的文字，怎麼做？", "雙擊節點，或選取後按空白鍵，接在原文字後打字：ENTER 保留並在下方開出同級節點，SHIFT+ENTER 換行，ESC 放棄。選取後直接打字則重寫文字。" ],
 	},
 	{
 		en: [ "I want to put a node earlier or later among its siblings. How?", `Select it and press ${ ALT.en.up } or ${ ALT.en.down }, or drag it between two of its siblings.` ],
@@ -65,12 +65,12 @@ const TASKS = [
 		cn: [ "我想把節點移到別處，怎麼做？", "把它拖到另一個節點上：它連同其下一切成為那個節點的最後一個子節點。或把它拖到兩個節點之間，出現一條短線標出位置，放開即插入該處。" ],
 	},
 	{
-		en: [ "I want to fold a branch away. How?", "Select its node and press SPACE, or click the small dot at the node's end; do it again to open it." ],
-		cn: [ "我想收起一個分支，怎麼做？", "選取節點後按空白鍵，或點節點末端的小圓點；再做一次即展開。" ],
+		en: [ "I want to fold a branch away. How?", "Select its node and press CMD+., or click the small dot at the node's end; do it again to open it." ],
+		cn: [ "我想收起一個分支，怎麼做？", "選取節點後按 CMD+.，或點節點末端的小圓點；再做一次即展開。" ],
 	},
 	{
-		en: [ "I want to see and edit the map as an outline. How?", "Press OUTLINE: the map shows at the left as an indented list, in step with it. Click a line to select its node, double-click to write its words; ENTER, TAB and SHIFT+TAB add nodes as on the map." ],
-		cn: [ "我想以大綱檢視並編輯地圖，怎麼做？", "按「大綱」，地圖即以縮排清單顯示在左側，與地圖同步。點一行選取節點，雙擊改寫文字；ENTER、TAB、SHIFT+TAB 加節點，與在地圖上相同。" ],
+		en: [ "I want to see and edit the map as an outline. How?", "Press OUTLINE: the map shows at the left as an indented list, in step with it. Click a line to select it; double-click it or press SPACE to write its words; ENTER, TAB and SHIFT+TAB add nodes." ],
+		cn: [ "我想以大綱檢視並編輯地圖，怎麼做？", "按「大綱」，地圖即以縮排清單顯示在左側，與地圖同步。點一行選取節點，雙擊或按空白鍵改寫文字；ENTER、TAB、SHIFT+TAB 加節點，與在地圖上相同。" ],
 	},
 	{
 		en: [ "I want to join two nodes with a line and label it. How?", "Select both and press ADD under Line, or select one, press ADD and click the other. Double-click the line to write its label. Two nodes take one line." ],

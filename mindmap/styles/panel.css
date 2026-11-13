@@ -62,6 +62,15 @@
 	.group .word.on { opacity: 1; }
 	button:disabled { opacity: .35; cursor: default; }
 
+	/* A word the keyboard has reached stands in full ink on its band
+		(base.css): held back, at .42 band and all, its letters stood on a band
+		as light as they are on a dark canvas and could not be read (found in
+		test, 2026-11-13); hovered, at .85, the band faded with it (found in
+		audit). A chip, whose own colour must show, is ringed with the band a
+		little outside instead, as a selected node glows round its own shape. */
+	button.word:focus-visible, .group .word:focus-visible { opacity: 1; }
+	.chip:focus-visible::before { inset: -5px; background: none; border: 3px solid var(--highlight-mark); }
+
 	/* No boxes. A field is the value itself, editable where it stands. */
 	input[type=text] { background: transparent; border: 0; padding: 0; color: inherit; }
 	input[type=text].hex { width: 72px; text-transform: lowercase; }

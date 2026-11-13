@@ -16,7 +16,7 @@
 		padding: 14px;
 	}
 	#picker-close { position: absolute; top: 2px; right: 6px; background: none; border: 0; color: #ffffff; padding: 4px; opacity: .7; cursor: pointer; }
-	#picker-close:hover { opacity: 1; }
+	#picker-close:hover, #picker-close:focus-visible { opacity: 1; }
 	#picker-close svg { display: block; width: 16px; height: 16px; }
 	#hue-wrap { position: relative; width: 176px; height: 14px; margin: 14px 0 8px; }
 	#hue { display: block; width: 176px; height: 14px; cursor: crosshair; touch-action: none; }

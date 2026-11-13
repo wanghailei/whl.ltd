@@ -1,5 +1,5 @@
 import { Point, Box } from "../layout/geometry.js"
-import { shapeFor, shownFill } from "./shapes.js"
+import { shapeFor } from "./shapes.js"
 import { fontFamily } from "./fonts.js"
 import { attributes, escaped } from "./markup.js"
 
@@ -54,11 +54,6 @@ export class Face {
 
 	glow( box ){
 		return this.shape.glow( box )
-	}
-
-	/* What its words stand on: the fill it shows, or else the ground under it. */
-	backdrop( ground ){
-		return shownFill( this.style ) ?? ground
 	}
 
 	/* Where the words and marks stand in the node's box: in its middle. */
@@ -129,7 +124,9 @@ const MARKS = {
 }
 
 /* Every shown node's face, made once per drawing. The node whose words are
-	being written, if any, is faced with those words as they stand. */
+	being written, if any, is faced with those words as they stand. Each is
+	faced as the node is drawn, edged where the canvas would hide its fill
+	(look.js). */
 export class Faces {
 	constructor( look, measure, placeholder = "", writing = null ){
 		this.look = look
@@ -141,7 +138,7 @@ export class Faces {
 
 	of( topic ){
 		const text = this.writing?.topic === topic ? this.writing.text : topic.text
-		if( !this.made.has( topic ) ) this.made.set( topic, new Face( topic, this.look.node( topic ), this.measure, this.placeholder, text ) )
+		if( !this.made.has( topic ) ) this.made.set( topic, new Face( topic, this.look.nodeAsDrawn( topic ), this.measure, this.placeholder, text ) )
 		return this.made.get( topic )
 	}
 }

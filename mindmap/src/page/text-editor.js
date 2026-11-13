@@ -49,9 +49,15 @@ export class TextEditor {
 		field.addEventListener( "input", event => {
 			if( !event.isComposing ) this.wake()
 			this.fit()
-			if( this.isOpen ) this.typed( this.session.face.topic, this.field.value )
+			this.retell()
 		} )
 		field.addEventListener( "blur", () => this.isOpen ? this.finish( "keep" ) : this.disarm() )
+	}
+
+	/* While words are written, tells them as they stand, as at every
+		 keystroke: so the map is drawn with them, the node's own hidden. */
+	retell(){
+		if( this.isOpen ) this.typed( this.session.face.topic, this.field.value )
 	}
 
 	/* Whether words are being written in it. */
@@ -60,8 +66,8 @@ export class TextEditor {
 	}
 
 	/* Waits unseen over a node for the first character typed onto it; `done` hears how the writing ended. */
-	arm( { face, box, ground, done } ){
-		this.session = { face, box, ground, done, writing: false }
+	arm( { face, box, done } ){
+		this.session = { face, box, done, writing: false }
 		this.place()
 		this.field.value = ""
 		this.field.classList.add( "armed" )
@@ -82,8 +88,8 @@ export class TextEditor {
 	}
 
 	/* Opens on a node: `replace` starts the words afresh with that character; `done` hears how it ended. */
-	open( { face, box, ground, replace = null, done } ){
-		this.session = { face, box, ground, done, writing: true }
+	open( { face, box, replace = null, done } ){
+		this.session = { face, box, done, writing: true }
 		this.place()
 		this.field.classList.remove( "armed", "hidden" )
 		this.field.value = replace ?? face.topic.text
@@ -131,8 +137,15 @@ export class TextEditor {
 		this.view.topicElement( this.session.face.topic.id )?.classList.toggle( "writing", writing )
 	}
 
+	/* The field has no ground of its own: the node drawn under it shows
+		 through, its shape and its fill, or the canvas where the shape shows
+		 none, and its drawn words are hidden while the field is open
+		 (canvas.css). A ground of the field's own, a rectangle, stood out past a
+		 pill's or a round node's curved ends once Shift+Enter made the node
+		 taller than it was wide (found in use, 2026-11-13). It hid the drawn
+		 words before they were hidden for it. */
 	place(){
-		const { face, box, ground } = this.session
+		const { face, box } = this.session
 		const zoom = this.view.zoom
 		const words = face.wordsIn( box )
 		const corner = this.view.toStage( new Point( words.left, words.top ) )
@@ -144,14 +157,13 @@ export class TextEditor {
 			fontSize: face.font.size * zoom + "px",
 			lineHeight: face.lineHeight * zoom + "px",
 			color: face.style.get( "textColour" ),
-			/* What the drawn words stand on: a node whose shape shows no fill
-				 stood its field on the stored fill, white words on white (found in
-				 audit, 2026-11-13). */
-			background: face.backdrop( ground ),
 		} )
 	}
 
-	/* As wide as its longest line and as tall as its lines, at the view's zoom. */
+	/* As wide as its longest line and as tall as its lines, at the view's zoom,
+		 with a character's room more across for the next one typed, so the line
+		 does not scroll aside before the field fits it again. Being clear, that
+		 room shows nothing past the node's edge. */
 	fit(){
 		if( !this.isOpen ) return
 		const { face } = this.session

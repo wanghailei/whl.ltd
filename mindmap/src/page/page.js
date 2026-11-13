@@ -18,6 +18,7 @@ import { HELP } from "./help.js"
 import { RemarkField } from "./remark-field.js"
 import { OutlineView } from "./outline-view.js"
 import { FindBar } from "./find-bar.js"
+import { highlightOn, glowOn, laidOver, rgbToHex } from "../drawing/colour.js"
 import { Search } from "../editor/search.js"
 
 /* The version of the last release: it rises once per release, when the
@@ -25,7 +26,7 @@ import { Search } from "../editor/search.js"
 	step if the release holds any feature, otherwise one patch step; the major
 	is the master's. A commit leaves it as it is; the changes since gather
 	under CHANGELOG.md's Unreleased heading, which the release then numbers. */
-const VERSION = "0.39.0"
+const VERSION = "0.40.0"
 /* How long a notice stays, unless another takes its place. */
 const NOTICE_TIME = 7000
 /* The notice for each reason a file would not open. */
@@ -189,19 +190,26 @@ class Page {
 	// ── Drawing ─────────────────────────────────────────────────────
 
 	/* After every change: a change to the map draws it afresh and keeps the
-		 draft; a change of selection only marks it. */
+		 draft; a change of selection only marks it. A map drawn afresh while a
+		 node's words are written, as when the house face arrives, is drawn with
+		 those words as they stand and the node's own hidden under the field,
+		 which has no ground of its own to cover them (found in audit,
+		 2026-11-13: the face arriving mid-writing drew the node's old words
+		 under the field). */
 	redraw( { mapChanged } ){
 		if( mapChanged ){
 			this.drawnWhileWriting = false
 			this.picture = new MapPicture( this.editor.map, { measure: this.measure, placeholder: CENTRAL_PLACEHOLDER } )
 			this.view.show( this.picture, this.editor )
 			this.keepDraft()
+			this.textEditor.retell()
 		} else this.view.mark( this.editor )
 		this.document.documentElement.style.setProperty( "--ground", this.picture.look.background )
 		this.document.documentElement.classList.toggle( "ink-dark", this.picture.look.isLight )
 		/* The ink itself the look's, which reads on any ground at 4.5 to 1:
 			 near-black fell short on greys round #777777 (found in audit, 2026-11-13). */
 		this.document.documentElement.style.setProperty( "--ink", this.picture.look.ink )
+		this.showHighlightMark()
 		this.panel.sync( { editor: this.editor, look: this.picture.look, zoom: this.view.zoom, highlight: this.highlight() } )
 		if( this.shown?.outline ) this.outline.show( this.editor )
 		this.markFound()
@@ -248,7 +256,6 @@ class Page {
 		this.textEditor.arm( {
 			face: this.picture.faces.of( focus ),
 			box,
-			ground: this.picture.look.background,
 			done: result => this.finishEditing( focus.id, false, map, result ),
 		} )
 	}
@@ -276,6 +283,29 @@ class Page {
 		const kept = this.store.highlight()
 		if( kept ) this.document.documentElement.style.setProperty( "--highlight", kept )
 		else this.document.documentElement.style.removeProperty( "--highlight" )
+		this.showHighlightMark()
+	}
+
+	/* How every mark in the highlight is drawn, so it is seen where it lies,
+		 light, dark or between (colour.js), set again whenever the ground or
+		 the highlight changes: on the canvas, the bands under words and the
+		 selection's glow, whose blur lets only part of its strength reach the
+		 eye; and on the colour picker's and the notices' own dark tiles, their
+		 words white, the bands drawn for that ground (found in audit,
+		 2026-11-13: a band drawn for a white canvas left the picker's white
+		 close mark at 2 to 1). A band is drawn solid, in its colour already
+		 laid over its ground, so a node lying under a tile or the title line
+		 cannot change what its words stand on (found in audit, 2026-11-13: a
+		 white node under a notice left its words at 3 to 1 on a clear band). */
+	showHighlightMark(){
+		if( !this.picture ) return
+		const highlight = this.highlight(), canvas = this.picture.look.background
+		const root = this.document.documentElement
+		root.style.setProperty( "--highlight-mark", bandOn( highlight, canvas ) )
+		const glow = glowOn( highlight, canvas )
+		root.style.setProperty( "--glow-mark", glow.colour )
+		root.style.setProperty( "--glow-strength", String( glow.strength ) )
+		for( const tile of [ this.element( "picker" ), this.element( "note" ) ] ) tile.style.setProperty( "--highlight-mark", bandOn( highlight, groundOf( tile, canvas ) ) )
 	}
 
 	highlight(){
@@ -349,7 +379,6 @@ class Page {
 		this.textEditor.open( {
 			face: this.picture.faces.of( topic ),
 			box: this.picture.arrangement.boxOf( topic ),
-			ground: this.picture.look.background,
 			replace,
 			done: result => this.finishEditing( id, fresh, map, result ),
 		} )
@@ -678,6 +707,18 @@ class Page {
 			},
 		}
 	}
+}
+
+/* The solid colour a band in the highlight is drawn in on a ground: the mark as colour.js settles it, laid over that ground. */
+function bandOn( highlight, ground ){
+	const { colour, strength } = highlightOn( highlight, ground )
+	return laidOver( ground, colour, strength )
+}
+
+/* What a tile of its own stands on: its colour, laid over the canvas at its strength. */
+function groundOf( tile, canvas ){
+	const [ red, green, blue, alpha = 1 ] = getComputedStyle( tile ).backgroundColor.match( /[\d.]+/g ).map( Number )
+	return laidOver( canvas, rgbToHex( red, green, blue ), alpha )
 }
 
 new Page( document )
