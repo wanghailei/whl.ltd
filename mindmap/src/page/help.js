@@ -97,8 +97,12 @@ const TASKS = [
 		cn: [ "我想切換布局或主題，怎麼做？", "在「布局」下選擇「向右」、「兩側」或「向下」，在「主題」下選擇主題。頂部的淺/深切換明暗外觀。" ],
 	},
 	{
-		en: [ `I want to add a ${ EN_REMARK } to a node. How?`, `Select one node and write in the field at the bottom of the map. Rest the pointer on the node to read its ${ EN_REMARK }.` ],
-		cn: [ `我想給節點添加${ REMARK.cn }，怎麼做？`, `選擇一個節點，在導圖底部的輸入框中輸入${ REMARK.cn }。將鼠標指針停留在節點上即可查看。` ],
+		en: [ `I want to add a ${ EN_REMARK } to a node. How?`, `Select one node: write up to 50 characters including spaces in the bottom field. ENTER or leaving keeps it; ESC cancels. Pasted line breaks become spaces; excess input shows a notice instead of being cut.` ],
+		cn: [ `我想給節點添加${ REMARK.cn }，怎麼做？`, `選擇一個節點，在底部輸入框中輸入單行${ REMARK.cn }，含空格最多 50 個字符。按 ENTER 或離開輸入框保存，ESC 取消。粘貼時換行轉為空格；超限修改會被拒絕並提示。` ],
+	},
+	{
+		en: [ "I want to read or replace an older remark. How?", "Older long or multiline remarks stay whole. Hover over or focus the bottom field to read the original. To replace it, type a valid single-line edit and confirm; cancelling keeps the original." ],
+		cn: [ "我想查看或替換舊版備註，怎麼做？", "舊版的長備註或多行備註保持完整。將鼠標指針停留在底部輸入框上或聚焦，即可查看原文。輸入有效的單行文本並確認後才能替換；取消則保留原文。" ],
 	},
 	{
 		en: [ "I want to move or zoom the map. How?", "Drag the empty canvas, or scroll, to move it. Pinch, scroll with CMD held, or press − and + to zoom; CENTRE or CMD+0 brings it back to the middle." ],

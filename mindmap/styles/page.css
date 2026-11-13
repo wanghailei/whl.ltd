@@ -164,36 +164,68 @@
 	.key-arrow { width: 0.6em; height: calc(0.6em * 24 / 23); fill: currentColor; }
 	.chord { white-space: nowrap; }
 
-	/* The remark: a fixed width, fixed at the bottom centre of the canvas,
-		standing on the foot, whichever node is selected and wherever the map
-		is moved. Its ground is the map's, so it reads over any map behind it;
-		it keeps a hairline to show where it can be written. It has no title:
-		its name is its placeholder. Empty and not typed in, it is barely
-		there, placeholder and hairline very faint, and the map shows through
-		it, so it hides nothing; with words in it, or while it is typed in,
-		both come up to their usual strength, on the map's own ground.
+	/* The remark is content: one centred line at the node's normal 14px,
+		independent of panel size or node styling. Only the empty prompt's word
+		is underlined. The ground covers nodes behind it, the native text input
+		scrolls horizontally while editing, and the font never shrinks.
 		Behaviour (by eye): the remark reads over any map behind it. */
 	/* Half the canvas's width, at the master's word (2026-11-12), and no wider
 		than 640px: the foot is the canvas less a page margin each side. */
 	#remark-area {
+		position: relative;
+		background: var(--ground);
 		width: min(640px, (100% + 2 * var(--page-margin)) / 2);
 		margin: 0 auto calc(var(--base-line-height) * var(--base-font-size));
 	}
 	#remark {
+		/* The caret must paint above the prompt's highlight. The area's ground
+			still covers the map when the empty input itself is transparent. */
+		position: relative;
+		z-index: var(--z-editor);
 		display: block;
 		width: 100%;
 		margin: 0;
 		padding: 0;
 		border: 0;
-		border-bottom: 1px solid var(--line-soft);
 		background: var(--ground);
-		color: inherit;
+		color: var(--ink);
+		font-size: 14px;
 		line-height: var(--base-line-height);
-		resize: none;
+		text-align: center;
+		opacity: 1;
 	}
-	#remark::placeholder { color: inherit; opacity: .45; }
-	#remark:placeholder-shown:not(:focus) { border-bottom-color: var(--line-faint); background: transparent; }
-	#remark:placeholder-shown:not(:focus)::placeholder { opacity: .18; }
+	#remark::placeholder { color: transparent; }
+	#remark:placeholder-shown { background: transparent; }
+	/* The empty word takes the same highlight band as a focused word-button,
+		not a field-wide rule or box. Written content stays on the canvas ground. */
+	#remark:focus-visible + #remark-prompt { background: var(--highlight-mark); opacity: 1; }
+	#remark-prompt {
+		font-size: 14px;
+		position: absolute;
+		top: 0;
+		left: 50%;
+		transform: translateX(-50%);
+		text-decoration: underline;
+		color: var(--ink);
+		opacity: .5;
+		line-height: var(--base-line-height);
+		pointer-events: none;
+	}
+	#remark-prompt[hidden], #remark-notice[hidden], #remark-original[hidden] { display: none; }
+	#remark-notice, #remark-original {
+		position: absolute;
+		bottom: calc(100% + 8px);
+		left: 0;
+		width: 100%;
+		padding: 4px;
+		background: var(--ground);
+		color: var(--ink);
+		text-align: center;
+	}
+	#remark-original { display: none; white-space: pre-wrap; overflow-wrap: anywhere; max-height: 30vh; overflow: auto; }
+	#remark-area:focus-within #remark-original:not([hidden]),
+	#remark-area:hover #remark-original:not([hidden]) { display: block; }
+	#remark-area:has(#remark-notice:not([hidden])) #remark-original { display: none; }
 
 	/* ── Help: the middle column, twice the panel's, folded until HELP ────
 		The body is as wide as the open column, so the prose holds still while

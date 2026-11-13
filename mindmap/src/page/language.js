@@ -19,6 +19,8 @@ export const CENTRAL_PLACEHOLDER = "Je pense, donc je suis."
 const WORDS = {
 	en: {
 		remark: () => REMARK.en,
+		remarkLimit: () => "Remark is limited to 50 characters. Shorten it and try again.",
+		remarkReplace: () => "Replace the full original remark with this single-line edit? Cancel keeps the original; select the field to try again.",
 		nodeHeading: ( { selected } ) => selected === 1 ? "Node" : selected + " nodes",
 		notSaved: () => "The browser would not keep this draft. Use Save to keep the map in a file.",
 		notAMap: () => "This file is not a Mindmap map or a Markdown outline. Open a .mindmap.json file or a .md outline.",
@@ -39,6 +41,8 @@ const WORDS = {
 	},
 	cn: {
 		remark: () => REMARK.cn,
+		remarkLimit: () => "備註最多 50 個字符。請縮短後重試。",
+		remarkReplace: () => "是否用此單行文本替換完整的原備註？取消將保留原文；可選擇輸入框重新編輯。",
 		nodeHeading: ( { selected } ) => selected === 1 ? "節點" : selected + " 個節點",
 		notSaved: () => "瀏覽器無法保存此草稿。請使用「保存」將導圖保存為文件。",
 		notAMap: () => "此文件不是 Mindmap 導圖或 Markdown 大綱。請打開 .mindmap.json 文件或 .md 大綱。",

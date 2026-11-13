@@ -72,7 +72,10 @@
 	content, so by the map and not among the controls. It has no title: the
 	page gives the field its name, in the live language, as its placeholder. -->
 <div id="remark-area" class="hidden">
-<textarea id="remark" rows="3" spellcheck="false"></textarea>
+<input id="remark" type="text" spellcheck="false" autocomplete="off" aria-describedby="remark-notice remark-original">
+<label id="remark-prompt" for="remark" aria-hidden="true"></label>
+<span id="remark-notice" role="status" hidden></span>
+<span id="remark-original" hidden></span>
 </div>
 <!-- The foot's line: held back, at its left, the main keys, in the keyboard
 	map's own words (SPEC.md, The keyboard); double-click edits a node too but

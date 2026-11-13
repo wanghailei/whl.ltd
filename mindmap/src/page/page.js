@@ -26,7 +26,7 @@ import { Search } from "../editor/search.js"
 	step if the release holds any feature, otherwise one patch step; the major
 	is the master's. A commit leaves it as it is; the changes since gather
 	under CHANGELOG.md's Unreleased heading, which the release then numbers. */
-const VERSION = "0.40.2"
+const VERSION = "0.41.0"
 /* How long a notice stays, unless another takes its place. */
 const NOTICE_TIME = 7000
 /* The notice for each reason a file would not open. */
@@ -57,6 +57,12 @@ class Page {
 		this.remarkField = new RemarkField( {
 			area: this.element( "remark-area" ),
 			field: this.element( "remark" ),
+			prompt: this.element( "remark-prompt" ),
+			notice: this.element( "remark-notice" ),
+			original: this.element( "remark-original" ),
+			say: word => this.language.say( word ),
+			confirm: words => this.document.defaultView.confirm( words ),
+			leave: () => this.armKeyboard(),
 			write: ( id, text ) => {
 				const topic = this.editor.map.find( id )
 				if( topic ) this.editor.writeRemark( topic, text )
