@@ -1,0 +1,29 @@
+/* WHL Mindmap — the colour picker, the Gradient tool's: a hue strip over a
+	rectangular field, chroma across and lightness up; the right edge is the
+	gamut edge for that lightness, so every point is a colour sRGB can hold.
+	It carries its own dark ground and pins white line-work, whatever the
+	map's ground. */
+@layer picker {
+	#picker {
+		position: fixed;
+		z-index: var(--z-picker);
+		background: rgba(0, 0, 0, .78);
+		color: #ffffff;
+		--line-strong: rgba(255, 255, 255, .34);
+		backdrop-filter: blur(18px) saturate(1.2);
+		-webkit-backdrop-filter: blur(18px) saturate(1.2);
+		border: 1px solid var(--line-strong);
+		padding: 14px;
+	}
+	#picker-close { position: absolute; top: 2px; right: 6px; background: none; border: 0; color: #ffffff; padding: 4px; opacity: .7; cursor: pointer; }
+	#picker-close:hover, #picker-close:focus-visible { opacity: 1; }
+	#picker-close svg { display: block; width: 16px; height: 16px; }
+	#hue-wrap { position: relative; width: 176px; height: 14px; margin: 14px 0 8px; }
+	#hue { display: block; width: 176px; height: 14px; cursor: crosshair; touch-action: none; }
+	#hue-dot { position: absolute; top: -2px; bottom: -2px; width: 3px; margin-left: -1px; background: #ffffff; box-shadow: 0 0 0 1px #000000; pointer-events: none; }
+	#field-wrap { position: relative; width: 176px; height: 118px; margin-bottom: 10px; }
+	#field { display: block; width: 176px; height: 118px; cursor: crosshair; touch-action: none; }
+	#dot { position: absolute; width: 9px; height: 9px; margin: -5px 0 0 -5px; pointer-events: none; border: 1px solid #000000; box-shadow: 0 0 0 1px #ffffff inset, 0 0 0 1px #ffffff; }
+	.picker-row { display: flex; align-items: center; gap: 7px; }
+	#picker-hex { background: transparent; border: 1px solid var(--line-strong); padding: 5px 6px; color: inherit; font: inherit; width: 100%; text-transform: lowercase; }
+}

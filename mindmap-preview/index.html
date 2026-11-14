@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<!-- WHL Mindmap: a single-page mind-map editor. What it does and how it is
+	used: SPEC.md; how to run it: README.md. Everything runs in this page;
+	nothing is sent anywhere. -->
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>WHL Mindmap</title>
+<!-- Favicon: IBM Carbon Design System "Model", @carbon/icons 11.92.0.
+	Copyright IBM Corp. 2016, 2023. Apache-2.0; licence copied below.
+	Source: https://unpkg.com/@carbon/icons@11.92.0/svg/32/model.svg
+	Pristine source: src/page/carbon-model.svg. Geometry unchanged in favicon.svg;
+	#111 fill and white ground added, PNG rasterised from that SVG.
+	Behaviour (by eye): Model reads at 16px and 32px on light and dark tab bars.
+	PNG supports Safari before SVG favicons; SVG-capable browsers can prefer
+	the last declaration. Both ship in the existing index.html/src archive. -->
+<link rel="icon" type="image/png" sizes="32x32" href="src/page/favicon.png">
+<link rel="icon" type="image/svg+xml" sizes="any" href="src/page/favicon.svg">
+<link rel="stylesheet" href="styles/base.css">
+<link rel="stylesheet" href="styles/page.css">
+<link rel="stylesheet" href="styles/panel.css">
+<link rel="stylesheet" href="styles/picker.css">
+<link rel="stylesheet" href="styles/canvas.css">
+</head>
+<body>
+
+<!-- Carbon icons the page's words draw in more than one place, each kept
+	once as a symbol and drawn where it is used: the up and down arrows of the
+	reorder keys, in the foot and the help. The house face draws ↑ and ↓ at its
+	x-height, specks at the interface's 12 pixels that read as + (found in
+	use, 2026-11-13). Each arrow's view is the arrow alone, a unit and a half
+	of room each side, so it fills the one character's cell the glyph took,
+	and the heads of ↑ and ↓ side by side stay apart. -->
+<svg class="symbols" aria-hidden="true">
+<symbol id="arrow-up" viewBox="4.5 4 23 24"><path d="M16 4 6 14 7.41 15.41 15 7.83 15 28 17 28 17 7.83 24.59 15.41 26 14 16 4z"/></symbol>
+<symbol id="arrow-down" viewBox="4.5 4 23 24"><path d="M24.59 16.59 17 24.17 17 4 15 4 15 24.17 7.41 16.59 6 18 16 28 26 18 24.59 16.59z"/></symbol>
+</svg>
+
+<!-- The shell, Alluvial's: one grid of four columns — the outline, the
+	canvas, the help, the control panel — each folded column 0px wide, opened
+	by a class of its own on the shell, and the change slides. -->
+<div id="shell" class="with-panel">
+
+<!-- The outline: the map as an indented list, kept in step with it, folded
+	until OUTLINE. Its lines are written by the page. -->
+<aside id="outline">
+<div class="body"><button class="sheet-close" type="button" aria-label="close" data-cn-aria-label="關閉"><svg viewBox="0 0 32 32" fill="currentColor" aria-hidden="true"><path d="M24 9.4 22.6 8 16 14.6 9.4 8 8 9.4 14.6 16 8 22.6 9.4 24 16 17.4 22.6 24 24 22.6 17.4 16z"/></svg></button><div id="outline-rows" role="tree" tabindex="-1" aria-label="Outline" data-cn-aria-label="大綱"></div></div>
+</aside>
+
+<main id="main">
+<!-- The map. The stage takes every pointer and wheel; the SVG draws the map
+	inside one group the view moves and scales. -->
+<div id="stage">
+<svg id="map" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="The mind map" data-cn-aria-label="思維導圖"><g id="viewport"></g></svg>
+<div id="marquee" class="hidden"></div>
+<textarea id="text-editor" class="hidden" spellcheck="false" aria-label="Node text" data-cn-aria-label="節點文本"></textarea>
+</div>
+
+<!-- The toggles, the notices, the remark and the foot lie over the canvas.
+	The layer takes no pointer events, so clicks fall through to the map; its
+	children take them back. -->
+<div id="foreground">
+<div id="lead">
+<!-- HELP is always the title line's last button, at the master's word
+	(2026-11-13, 12:38, #29): a button added later goes before it. -->
+<div id="title-line"><div id="title"></div><div id="tools">
+<button id="language" title="Interface language" data-cn-title="界面語言" aria-label="Interface language" data-cn-aria-label="界面語言"><span id="language-en" class="on">EN</span><span>/</span><span id="language-cn">CN</span></button>
+<button id="appearance" title="Light or dark map" data-cn-title="淺色或深色導圖" aria-label="Light or dark map" data-cn-aria-label="淺色或深色導圖"><span id="appearance-light" data-cn="淺">LIGHT</span><span>/</span><span id="appearance-dark" class="on" data-cn="深">DARK</span></button>
+<button id="view" title="Show or hide the control panel" data-cn-title="顯示或隱藏操作面板" aria-label="Show or hide the control panel" data-cn-aria-label="顯示或隱藏操作面板"><span id="view-full" data-cn="全屏">FULLSCREEN</span><span>/</span><span id="view-panel" class="on" data-cn="面板">PANEL</span></button>
+<button id="outline-button" title="Open or fold the outline" data-cn-title="展開或收起大綱" aria-label="Open or fold the outline" data-cn-aria-label="展開或收起大綱" data-cn="大綱">OUTLINE</button>
+<button id="help-button" title="Open or fold the help" data-cn-title="展開或收起幫助" aria-label="Open or fold the help" data-cn-aria-label="展開或收起幫助" data-cn="幫助">HELP</button>
+</div></div>
+<!-- The find field, under the title line while Cmd+F has it open: the words
+	to find, and which match of how many was gone to. -->
+<div id="find" class="hidden"><input id="find-field" type="text" spellcheck="false" autocomplete="off" placeholder="Find" data-cn-placeholder="查找" aria-label="Find nodes by their words or remark" data-cn-aria-label="按文本或備註查找節點"><span id="find-count" aria-live="polite"></span></div>
+<div id="note" class="hidden" role="status"></div>
+</div>
+
+<div id="foot">
+<!-- The selected node's remark, fixed at the bottom centre of the canvas:
+	content, so by the map and not among the controls. It has no title: the
+	page gives the field its name, in the live language, as its placeholder. -->
+<div id="remark-area" class="hidden">
+<input id="remark" type="text" spellcheck="false" autocomplete="off" aria-describedby="remark-notice remark-original">
+<label id="remark-prompt" for="remark" aria-hidden="true"></label>
+<span id="remark-notice" role="status" hidden></span>
+<span id="remark-original" hidden></span>
+</div>
+<!-- The foot's line: held back, at its left, the main keys, in the keyboard
+	map's own words (SPEC.md, The keyboard); double-click edits a node too but
+	is not listed. Each hint is one piece that does not break, with its own
+	Chinese, so a narrow line folds between hints; nor does the space before
+	each separator, so a folded line never starts with one. The arrows of the
+	reorder keys are the symbols above, named for screen readers. -->
+<div id="foot-line">
+<div id="keys"><span class="hint" data-cn="TAB 子節點">TAB child</span>&nbsp;· <span class="hint" data-cn="SHIFT+TAB 父節點">SHIFT+TAB parent</span>&nbsp;· <span class="hint" data-cn="ENTER 同級節點">ENTER sibling</span>&nbsp;· <span class="hint" data-cn="DELETE 刪除">DELETE delete</span>&nbsp;· <span class="hint">ALT+<svg class="key-arrow" role="img" aria-label="up" data-cn-aria-label="上"><use href="#arrow-up"/></svg><svg class="key-arrow" role="img" aria-label="down" data-cn-aria-label="下"><use href="#arrow-down"/></svg> <span data-cn="調整順序">reorder</span></span>&nbsp;· <span class="hint" data-cn="CMD+C/X/V 複製、剪切、粘貼">CMD+C/X/V copy, cut, paste</span>&nbsp;· <span class="hint" data-cn="CMD+F 查找">CMD+F find</span>&nbsp;· <span class="hint" data-cn="CMD+Z 撤銷">CMD+Z undo</span>&nbsp;· <span class="hint" data-cn="CMD+SHIFT+Z 重做">CMD+SHIFT+Z redo</span>&nbsp;· <span class="hint" data-cn="CMD+0 居中">CMD+0 centre</span></div>
+</div>
+</div>
+</div>
+</main>
+
+<!-- The help: twice the control panel's width, folded until HELP. Its body
+	is as wide as the open column, so the text holds still while it slides. -->
+<aside id="help">
+<div class="body"><button class="sheet-close" type="button" aria-label="close" data-cn-aria-label="關閉"><svg viewBox="0 0 32 32" fill="currentColor" aria-hidden="true"><path d="M24 9.4 22.6 8 16 14.6 9.4 8 8 9.4 14.6 16 8 22.6 9.4 24 16 17.4 22.6 24 24 22.6 17.4 16z"/></svg></button><div id="help-text"></div></div>
+</aside>
+
+<aside id="toolbar">
+<div id="rail">
+<div id="blocks">
+
+<!-- File: the map's own file in and out. -->
+<section class="panel">
+	<h2 data-cn="文件">File</h2>
+	<div class="control-row">
+		<button class="word" data-command="new" data-cn="新建">New</button>
+		<button class="word" data-command="open" data-cn="打開">Open</button>
+		<button class="word" data-command="save" data-cn="保存">Save</button>
+	</div>
+</section>
+
+<!-- Output: the map as a picture or an outline. -->
+<section class="panel">
+	<h2 data-cn="輸出">Output</h2>
+	<div class="control-row">
+		<button class="word" data-command="png">PNG</button>
+		<button class="word" data-command="svg">SVG</button>
+		<button class="word" data-command="pdf">PDF</button>
+		<button class="word" data-command="markdown">MD</button>
+	</div>
+</section>
+
+<!-- The map as a whole: its layout, colour scheme and independent Canvas. -->
+<section class="panel">
+	<h2 data-cn="布局">Layout</h2>
+	<div class="control-row group" data-map="layout">
+		<button class="word" data-value="right" data-cn="向右">Right</button>
+		<button class="word" data-value="both" data-cn="兩側">Both</button>
+		<button class="word" data-value="down" data-cn="向下">Down</button>
+	</div>
+</section>
+
+<section class="panel" id="colour-scheme-panel">
+	<h2 data-cn="配色方案">Colour scheme</h2>
+	<div class="control-row group" data-map="colourScheme" role="group" aria-label="Colour scheme" data-cn-aria-label="配色方案">
+		<button class="word" data-value="uniform" data-cn="全局同色" aria-pressed="false">Uniform</button>
+		<button class="word" data-value="cascade" data-cn="層級配色" aria-pressed="false">Cascade</button>
+		<button class="word" data-value="rainbow" data-cn="彩虹分支" aria-pressed="false">Rainbow</button>
+	</div>
+	<div class="control-row hidden" id="imported-colours" data-cn="已導入配色">Imported colours</div>
+	<!-- Paired swatches are commands, not colour bindings. Their actual
+		colours come from UNIFORM_PRESETS in model/colour-scheme.js. -->
+	<div class="control-row uniform-presets" data-scheme-controls="uniform">
+		<button type="button" class="uniform-swatch" data-uniform="0" aria-label="Black on white" data-cn-aria-label="黑色／白底" title="Black on white" data-cn-title="黑色／白底" aria-pressed="false"><span aria-hidden="true"></span></button>
+		<button type="button" class="uniform-swatch" data-uniform="1" aria-label="White on black" data-cn-aria-label="白色／黑底" title="White on black" data-cn-title="白色／黑底" aria-pressed="false"><span aria-hidden="true"></span></button>
+		<button type="button" class="uniform-swatch" data-uniform="2" aria-label="Grey on white" data-cn-aria-label="灰色／白底" title="Grey on white" data-cn-title="灰色／白底" aria-pressed="false"><span aria-hidden="true"></span></button>
+		<button type="button" class="uniform-swatch" data-uniform="3" aria-label="IBM blue on white" data-cn-aria-label="IBM 藍／白底" title="IBM blue on white" data-cn-title="IBM 藍／白底" aria-pressed="false"><span aria-hidden="true"></span></button>
+		<button type="button" class="uniform-swatch" data-uniform="4" aria-label="Pale gold on black" data-cn-aria-label="淡金色／黑底" title="Pale gold on black" data-cn-title="淡金色／黑底" aria-pressed="false"><span aria-hidden="true"></span></button>
+	</div>
+	<div class="control-row hidden" data-scheme-controls="cascade">
+		<span class="label" data-cn="主色">Primary</span>
+		<button type="button" class="chip" data-for="primary-colour" title="Pick" data-cn-title="選擇顏色" aria-label="Pick the primary colour" data-cn-aria-label="選擇主色"></button>
+		<input type="text" class="hex" id="primary-colour" data-setting="primary" spellcheck="false" aria-label="Primary colour" data-cn-aria-label="主色">
+	</div>
+	<div class="control-row hidden" data-scheme-controls="rainbow">
+		<label class="label" for="rainbow-chroma" data-cn="色度">Chroma</label>
+		<input type="range" id="rainbow-chroma" data-setting="chroma" min="0" max="0.24" step="0.005" value="0.12" aria-label="Chroma" data-cn-aria-label="色度">
+		<span class="value" data-shows="rainbow-chroma">0.12</span>
+	</div>
+	<div class="control-row">
+		<span class="label" data-cn="畫布">Canvas</span>
+		<button type="button" class="chip" data-for="canvas-colour" title="Pick" data-cn-title="選擇顏色" aria-label="Pick the canvas colour" data-cn-aria-label="選擇畫布顏色"></button>
+		<input type="text" class="hex" id="canvas-colour" data-setting="canvas" spellcheck="false" aria-label="Canvas colour" data-cn-aria-label="畫布顏色">
+	</div>
+</section>
+
+<!-- View: how large the map is shown, never how large it is exported. -->
+<section class="panel">
+	<h2 data-cn="視圖">View</h2>
+	<div class="control-row">
+		<span class="label" data-cn="縮放">Zoom</span>
+		<button class="word" data-command="zoom-out" title="Zoom out by 10%" data-cn-title="縮小 10%" aria-label="Zoom out by 10%" data-cn-aria-label="縮小 10%">−</button>
+		<button class="word" data-command="zoom-in" title="Zoom in by 10%" data-cn-title="放大 10%" aria-label="Zoom in by 10%" data-cn-aria-label="放大 10%">+</button>
+		<span class="value" id="zoom-value"></span>
+		<button class="word" data-command="centre" data-cn="居中">Centre</button>
+	</div>
+	<div class="control-row">
+		<span class="label" data-cn="高亮色">Highlight</span>
+		<button type="button" class="chip" data-for="highlight-colour" title="Pick" data-cn-title="選擇顏色" aria-label="Pick the highlight colour" data-cn-aria-label="選擇高亮色"></button>
+		<input type="text" class="hex" id="highlight-colour" data-setting="highlight" spellcheck="false" aria-label="Highlight colour" data-cn-aria-label="高亮色">
+	</div>
+</section>
+
+<!-- Branch width belongs to the whole map and is always at hand, above
+	every selection-only row so selecting never moves it (2026-11-13, #33). -->
+<section class="panel" id="branch-width-panel">
+	<h2 data-cn="分支寬度">Branch width</h2>
+	<div class="control-row stepper" id="branch-width" data-style="branch" data-property="width" data-step="0.25" data-scope="map">
+		<span class="label" data-cn="寬度">Width</span>
+		<button class="word" data-steps="-1" title="Thinner" data-cn-title="變細" aria-label="Make the branch thinner" data-cn-aria-label="分支變細">−</button>
+		<button class="word" data-steps="1" title="Thicker" data-cn-title="變粗" aria-label="Make the branch thicker" data-cn-aria-label="分支變粗">+</button>
+		<span class="value"></span>
+	</div>
+</section>
+
+<!-- Below here the panel's sections show only with a selection: the
+	Line section's form and ADD are always there, its own rows only with a
+	line selected; Node and Branch only with nodes selected. They stand under every
+	section always shown, so showing or hiding them moves nothing else. -->
+
+<!-- Line: auxiliary lines between any two nodes. The form every line of
+	the map takes, straight or arc, and ADD are always here; the rows under
+	them are the selected line's own. A line has no SHAPE: every corner of a
+	straight line is round (2026-11-12). -->
+<section class="panel" id="line-panel">
+	<h2 data-cn="輔助線">Line</h2>
+	<div class="control-row group" data-map="lineForm">
+		<button class="word" data-value="straight" data-cn="直線">Straight</button>
+		<button class="word" data-value="arc" data-cn="弧線">Arc</button>
+	</div>
+	<div class="control-row">
+		<button class="word" data-command="add-line" data-cn="添加">Add</button>
+	</div>
+	<div id="line-rows">
+		<div class="control-row">
+			<span class="label" data-cn="標籤">Label</span>
+			<input type="text" id="line-label" class="wide" spellcheck="false" aria-label="Line label" data-cn-aria-label="輔助線標籤">
+		</div>
+		<div class="control-row">
+			<span class="label" data-cn="顏色">Colour</span>
+			<button type="button" class="chip" data-for="line-colour" title="Pick" data-cn-title="選擇顏色" aria-label="Pick the line colour" data-cn-aria-label="選擇輔助線顏色"></button>
+			<input type="text" class="hex" id="line-colour" data-style="line" data-property="colour" spellcheck="false" aria-label="Line colour" data-cn-aria-label="輔助線顏色">
+		</div>
+		<div class="control-row stepper" id="line-width" data-style="line" data-property="width" data-step="0.25">
+			<span class="label" data-cn="寬度">Width</span>
+			<button class="word" data-steps="-1" title="Thinner" data-cn-title="變細" aria-label="Make the line thinner" data-cn-aria-label="輔助線變細">−</button>
+			<button class="word" data-steps="1" title="Thicker" data-cn-title="變粗" aria-label="Make the line thicker" data-cn-aria-label="輔助線變粗">+</button>
+			<span class="value"></span>
+		</div>
+		<div class="control-row group" data-style="line" data-property="dash">
+			<button class="word" data-value="solid" data-cn="實線">Solid</button>
+			<button class="word" data-value="dashed" data-cn="虛線">Dashed</button>
+			<button class="word" data-value="dotted" data-cn="點線">Dotted</button>
+		</div>
+		<div class="control-row">
+			<button class="word" data-command="default-line" data-cn="設為默認">Set as default</button>
+			<button class="word" data-command="delete-line" data-cn="刪除">Delete</button>
+		</div>
+	</div>
+</section>
+
+<!-- Node: the selected nodes' look. Shown while nodes are selected. -->
+<section class="panel" id="node-panel">
+	<h2 id="node-heading">Node</h2>
+	<div class="control-row group" data-style="node" data-property="shape">
+		<button class="word" data-value="box" data-cn="矩形">Box</button>
+		<button class="word" data-value="round" data-cn="圓角">Round</button>
+		<button class="word" data-value="pill" data-cn="膠囊">Pill</button>
+		<button class="word" data-value="none" data-cn="無">None</button>
+	</div>
+	<div class="control-row">
+		<span class="label" data-cn="填充">Fill</span>
+		<button type="button" class="chip" data-for="node-fill" title="Pick" data-cn-title="選擇顏色" aria-label="Pick the fill" data-cn-aria-label="選擇填充顏色"></button>
+		<input type="text" class="hex" id="node-fill" data-style="node" data-property="fill" spellcheck="false" aria-label="Fill" data-cn-aria-label="填充">
+	</div>
+	<div class="control-row">
+		<span class="label" data-cn="邊框">Border</span>
+		<button type="button" class="chip" data-for="node-border" title="Pick" data-cn-title="選擇顏色" aria-label="Pick the border" data-cn-aria-label="選擇邊框顏色"></button>
+		<input type="text" class="hex" id="node-border" data-style="node" data-property="border" spellcheck="false" aria-label="Border" data-cn-aria-label="邊框">
+	</div>
+	<div class="control-row stepper" id="node-border-width" data-style="node" data-property="borderWidth" data-step="1">
+		<span class="label" data-cn="寬度">Width</span>
+		<button class="word" data-steps="-1" title="Thinner" data-cn-title="變細" aria-label="Make the border thinner" data-cn-aria-label="邊框變細">−</button>
+		<button class="word" data-steps="1" title="Thicker" data-cn-title="變粗" aria-label="Make the border thicker" data-cn-aria-label="邊框變粗">+</button>
+		<span class="value"></span>
+	</div>
+	<div class="control-row group" data-style="node" data-property="font">
+		<button class="word" data-value="mono" data-cn="等寬">Mono</button>
+		<button class="word" data-value="sans" data-cn="無襯線">Sans</button>
+		<button class="word" data-value="serif" data-cn="襯線">Serif</button>
+	</div>
+	<div class="control-row">
+		<span class="label" data-cn="字號">Size</span>
+		<input type="range" id="node-font-size" data-style="node" data-property="fontSize" min="8" max="72" step="1" aria-label="Font size" data-cn-aria-label="字號">
+		<span class="value" data-shows="node-font-size"></span>
+	</div>
+	<div class="control-row">
+		<span class="label" data-cn="文字顏色">Text</span>
+		<button type="button" class="chip" data-for="node-text-colour" title="Pick" data-cn-title="選擇顏色" aria-label="Pick the text colour" data-cn-aria-label="選擇文字顏色"></button>
+		<input type="text" class="hex" id="node-text-colour" data-style="node" data-property="textColour" spellcheck="false" aria-label="Text colour" data-cn-aria-label="文字顏色">
+	</div>
+	<div class="control-row">
+		<button class="word" data-command="default-node" data-cn="設為默認">Set as default</button>
+		<button class="word" data-command="clear-style" data-cn="清除">Clear</button>
+	</div>
+</section>
+
+<!-- Branch: the lines from the selected nodes to their parents. -->
+<section class="panel" id="branch-panel">
+	<h2 data-cn="分支">Branch</h2>
+	<div class="control-row group" data-style="branch" data-property="shape">
+		<button class="word" data-value="curve" data-cn="曲線">Curve</button>
+		<button class="word" data-value="elbow" data-cn="折線">Elbow</button>
+		<button class="word" data-value="straight" data-cn="直線">Straight</button>
+	</div>
+	<div class="control-row">
+		<span class="label" data-cn="顏色">Colour</span>
+		<button type="button" class="chip" data-for="branch-colour" title="Pick" data-cn-title="選擇顏色" aria-label="Pick the branch colour" data-cn-aria-label="選擇分支顏色"></button>
+		<input type="text" class="hex" id="branch-colour" data-style="branch" data-property="colour" spellcheck="false" aria-label="Branch colour" data-cn-aria-label="分支顏色">
+	</div>
+	<div class="control-row group" data-style="branch" data-property="dash">
+		<button class="word" data-value="solid" data-cn="實線">Solid</button>
+		<button class="word" data-value="dashed" data-cn="虛線">Dashed</button>
+	</div>
+</section>
+
+</div>
+</div>
+<!-- The copyright stands at the panel's foot, below what scrolls. -->
+<div id="copy">© 2026 Wanted Hacker Limited</div>
+</aside>
+
+</div>
+
+<!-- The colour picker, the house's (the Gradient tool's): a hue strip over a
+	chroma × lightness field. Opened from the chip beside any hex field, it
+	edits that field. It floats over the shell, so it stands outside it. The
+	close icon is an IBM Carbon Design System glyph (Apache-2.0). -->
+<div id="picker" class="hidden">
+	<button id="picker-close" type="button" title="Close" data-cn-title="關閉" aria-label="Close" data-cn-aria-label="關閉"><svg viewBox="0 0 32 32" fill="currentColor" aria-hidden="true"><path d="M24 9.4 22.6 8 16 14.6 9.4 8 8 9.4 14.6 16 8 22.6 9.4 24 16 17.4 22.6 24 24 22.6 17.4 16z"/></svg></button>
+	<div id="hue-wrap"><canvas id="hue" width="176" height="14"></canvas><div id="hue-dot"></div></div>
+	<div id="field-wrap"><canvas id="field" width="132" height="88"></canvas><div id="dot"></div></div>
+	<div class="picker-row"><input type="text" id="picker-hex" spellcheck="false" aria-label="Hex" data-cn-aria-label="十六進制顏色代碼"></div>
+</div>
+
+<input type="file" id="open-file" accept=".json,.md,.markdown,.txt,application/json,text/markdown,text/plain" hidden>
+
+<script type="module" src="src/page/page.js"></script>
+
+</body>
+</html>
+
+<!-- The favicon's Apache-2.0 licence, copied from @carbon/icons 11.92.0/LICENSE.
+	Kept in this shipped file so the existing deployment archive carries it.
+
+Apache License
+Version 2.0, January 2004
+http://www.apache.org/licenses/
+
+TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION
+
+1. Definitions.
+
+"License" shall mean the terms and conditions for use, reproduction,
+and distribution as defined by Sections 1 through 9 of this document.
+
+"Licensor" shall mean the copyright owner or entity authorized by
+the copyright owner that is granting the License.
+
+"Legal Entity" shall mean the union of the acting entity and all
+other entities that control, are controlled by, or are under common
+control with that entity. For the purposes of this definition,
+"control" means (i) the power, direct or indirect, to cause the
+direction or management of such entity, whether by contract or
+otherwise, or (ii) ownership of fifty percent (50%) or more of the
+outstanding shares, or (iii) beneficial ownership of such entity.
+
+"You" (or "Your") shall mean an individual or Legal Entity
+exercising permissions granted by this License.
+
+"Source" form shall mean the preferred form for making modifications,
+including but not limited to software source code, documentation
+source, and configuration files.
+
+"Object" form shall mean any form resulting from mechanical
+transformation or translation of a Source form, including but
+not limited to compiled object code, generated documentation,
+and conversions to other media types.
+
+"Work" shall mean the work of authorship, whether in Source or
+Object form, made available under the License, as indicated by a
+copyright notice that is included in or attached to the work
+(an example is provided in the Appendix below).
+
+"Derivative Works" shall mean any work, whether in Source or Object
+form, that is based on (or derived from) the Work and for which the
+editorial revisions, annotations, elaborations, or other modifications
+represent, as a whole, an original work of authorship. For the purposes
+of this License, Derivative Works shall not include works that remain
+separable from, or merely link (or bind by name) to the interfaces of,
+the Work and Derivative Works thereof.
+
+"Contribution" shall mean any work of authorship, including
+the original version of the Work and any modifications or additions
+to that Work or Derivative Works thereof, that is intentionally
+submitted to Licensor for inclusion in the Work by the copyright owner
+or by an individual or Legal Entity authorized to submit on behalf of
+the copyright owner. For the purposes of this definition, "submitted"
+means any form of electronic, verbal, or written communication sent
+to the Licensor or its representatives, including but not limited to
+communication on electronic mailing lists, source code control systems,
+and issue tracking systems that are managed by, or on behalf of, the
+Licensor for the purpose of discussing and improving the Work, but
+excluding communication that is conspicuously marked or otherwise
+designated in writing by the copyright owner as "Not a Contribution."
+
+"Contributor" shall mean Licensor and any individual or Legal Entity
+on behalf of whom a Contribution has been received by Licensor and
+subsequently incorporated within the Work.
+
+2. Grant of Copyright License. Subject to the terms and conditions of
+this License, each Contributor hereby grants to You a perpetual,
+worldwide, non-exclusive, no-charge, royalty-free, irrevocable
+copyright license to reproduce, prepare Derivative Works of,
+publicly display, publicly perform, sublicense, and distribute the
+Work and such Derivative Works in Source or Object form.
+
+3. Grant of Patent License. Subject to the terms and conditions of
+this License, each Contributor hereby grants to You a perpetual,
+worldwide, non-exclusive, no-charge, royalty-free, irrevocable
+(except as stated in this section) patent license to make, have made,
+use, offer to sell, sell, import, and otherwise transfer the Work,
+where such license applies only to those patent claims licensable
+by such Contributor that are necessarily infringed by their
+Contribution(s) alone or by combination of their Contribution(s)
+with the Work to which such Contribution(s) was submitted. If You
+institute patent litigation against any entity (including a
+cross-claim or counterclaim in a lawsuit) alleging that the Work
+or a Contribution incorporated within the Work constitutes direct
+or contributory patent infringement, then any patent licenses
+granted to You under this License for that Work shall terminate
+as of the date such litigation is filed.
+
+4. Redistribution. You may reproduce and distribute copies of the
+Work or Derivative Works thereof in any medium, with or without
+modifications, and in Source or Object form, provided that You
+meet the following conditions:
+
+(a) You must give any other recipients of the Work or
+Derivative Works a copy of this License; and
+
+(b) You must cause any modified files to carry prominent notices
+stating that You changed the files; and
+
+(c) You must retain, in the Source form of any Derivative Works
+that You distribute, all copyright, patent, trademark, and
+attribution notices from the Source form of the Work,
+excluding those notices that do not pertain to any part of
+the Derivative Works; and
+
+(d) If the Work includes a "NOTICE" text file as part of its
+distribution, then any Derivative Works that You distribute must
+include a readable copy of the attribution notices contained
+within such NOTICE file, excluding those notices that do not
+pertain to any part of the Derivative Works, in at least one
+of the following places: within a NOTICE text file distributed
+as part of the Derivative Works; within the Source form or
+documentation, if provided along with the Derivative Works; or,
+within a display generated by the Derivative Works, if and
+wherever such third-party notices normally appear. The contents
+of the NOTICE file are for informational purposes only and
+do not modify the License. You may add Your own attribution
+notices within Derivative Works that You distribute, alongside
+or as an addendum to the NOTICE text from the Work, provided
+that such additional attribution notices cannot be construed
+as modifying the License.
+
+You may add Your own copyright statement to Your modifications and
+may provide additional or different license terms and conditions
+for use, reproduction, or distribution of Your modifications, or
+for any such Derivative Works as a whole, provided Your use,
+reproduction, and distribution of the Work otherwise complies with
+the conditions stated in this License.
+
+5. Submission of Contributions. Unless You explicitly state otherwise,
+any Contribution intentionally submitted for inclusion in the Work
+by You to the Licensor shall be under the terms and conditions of
+this License, without any additional terms or conditions.
+Notwithstanding the above, nothing herein shall supersede or modify
+the terms of any separate license agreement you may have executed
+with Licensor regarding such Contributions.
+
+6. Trademarks. This License does not grant permission to use the trade
+names, trademarks, service marks, or product names of the Licensor,
+except as required for reasonable and customary use in describing the
+origin of the Work and reproducing the content of the NOTICE file.
+
+7. Disclaimer of Warranty. Unless required by applicable law or
+agreed to in writing, Licensor provides the Work (and each
+Contributor provides its Contributions) on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+implied, including, without limitation, any warranties or conditions
+of TITLE, NON-INFRINGEMENT, MERCHANTABILITY, or FITNESS FOR A
+PARTICULAR PURPOSE. You are solely responsible for determining the
+appropriateness of using or redistributing the Work and assume any
+risks associated with Your exercise of permissions under this License.
+
+8. Limitation of Liability. In no event and under no legal theory,
+whether in tort (including negligence), contract, or otherwise,
+unless required by applicable law (such as deliberate and grossly
+negligent acts) or agreed to in writing, shall any Contributor be
+liable to You for damages, including any direct, indirect, special,
+incidental, or consequential damages of any character arising as a
+result of this License or out of the use or inability to use the
+Work (including but not limited to damages for loss of goodwill,
+work stoppage, computer failure or malfunction, or any and all
+other commercial damages or losses), even if such Contributor
+has been advised of the possibility of such damages.
+
+9. Accepting Warranty or Additional Liability. While redistributing
+the Work or Derivative Works thereof, You may choose to offer,
+and charge a fee for, acceptance of support, warranty, indemnity,
+or other liability obligations and/or rights consistent with this
+License. However, in accepting such obligations, You may act only
+on Your own behalf and on Your sole responsibility, not on behalf
+of any other Contributor, and only if You agree to indemnify,
+defend, and hold each Contributor harmless for any liability
+incurred by, or claims asserted against, such Contributor by reason
+of your accepting any such warranty or additional liability.
+
+END OF TERMS AND CONDITIONS
+
+APPENDIX: How to apply the Apache License to your work.
+
+To apply the Apache License to your work, attach the following
+boilerplate notice, with the fields enclosed by brackets "{}"
+replaced with your own identifying information. (Don't include
+the brackets!) The text should be enclosed in the appropriate
+comment syntax for the file format. We also recommend that a
+file or class name and description of purpose be included on the
+same "printed page" as the copyright notice for easier
+identification within third-party archives.
+
+Copyright 2015 IBM Corp.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->

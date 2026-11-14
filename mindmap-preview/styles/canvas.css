@@ -1,0 +1,98 @@
+/* WHL Mindmap — the map on its canvas: the stage, the selection, the fold
+	dots, the drop target, the rectangle of a Shift-drag, and the field a
+	node's text is typed in. */
+@layer canvas {
+	#stage {
+		position: absolute;
+		inset: 0;
+		overflow: hidden;
+		background: var(--ground);
+		cursor: grab;
+		touch-action: none;
+		/* A press on the map is the map's own gesture, never the browser's text
+			selection: a node pressed near its edge and dragged selected the
+			words of the nodes it passed (found in use, 2026-11-12). The field a
+			node's words are written in is editable, so its own words are still
+			selected as in any field. */
+		-webkit-user-select: none;
+		user-select: none;
+	}
+	#stage.panning { cursor: grabbing; }
+	#stage.joining, #stage.joining .topic { cursor: crosshair; }
+	#map { display: block; width: 100%; height: 100%; }
+
+	.topic { cursor: pointer; }
+	/* A node takes a press anywhere within its shape, filled or not: given no
+		fill, its outline took none inside, so a press there went to what lay
+		beneath, an arc's press target or the canvas (found in audit,
+		2026-11-12). A node being dragged takes none, so the node under the
+		pointer can be found to drop it on. */
+	.topic:not(.dragging) .outline { pointer-events: visible; }
+	.topic.dragging { opacity: .55; pointer-events: none; }
+
+	/* The selection is a thin, soft glow round the node's own shape, in the
+		highlight colour at 40% strength whatever that colour is, at the
+		master's word (2026-11-12): at 6 wide and half strength it was too
+		thick and too opaque. Where 40% is not seen on the canvas, as pale
+		yellow on white, it is stronger, or a shade of the highlight that is,
+		at the master's word (2026-11-13, 10:04): the highlight as it is drawn
+		on the ground, its blur allowed for (--glow-mark, page.js). A selected line or branch
+		glows the same way.
+		Behaviour (by eye): the glow reads as soft, not as a box. */
+	.halo, .line-halo, .branch-halo { display: none; fill: none; stroke: var(--glow-mark); stroke-opacity: var(--glow-strength); pointer-events: none; }
+	/* Below half size, page.js holds the screen's stroke and blur at their
+		half-size widths. Line and branch halos stay unfiltered. */
+	.halo { stroke-width: calc(3px * var(--glow-scale, 1)); filter: blur(calc(1px * var(--glow-scale, 1))); }
+	.topic.selected .halo { display: inline; }
+	.topic.drop-target .halo { display: inline; stroke-dasharray: 4 3; }
+	/* While the find field is open, every node it finds glows in the
+		highlight, and the one gone to, being selected, glows stronger.
+		Behaviour (by eye): the one gone to stands out among the others found. */
+	.topic.found .halo { display: inline; }
+	.topic.found.selected .halo { stroke-opacity: max(.9, var(--glow-strength)); stroke-width: calc(4px * var(--glow-scale, 1)); }
+	/* While a node is dragged between two siblings, a short line in the
+		interface's ink marks the gap it would go into.
+		Behaviour (by eye): the marker reads on light and dark canvases alike. */
+	.gap-marker { fill: none; stroke: var(--ink); stroke-width: 2; stroke-linecap: round; pointer-events: none; }
+	.line, .line-target, .branch-target { cursor: pointer; }
+	/* A line is pressed by its wide unseen target, which lies under the
+		nodes; its drawn stroke, and an arc's edge under it, take no press, so
+		where an arc, drawn over the nodes, crosses one, a press there is the
+		node's. */
+	.line-path, .line-edge { pointer-events: none; }
+	.line.selected .line-halo, [data-branch].selected .branch-halo { display: inline; stroke-width: calc(7px * var(--glow-scale, 1)); }
+
+	/* The fold dot shows on the node under the pointer, and on the selected one. */
+	.fold-dot { opacity: 0; cursor: pointer; transition: opacity .12s ease; }
+	.topic:hover .fold-dot, .topic.selected .fold-dot { opacity: 1; }
+	.fold-badge { cursor: pointer; }
+
+	#marquee {
+		position: absolute;
+		border: 1px dashed var(--line-mid);
+		background: transparent;
+		pointer-events: none;
+	}
+
+	/* The text field lies exactly over the node, in its face and size; the page sets those. */
+	#text-editor {
+		position: absolute;
+		z-index: var(--z-editor);
+		margin: 0;
+		padding: 0;
+		border: 0;
+		resize: none;
+		overflow: hidden;
+		white-space: pre;
+		background: transparent;
+		caret-color: currentColor;
+	}
+	/* Waiting unseen over the selected node for an input method to compose in; clicks pass through it. */
+	#text-editor.armed { opacity: 0; pointer-events: none; }
+	/* An empty central node's placeholder, held back as the drawn one is (drawing/face.js).
+		Behaviour (by eye): editing an empty central node shows its placeholder in
+		the field, in the words' own colour held back, until the first character. */
+	#text-editor::placeholder { color: inherit; opacity: .5; }
+	/* While a node's words are written in the field, its drawn words are hidden under it. */
+	.topic.writing .words { visibility: hidden; }
+}

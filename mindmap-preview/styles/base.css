@@ -1,0 +1,126 @@
+/* WHL Mindmap — the entry stylesheet: the order of every layer, the house
+	face, the tokens, and the element defaults. The other files each fill one
+	layer: page (the shell and what lies over the canvas), panel (the
+	controls), picker (the colour picker), canvas (the map). */
+@layer base, page, panel, picker, canvas;
+
+@layer base {
+	/* Berkeley Mono lives beside the page as berkeley.woff2, exactly as it does
+		beside Gradient and Alluvial; a machine with neither the file nor the
+		installed face steps down to IBM Plex Mono. The face is licensed per seat
+		and never enters the repository (.gitignore bars *.woff2). */
+	@font-face {
+		font-family: "Berkeley Mono";
+		src: url(../berkeley.woff2) format("woff2");
+		font-weight: 100 900;
+		font-stretch: 60% 100%;
+		font-style: oblique -16deg 0deg;
+		font-display: block;
+	}
+
+	:root {
+		/* The house law for every WHL site: Berkeley Mono, IBM Plex Mono,
+			monospace — one size, one set of weight rules. No face is embedded for
+			the Chinese interface; it takes whatever the system hands it. The
+			Chinese face is IBM Plex Sans TC, since every app on whl.ltd writes
+			Traditional Chinese only (the master's rule, 2026-11-12). */
+		--mindmap-font-mono: "Berkeley Mono", "IBM Plex Mono", "IBM Plex Sans TC", monospace;
+		--base-font-size: 0.75rem;
+		--base-line-height: 1.5;
+		--base-row-height: 36px;                    /* one panel row = two line boxes */
+		--base-min-width: 960px;                    /* the narrowest window the page is drawn for */
+		--base-edge-gap: 3px;                       /* how far the layer over the canvas sits off the window's edge */
+		--page-margin: 4ch;                         /* content to edge — the house law */
+		--panel-width: 252px;
+		--panel-width-wide: calc(var(--panel-width) * 2);
+		--panel-column: calc(var(--panel-width) + var(--page-margin) - 10px);
+		--help-column: calc(var(--panel-column) * 2);
+		--outline-column: var(--panel-column);
+		/* The ground is the map's own background; the page sets it with the
+			map. The ink and the interface's lines turn black on a light ground. */
+		--ground: #0b0b0b;
+		--ink: #ffffff;
+		--line-strong: rgba(255, 255, 255, .34);
+		--line-mid: rgba(255, 255, 255, .55);
+		--line-soft: rgba(255, 255, 255, .28);
+		--line-faint: rgba(255, 255, 255, .1);
+		/* Ink held back, as an unchosen word is, in its colour rather than by
+			the element's transparency, so what stands behind it can be solid. */
+		--ink-held: rgba(255, 255, 255, .42);
+		/* The edge of a thing that may wear the ground's own colour, such as
+			the canvas colour's chip: a strength that stands 3 to 1 from every
+			one of the 16.7 million grounds, a bright red being the hardest
+			(3.33 at #f30404). The other lines fell to 1.7, and the chip vanished
+			(found in use, 2026-11-12); 0.75 still fell to 2.77 on #f30000, and
+			0.8 held by a hair, 3.05, too fine for the browser's rounding. */
+		--line-edge: rgba(255, 255, 255, .85);
+		--tile-fill: rgba(0, 0, 0, .62);
+		/* The selection's glow, pale yellow unless the user picks another (page.js). */
+		--highlight: #ffe680;
+		/* The solid colour every band in the highlight is drawn in, laid over its
+			ground already, which the page sets with the ground so the band is seen
+			on it and its words read (colour.js, highlightOn); until it does, the
+			highlight itself. */
+		--highlight-mark: var(--highlight);
+		/* The selection's glow, drawn so for the share of it its blur lets through. */
+		--glow-mark: var(--highlight);
+		--glow-strength: .4;
+		/* The z-index registry. */
+		--z-editor: 5;
+		--z-foreground: 10;
+		--z-picker: 20;
+	}
+
+	/* Black on a light ground reads lighter than white on a dark one at the
+		same alpha, so each line is a touch heavier in black. */
+	:root.ink-dark {
+		--ink: #111111;
+		--line-strong: rgba(0, 0, 0, .42);
+		--line-mid: rgba(0, 0, 0, .62);
+		--line-soft: rgba(0, 0, 0, .34);
+		--line-faint: rgba(0, 0, 0, .12);
+		--ink-held: rgba(17, 17, 17, .42);
+		--line-edge: rgba(0, 0, 0, .85);
+	}
+
+	* { box-sizing: border-box; border-radius: 0 !important; }
+
+	html, body { height: 100%; margin: 0; background: var(--ground); overscroll-behavior: none; }
+
+	body {
+		min-width: var(--base-min-width);
+		overflow-x: auto;
+		overflow-y: hidden;
+		font-family: var(--mindmap-font-mono);
+		font-size: var(--base-font-size);
+		line-height: var(--base-line-height);
+		color: var(--ink);
+		-webkit-font-smoothing: antialiased;
+	}
+
+	button, input, select, textarea { font-family: inherit; font-size: inherit; color: inherit; }
+
+	/* No focus box: nothing else in this interface is boxed. A button the
+		keyboard has reached, in the title line, the outline, the help or the
+		panel, is marked instead, at the master's word (#19), as a selected line
+		of the outline is: on a band of the highlight, as it is drawn on the
+		ground so it is seen there (--highlight-mark, page.js). A button the
+		pointer pressed has let the focus go (keyboard.js), so only the
+		keyboard's button is marked. The button is a stacking context of its
+		own, so the band lies under its letters, not over them. A band is held
+		back with any button held back, so each held-back button comes up to
+		full strength while it is reached, beside its hover in its own layer;
+		a chip is ringed instead, so its own colour shows (panel.css). */
+	:focus, :focus-visible { outline: none; }
+	button:focus-visible { position: relative; z-index: 0; }
+	button:focus-visible::before {
+		content: "";
+		position: absolute;
+		inset: 0;
+		z-index: -1;
+		background: var(--highlight-mark);
+		pointer-events: none;
+	}
+
+	.hidden { display: none !important; }
+}

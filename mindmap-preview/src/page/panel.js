@@ -1,0 +1,299 @@
+import { NODE, BRANCH, LINE, hexColour } from "../model/style.js"
+import { UNIFORM_PRESETS } from "../model/colour-scheme.js"
+import { contrast, laidOver } from "../drawing/colour.js"
+
+/* Held-back panel words must still read at 12px. On unusual Canvas colours
+	a fixed alpha fails, so strengthen only this panel's ink until it reaches
+	WCAG text contrast. The full canvas ink is already chosen to meet it. */
+function panelInk( ink, ground, strength ){
+	for( let hundredths = strength * 100; hundredths <= 100; hundredths++ ){
+		const colour = laidOver( ground, ink, hundredths / 100 )
+		if( contrast( colour, ground ) >= 4.5 ) return colour
+	}
+	return ink
+}
+
+const KINDS = { node: NODE, branch: BRANCH, line: LINE }
+/* The colour settings and what each would keep of what is typed: only a solid colour. */
+const SETTINGS = {
+	canvas: typed => hexColour( typed ),
+	highlight: typed => hexColour( typed ),
+	primary: typed => hexColour( typed ),
+}
+
+/* A hex field of a style — data-style and data-property — keeps what the
+	style's kind accepts, and changes that style of what is selected. */
+class StyleHexField {
+	constructor( field ){
+		this.field = field
+	}
+
+	/* The colour it would keep, or undefined when refused. */
+	accept( typed ){
+		return KINDS[ this.field.dataset.style ].accept( this.field.dataset.property, typed )
+	}
+
+	apply( actions, value, gesture ){
+		actions.style( this.field.dataset.style, { [ this.field.dataset.property ]: value }, gesture )
+	}
+}
+
+/* A hex field of one of the map's colour settings — data-setting — keeps
+	what the setting accepts; left empty, it takes the setting away. */
+class SettingHexField {
+	constructor( field ){
+		this.name = field.dataset.setting
+	}
+
+	/* The colour it would keep, null for none, or undefined when refused. */
+	accept( typed ){
+		return typed === "" && this.name !== "primary" ? null : SETTINGS[ this.name ]( typed )
+	}
+
+	apply( actions, value, gesture ){
+		actions.setting( this.name, value, gesture )
+	}
+}
+
+function hexFieldFor( field ){
+	return field.dataset.setting ? new SettingHexField( field ) : new StyleHexField( field )
+}
+
+/* A width of a style — data-style and data-property — shown as its value,
+	with − and + that take it a step, data-step, down or up, at the master's
+	word (2026-11-12, 22:35): a slider resting at 0 hid the very border a
+	colour was picked for. A press goes to the next step on the step's own
+	grid, so a width a file gave between steps comes onto it, and the style's
+	kind holds it to its bounds. */
+class Stepper {
+	constructor( row ){
+		this.row = row
+		this.value = 0
+	}
+
+	show( value ){
+		this.value = value
+		this.row.querySelector( ".value" ).textContent = String( value )
+	}
+
+	press( actions, direction ){
+		const { style, property } = this.row.dataset, step = Number( this.row.dataset.step )
+		const grid = direction > 0 ? Math.floor( this.value / step + 1e-9 ) + 1 : Math.ceil( this.value / step - 1e-9 ) - 1
+		actions.style( style, { [ property ]: KINDS[ style ].accept( property, grid * step ) } )
+	}
+}
+
+/* The control panel: its controls wired to the page's actions by what their
+	data attributes say, and shown, after every change, what is selected.
+
+	A control names what it changes — data-style and data-property for a
+	style, data-map for the map, data-setting for one of the map's colour
+	settings, data-command for a press — so the wiring is one walk over the markup and no control is
+	wired by hand. A slider or a colour dragged is one gesture, which undo
+	takes back as one step. */
+export class Panel {
+	constructor( { document, actions, picker, language } ){
+		this.document = document
+		this.actions = actions
+		this.picker = picker
+		this.language = language
+		/* Each drag of a slider, and each opening of the picker, is a gesture of its own. */
+		this.gestures = 0
+		this.steppers = this.all( ".stepper[data-style]" ).map( row => new Stepper( row ) )
+		this.wireCommands()
+		this.wireChoices()
+		this.wireFields()
+		this.wireSteppers()
+		this.wireLine()
+		for( const button of this.all( "[data-uniform]" ) ){
+			const preset = UNIFORM_PRESETS[ Number( button.dataset.uniform ) ]
+			button.style.setProperty( "--preset-fill", preset.fill )
+			button.style.setProperty( "--preset-canvas", preset.canvas )
+			button.addEventListener( "click", () => this.actions.uniform( Number( button.dataset.uniform ) ) )
+		}
+	}
+
+	element( id ){
+		return this.document.getElementById( id )
+	}
+
+	all( selector ){
+		return [ ...this.document.querySelectorAll( selector ) ]
+	}
+
+	wireCommands(){
+		for( const button of this.all( "[data-command]" ) ){
+			button.addEventListener( "click", () => this.actions.command( button.dataset.command ) )
+		}
+	}
+
+	/* Each press of − or + is a change of its own, which undo takes back alone. */
+	wireSteppers(){
+		for( const stepper of this.steppers ){
+			stepper.row.addEventListener( "click", event => {
+				const button = event.target.closest( "[data-steps]" )
+				if( button ) stepper.press( this.actions, Number( button.dataset.steps ) )
+			} )
+		}
+	}
+
+	/* A row of words, one of which is live: a style's choice, the layout, the colour scheme. */
+	wireChoices(){
+		for( const row of this.all( ".group[data-style]" ) ){
+			row.addEventListener( "click", event => {
+				const button = event.target.closest( "[data-value]" )
+				if( button ) this.actions.style( row.dataset.style, { [ row.dataset.property ]: button.dataset.value } )
+			} )
+		}
+		for( const row of this.all( "[data-map]" ) ){
+			row.addEventListener( "click", event => {
+				const button = event.target.closest( "[data-value]" )
+				if( button ) this.actions.map( row.dataset.map, button.dataset.value )
+			} )
+		}
+	}
+
+	/* Hex fields with their chips, and sliders with their readouts. */
+	wireFields(){
+		for( const field of this.all( "input.hex[data-style], input.hex[data-setting]" ) ){
+			field.addEventListener( "change", () => this.takeHex( field, field.value ) )
+		}
+		for( const chip of this.all( ".chip[data-for]" ) ){
+			const field = this.element( chip.dataset.for )
+			const target = { id: field.id, get: () => field.value, set: hex => this.takeHex( field, hex, "picker " + field.id + " " + this.gestures ) }
+			chip.addEventListener( "click", () => {
+				this.gestures += 1
+				this.picker.toggle( target, chip )
+			} )
+		}
+		for( const slider of this.all( "input[type=range][data-style], input[type=range][data-setting]" ) ){
+			slider.addEventListener( "input", () => {
+				this.shows( slider )
+				const gesture = "slide " + slider.id + " " + this.gestures
+				if( slider.dataset.setting ) this.actions.setting( slider.dataset.setting, Number( slider.value ), gesture )
+				else this.actions.style( slider.dataset.style, { [ slider.dataset.property ]: Number( slider.value ) }, gesture )
+			} )
+			slider.addEventListener( "change", () => { this.gestures += 1 } )
+		}
+	}
+
+	/* A hex as typed or picked, as the field would keep it: refused if it is
+		 not a colour — none only for a fill — said in a notice, and the field
+		 put back. A setting's field left empty takes the setting away. */
+	takeHex( field, typed, gesture = null ){
+		const hexField = hexFieldFor( field )
+		const value = hexField.accept( typed.trim() )
+		if( value === undefined ){
+			/* Let go of the field, or the panel leaves a field being typed in alone and cannot put it back. */
+			field.blur()
+			this.actions.refuseColour( typed )
+			return
+		}
+		field.value = value ?? ""
+		hexField.apply( this.actions, value, gesture )
+	}
+
+	wireLine(){
+		const label = this.element( "line-label" )
+		label.addEventListener( "change", () => this.actions.label( label.value ) )
+	}
+
+	// ── Showing what is selected ────────────────────────────────────
+
+	/* Every control set to the look of what is selected — its look as drawn,
+		 scheme and all, so the panel says what the eye sees. */
+	sync( { editor, look, zoom, highlight } ){
+		const toolbar = this.element( "toolbar" )
+		toolbar.style.setProperty( "--panel-label-ink", panelInk( look.ink, look.background, .75 ) )
+		toolbar.style.setProperty( "--panel-choice-ink", panelInk( look.ink, look.background, .7 ) )
+		const map = editor.map
+		const topics = editor.selectedTopics
+		const focus = topics[ 0 ]
+		const line = editor.selectedLine
+		this.choose( "[data-map=layout]", map.layout )
+		const scheme = map.style.colourScheme
+		if( this.schemeMode !== scheme.mode ) this.picker.close()
+		this.schemeMode = scheme.mode
+		this.choose( "[data-map=colourScheme]", scheme.mode )
+		for( const controls of this.all( "[data-scheme-controls]" ) ) controls.classList.toggle( "hidden", controls.dataset.schemeControls !== scheme.mode )
+		this.element( "imported-colours" ).classList.toggle( "hidden", scheme.mode !== "imported" )
+		for( const button of this.all( "[data-uniform]" ) ){
+			const preset = UNIFORM_PRESETS[ Number( button.dataset.uniform ) ]
+			const active = scheme.mode === "uniform" && scheme.fill === preset.fill && look.background === preset.canvas
+			button.classList.toggle( "on", active )
+			button.setAttribute( "aria-pressed", String( active ) )
+		}
+		if( scheme.mode === "cascade" ) this.showHex( "primary-colour", scheme.primary )
+		if( scheme.mode === "rainbow" ){
+			const slider = this.element( "rainbow-chroma" )
+			slider.value = String( scheme.chroma )
+			this.shows( slider )
+		}
+		this.choose( "[data-map=lineForm]", map.lineForm )
+		this.showHex( "canvas-colour", look.background )
+		this.showHex( "highlight-colour", highlight )
+		this.element( "appearance-light" ).classList.toggle( "on", look.appearance === "light" )
+		this.element( "appearance-dark" ).classList.toggle( "on", look.appearance === "dark" )
+		this.element( "node-panel" ).classList.toggle( "hidden", !focus )
+		/* A selected branch shows the Branch section alone, its colour at hand. */
+		const branched = editor.selectedBranch ?? topics.find( topic => !topic.isRoot )
+		this.element( "branch-panel" ).classList.toggle( "hidden", !branched )
+		this.element( "line-rows" ).classList.toggle( "hidden", !line )
+		if( focus ) this.showNode( focus, topics, look )
+		if( branched ) this.showStyle( "branch", look.branch( branched ) )
+		/* Always shown, from the map, never from a selected legacy branch. */
+		this.steppers.find( each => each.row.id === "branch-width" ).show( look.branchWidth )
+		if( line ) this.showLine( line, look )
+		this.element( "zoom-value" ).textContent = Math.round( zoom * 100 ) + "%"
+	}
+
+	showNode( focus, topics, look ){
+		this.element( "node-heading" ).textContent = this.language.say( "nodeHeading", { selected: topics.length } )
+		this.showStyle( "node", look.node( focus ) )
+	}
+
+	showLine( line, look ){
+		this.showStyle( "line", look.line( line ) )
+		this.fill( "line-label", line.label )
+	}
+
+	/* Every control of one kind of style, set from the style. */
+	showStyle( kind, style ){
+		for( const row of this.all( `.group[data-style=${ kind }]` ) ) this.choose( row, style.get( row.dataset.property ) )
+		for( const stepper of this.steppers.filter( each => each.row.dataset.style === kind && each.row.dataset.scope !== "map" ) ) stepper.show( style.get( stepper.row.dataset.property ) )
+		for( const field of this.all( `input[data-style=${ kind }]` ) ){
+			const value = style.get( field.dataset.property )
+			if( field.type === "range" ){
+				field.value = String( value )
+				this.shows( field )
+			} else this.showHex( field.id, value )
+		}
+	}
+
+	/* A hex field and its chip; a chip with no colour, or none, is empty. */
+	showHex( id, value ){
+		this.fill( id, value )
+		const chip = this.document.querySelector( `.chip[data-for="${ id }"]` )
+		if( chip ) chip.style.background = value && value !== "none" ? value : "transparent"
+	}
+
+	/* A field is left alone while it is being typed in. */
+	fill( id, value ){
+		const field = this.element( id )
+		if( this.document.activeElement !== field ) field.value = value
+	}
+
+	choose( row, value ){
+		const group = typeof row === "string" ? this.document.querySelector( row ) : row
+		for( const button of group.querySelectorAll( "[data-value]" ) ){
+			const active = button.dataset.value === value
+			button.classList.toggle( "on", active )
+			button.setAttribute( "aria-pressed", String( active ) )
+		}
+	}
+
+	shows( slider ){
+		const readout = this.document.querySelector( `[data-shows="${ slider.id }"]` )
+		if( readout ) readout.textContent = slider.value
+	}
+}

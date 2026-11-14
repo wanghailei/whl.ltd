@@ -1,0 +1,128 @@
+/* WHL Mindmap — the control panel: Alluvial's, row for row. No plates, no
+	drawn dividers: the controls sit straight on the ground. */
+@layer panel {
+	#toolbar { display: flex; flex-direction: column; }
+	/* The rail is what scrolls; its right padding stands the panel its page
+		margin off the window edge, the panel's own 10px counted in. */
+	#rail {
+		flex: 1 1 auto;
+		min-height: 0;
+		overflow-y: auto;
+		overflow-x: hidden;
+		overscroll-behavior: none;
+		padding: calc(var(--page-margin) - 4px) calc(var(--page-margin) - 10px) calc(var(--page-margin) - 8px) 0;
+	}
+	#blocks { display: block; width: var(--panel-width); }
+	/* The copyright at the panel's foot, below the rail, in line with the
+		panel's words and a page margin off the window's bottom, as the canvas's
+		foot line is. A row's height of empty ground stands above it, so where
+		the rail's rows run on past what fits, the last one shown is not flush
+		on it (found in use, 2026-11-12). */
+	#copy {
+		flex: none;
+		padding: var(--base-row-height) calc(var(--page-margin) - 10px) var(--page-margin) 10px;
+		white-space: nowrap;
+		-webkit-user-select: text;
+		user-select: text;
+	}
+
+	.panel { width: var(--panel-width); padding: 4px 10px 8px; }
+	.panel > h2 {
+		margin: 0;
+		display: flex;
+		align-items: center;
+		min-height: var(--base-row-height);
+		font-size: var(--base-font-size);
+		font-weight: 400;
+		text-transform: uppercase;
+		color: var(--panel-label-ink, var(--ink));
+	}
+
+	/* Every row is the same height, headings included, so the column keeps one rhythm. */
+	.control-row { display: flex; align-items: center; flex-wrap: wrap; gap: 0 6px; min-height: var(--base-row-height); }
+	/* As wide as the longest label, HIGHLIGHT, so every row's control starts
+		on one line. The scheme choices have no leading label of their own. */
+	.control-row > .label:first-child { min-width: 9ch; }
+	.label { text-transform: uppercase; color: var(--panel-label-ink, var(--ink)); white-space: nowrap; flex: 0 0 auto; }
+
+	/* Buttons are words you can press — no box, no fill. Strength of ink says which one is live. */
+	button.word {
+		background: none;
+		border: 0;
+		/* Carbon's compact 32px target fits inside the house's 36px row.
+			Keep the approved 12px words and panel/canvas widths unchanged. */
+		min-height: 32px;
+		min-width: 24px;
+		line-height: 18px;
+		padding: 7px 2px;
+		text-transform: uppercase;
+		cursor: pointer;
+		white-space: nowrap;
+		color: inherit;
+	}
+	.group .word:not(.on) { color: var(--panel-choice-ink, var(--ink)); }
+	.group .word.on, .group .word:hover, button.word:hover { color: inherit; }
+	button:disabled { opacity: .35; cursor: default; }
+
+	/* A word the keyboard has reached stands in full ink on its band
+		(base.css): held back, at .42 band and all, its letters stood on a band
+		as light as they are on a dark canvas and could not be read (found in
+		test, 2026-11-13); hovered, at .85, the band faded with it (found in
+		audit). A chip, whose own colour must show, is ringed with the band a
+		little outside instead, as a selected node glows round its own shape. */
+	button.word:focus-visible, .group .word:focus-visible { opacity: 1; color: inherit; }
+	.chip:focus-visible::before { inset: -5px; background: none; border: 3px solid var(--highlight-mark); }
+
+	/* Behaviour (by eye): five crisp paired-colour previews keep the row's
+		36px rhythm; an ink underline marks the active pair, independently of
+		the keyboard's highlight ring. These use the house's native control
+		grammar and Carbon spacing, without a second component runtime. */
+	.uniform-swatch {
+		width: 28px;
+		height: 28px;
+		padding: 6px;
+		border: 1px solid var(--line-edge);
+		background: var(--preset-canvas);
+		color: inherit;
+		cursor: pointer;
+	}
+	.uniform-swatch > span { display: block; width: 100%; height: 100%; background: var(--preset-fill); }
+	.uniform-swatch.on { box-shadow: 0 4px 0 -2px var(--ink); }
+	.uniform-swatch:focus-visible::before { inset: -5px; background: none; border: 3px solid var(--highlight-mark); }
+	[data-map=colourScheme] { flex-wrap: nowrap; }
+	#imported-colours { color: var(--panel-label-ink, var(--ink)); }
+
+	/* No boxes. A field is the value itself, editable where it stands. */
+	#toolbar input[type=text] { background: transparent; border: 0; padding: 0; color: inherit; height: 32px; line-height: 18px; }
+	#toolbar input[type=text].hex { width: 72px; text-transform: lowercase; }
+	#toolbar input[type=text].wide { flex: 1 1 0; min-width: 0; }
+	#toolbar input::placeholder { color: inherit; opacity: .35; }
+
+	#toolbar input[type=range] {
+		-webkit-appearance: none;
+		appearance: none;
+		background: transparent;
+		height: 32px;
+		margin: 0;
+		width: clamp(72px, 8vw, 92px);
+	}
+	#toolbar input[type=range]::-webkit-slider-runnable-track { height: 1px; background: var(--line-strong); }
+	#toolbar input[type=range]::-moz-range-track { height: 1px; background: var(--line-strong); }
+	#toolbar input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 3px; height: 13px; background: currentColor; margin-top: -6px; cursor: pointer; }
+	#toolbar input[type=range]::-moz-range-thumb { width: 3px; height: 13px; background: currentColor; border: 0; cursor: pointer; }
+	.value { min-width: 34px; text-align: right; color: var(--panel-label-ink, var(--ink)); font-variant-numeric: tabular-nums; }
+
+	/* A chip shows the colour of the hex field beside it and, pressed, opens
+		the picker on that field. Its hairline edge is seen on any ground, so a
+		chip in the ground's own colour does not vanish into it. */
+	.chip {
+		width: 16px;
+		height: 16px;
+		padding: 0;
+		display: block;
+		flex: 0 0 auto;
+		border: 1px solid var(--line-edge);
+		background: none;
+		cursor: pointer;
+	}
+}

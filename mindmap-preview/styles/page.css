@@ -1,0 +1,318 @@
+/* WHL Mindmap — the shell, and what lies over the canvas: the title line,
+	the notices, the remark, the foot with its key hints; the outline column
+	and the help column. */
+@layer page {
+	/* ── Shell: outline | canvas | help | panel, Alluvial's ───────────────
+		One grid, four columns: a folded column is 0px wide, each opened by a
+		class of its own on the shell, and the change slides. Each column
+		clips, so its content is cut, not squeezed, while it slides; clip, not
+		hidden, which a script may still scroll: the outline, narrow as it
+		slid open, was scrolled sideways to bring its selected line into
+		sight, and its lines slid back 29 pixels as it widened (found in
+		test, 2026-11-13). */
+	#shell {
+		--outline-open: 0px;
+		--help-open: 0px;
+		--panel-open: 0px;
+		display: grid;
+		grid-template-rows: 1fr;
+		grid-template-columns: var(--outline-open) 1fr var(--help-open) var(--panel-open);
+		width: 100%;
+		height: 100%;
+		transition: grid-template-columns .2s ease;
+	}
+	#shell.with-outline { --outline-open: var(--outline-column); }
+	#shell.with-help { --help-open: var(--help-column); }
+	#shell.with-panel { --panel-open: var(--panel-column); }
+	#outline, #main, #help, #toolbar { grid-row: 1; min-width: 0; min-height: 0; overflow: clip; }
+	#outline { grid-column: 1; }
+	#main { grid-column: 2; position: relative; }
+	#help { grid-column: 3; }
+	#toolbar { grid-column: 4; }
+
+	/* ── Over the canvas ──────────────────────────────────────────────────
+		The layer takes no pointer events, so the map below takes them; its
+		children take them back, which also makes their text selectable. One
+		column, as wide as the canvas and never wider, so what lies over the
+		canvas folds within it: the title line stood in a column of its own,
+		twice the panel's width, and ran past the canvas's edge, which cut
+		OUTLINE to OUTLI with HELP open at 1440 wide (found in review,
+		2026-11-13). */
+	#foreground {
+		position: absolute;
+		inset: 0;
+		z-index: var(--z-foreground);
+		display: grid;
+		grid-template-columns: minmax(0, 1fr);
+		grid-template-rows: auto 1fr auto;
+		gap: var(--base-edge-gap);
+		padding: var(--base-edge-gap);
+		padding-bottom: calc(var(--base-edge-gap) + env(safe-area-inset-bottom));
+		pointer-events: none;
+	}
+	#foreground > * { pointer-events: auto; }
+	/* The foot spans the canvas and, with the remark, stands tall over it:
+		only what is in it takes the pointer, so the map under the rest of it
+		can still be pressed, dragged and scrolled (found in review, 2026-11-12). */
+	#foreground > #foot, #foot-line { pointer-events: none; }
+	#remark-area { pointer-events: auto; }
+
+	/* The lead spans the canvas, but only what is in it takes the pointer, so
+		the map beside the title line can still be pressed. */
+	#lead {
+		grid-row: 1;
+		margin: calc(var(--page-margin) - var(--base-edge-gap));
+		-webkit-user-select: text;
+		user-select: text;
+		pointer-events: none;
+	}
+	#lead > * { pointer-events: auto; }
+
+	/* The title line: the name and version, then the toggles five characters
+		on and five apart — a flex row, so nothing is measured. As wide as what
+		it holds, it is one line wherever the canvas is wide enough for it;
+		where it is not, it folds between the name and the toggles, and then
+		between toggles, a line under another, as the foot's hints fold, and
+		no button is cut at the canvas's edge. */
+	#title-line { display: flex; flex-wrap: wrap; column-gap: 5ch; width: fit-content; margin-bottom: calc(var(--base-line-height) * var(--base-font-size)); }
+	/* The name is one line, never folded: the title line folds after it instead. */
+	#title { font-weight: 500; white-space: nowrap; }
+	/* The version shares the title's line but not its voice: a stamp, not part of the name. */
+	#version { font-weight: 400; opacity: .4; }
+
+	/* The toggles are two words with a slash between, the live one in full
+		ink; HELP is one word, in full ink while the help is open. */
+	#tools { display: flex; flex-wrap: wrap; column-gap: 5ch; }
+	#language, #appearance, #view, #help-button, #outline-button {
+		line-height: var(--base-line-height);
+		background: none;
+		border: 0;
+		padding: 0;
+		cursor: pointer;
+		white-space: pre;
+	}
+	#language span, #appearance span, #view span, #help-button, #outline-button { opacity: .42; }
+	#language span.on, #appearance span.on, #view span.on, #help-button.on, #outline-button.on { opacity: 1; }
+	/* HELP and OUTLINE come up to full ink while the keyboard is on them, as
+		their band is held back with them (base.css); a toggle's two words keep
+		their strengths on its band, so it still says which is live. */
+	#help-button:focus-visible, #outline-button:focus-visible { opacity: 1; }
+
+	/* The find field: its words on the map's own ground, a hairline under
+		them as under the remark, and which match of how many beside it, held back. */
+	#find { display: flex; align-items: baseline; gap: 2ch; width: max-content; margin-top: calc(var(--base-line-height) * var(--base-font-size)); }
+	#find-field {
+		width: 24ch;
+		margin: 0;
+		padding: 0;
+		border: 0;
+		border-bottom: 1px solid var(--line-soft);
+		background: var(--ground);
+		color: inherit;
+		line-height: var(--base-line-height);
+	}
+	#find-field::placeholder { color: inherit; opacity: .45; }
+	#find-count { color: var(--ink-held); font-variant-numeric: tabular-nums; }
+
+	/* A notice keeps a ground of its own: it is transient and must read over whatever map lies behind it. */
+	#note {
+		margin-top: calc(var(--base-line-height) * var(--base-font-size));
+		width: max-content;
+		max-width: var(--panel-width-wide);
+		padding: 8px 18px;
+		background: var(--tile-fill);
+		backdrop-filter: blur(16px) saturate(1.2);
+		-webkit-backdrop-filter: blur(16px) saturate(1.2);
+		color: #ffffff;
+	}
+
+	#foot {
+		grid-row: 3;
+		align-self: end;
+		margin: calc(var(--page-margin) - var(--base-edge-gap));
+		-webkit-user-select: text;
+		user-select: text;
+	}
+	/* The key hints at the left of the foot's line. Where the line is too
+		short for them, they fold onto lines of their own above. */
+	#foot-line { display: flex; align-items: flex-end; }
+	/* Quiet: held back as an unchosen word is, never in the way. They stand
+		on a backdrop of the canvas's own colour, a little wider than the words,
+		so where the map runs under them no node's words show through (found in
+		use, 2026-11-12); the edge is a shadow, so the words do not move.
+		Behaviour (by eye): the hints read as quieter than the words of the page. */
+	#keys {
+		min-width: 0;
+		text-align: left;
+		color: var(--ink-held);
+		background: var(--ground);
+		box-shadow: 0 0 0 4px var(--ground);
+	}
+	/* The hints are only read, so they take no pointer: folded, they cover a
+		block of the canvas, and the map under it still takes presses and scrolls. */
+	/* Each hint is one piece: a narrow line folds between hints, never inside one. */
+	#keys .hint { white-space: nowrap; }
+
+	/* The symbols the page's words draw take no room of their own. */
+	.symbols { position: absolute; width: 0; height: 0; overflow: hidden; }
+	/* A key's arrow, Carbon's, in the words' own ink: one character's cell
+		wide, as the glyph it stands for was, so the foot's hints take no more
+		room (at 1728 wide they fit its line with under 3 pixels to spare), and
+		standing from the baseline nearly as tall as the capitals beside it. A
+		key named with an arrow is one piece, never folded between ALT and the
+		arrow. */
+	.key-arrow { width: 0.6em; height: calc(0.6em * 24 / 23); fill: currentColor; }
+	.chord { white-space: nowrap; }
+
+	/* The remark is content: one centred line at the node's normal 12px,
+		independent of panel size or node styling. Only the empty prompt's word
+		is underlined. The ground covers nodes behind it, the native text input
+		scrolls horizontally while editing, and the font never shrinks.
+		Behaviour (by eye): the remark reads over any map behind it. */
+	/* Half the canvas's width, at the master's word (2026-11-12), and no wider
+		than 640px: the foot is the canvas less a page margin each side. */
+	#remark-area {
+		position: relative;
+		background: var(--ground);
+		width: min(640px, (100% + 2 * var(--page-margin)) / 2);
+		margin: 0 auto calc(var(--base-line-height) * var(--base-font-size));
+	}
+	#remark {
+		/* The caret must paint above the prompt's highlight. The area's ground
+			still covers the map when the empty input itself is transparent. */
+		position: relative;
+		z-index: var(--z-editor);
+		display: block;
+		width: 100%;
+		margin: 0;
+		padding: 0;
+		border: 0;
+		background: var(--ground);
+		color: var(--ink);
+		font-size: 12px;
+		line-height: var(--base-line-height);
+		text-align: center;
+		opacity: 1;
+	}
+	#remark::placeholder { color: transparent; }
+	#remark:placeholder-shown { background: transparent; }
+	/* The empty word takes the same highlight band as a focused word-button,
+		not a field-wide rule or box. Written content stays on the canvas ground. */
+	#remark:focus-visible + #remark-prompt { background: var(--highlight-mark); opacity: 1; }
+	#remark-prompt {
+		font-size: 12px;
+		position: absolute;
+		top: 0;
+		left: 50%;
+		transform: translateX(-50%);
+		text-decoration: underline;
+		color: var(--ink);
+		opacity: .5;
+		line-height: var(--base-line-height);
+		pointer-events: none;
+	}
+	#remark-prompt[hidden], #remark-notice[hidden], #remark-original[hidden] { display: none; }
+	#remark-notice, #remark-original {
+		position: absolute;
+		bottom: calc(100% + 8px);
+		left: 0;
+		width: 100%;
+		padding: 4px;
+		background: var(--ground);
+		color: var(--ink);
+		text-align: center;
+	}
+	#remark-original { display: none; white-space: pre-wrap; overflow-wrap: anywhere; max-height: 30vh; overflow: auto; }
+	#remark-area:focus-within #remark-original:not([hidden]),
+	#remark-area:hover #remark-original:not([hidden]) { display: block; }
+	#remark-area:has(#remark-notice:not([hidden])) #remark-original { display: none; }
+
+	/* ── Help: the middle column, twice the panel's, folded until HELP ────
+		The body is as wide as the open column, so the prose holds still while
+		the column slides shut over it. */
+	#help .body {
+		width: var(--help-column);
+		height: 100%;
+		overflow-y: auto;
+		overflow-x: hidden;
+		overscroll-behavior: none;
+		padding: calc(var(--page-margin) - 4px) var(--page-margin) var(--page-margin) var(--page-margin);
+		-webkit-user-select: text;
+		user-select: text;
+	}
+	/* The sheet opens under its door, the Carbon close icon at 16px, a blank line between door and text. */
+	.sheet-close {
+		display: block;
+		background: none;
+		border: 0;
+		padding: 0;
+		color: inherit;
+		cursor: pointer;
+		opacity: .55;
+		margin-bottom: calc(var(--base-line-height) * var(--base-font-size));
+	}
+	.sheet-close:hover, .sheet-close:focus-visible { opacity: 1; }
+	.sheet-close svg { display: block; width: 16px; height: 16px; }
+	#help-text p { margin: 0 0 calc(var(--base-line-height) * var(--base-font-size)); }
+	/* Each task's question, a small heading held back as a panel section's
+		name is, its answer under it in full ink. */
+	#help-text h3 { margin: 0; font-size: inherit; font-weight: 400; opacity: .55; }
+
+	/* ── Outline: the left column, folded until OUTLINE ───────────────────
+		Like the help, the body is as wide as the open column, so its lines
+		hold still while it slides. A line is a node's words, set in from the
+		left two characters a level, after the mark that folds its children;
+		the selected lines glow as selected nodes do, in the highlight as it is
+		drawn on the ground (--highlight-mark). */
+	#outline .body {
+		width: var(--outline-column);
+		height: 100%;
+		overflow-y: auto;
+		overflow-x: hidden;
+		overscroll-behavior: none;
+		padding: calc(var(--page-margin) - 4px) var(--page-margin) var(--page-margin) var(--page-margin);
+	}
+	#outline-rows:focus { outline: none; }
+	.outline-row {
+		position: relative;
+		display: flex;
+		align-items: flex-start;
+		padding-left: calc(var(--depth) * 2ch);
+		line-height: var(--base-line-height);
+		cursor: default;
+	}
+	.outline-row.selected::before {
+		content: "";
+		position: absolute;
+		inset: 0 calc(-1 * var(--page-margin) / 2);
+		background: var(--highlight-mark);
+		pointer-events: none;
+	}
+	.outline-fold, .outline-space { flex: none; width: 2ch; height: calc(var(--base-line-height) * 1em); }
+	.outline-fold { position: relative; display: grid; place-items: center; background: none; border: 0; padding: 0; color: inherit; cursor: pointer; opacity: .55; }
+	.outline-fold:hover, .outline-fold:focus-visible { opacity: 1; }
+	.outline-fold svg { width: 12px; height: 12px; }
+	.outline-content { position: relative; flex: 1; min-width: 0; }
+	.outline-text, .outline-remark { display: block; white-space: pre-wrap; overflow-wrap: anywhere; }
+	/* Legacy remarks keep their line breaks for reading, not for input.
+		Hierarchy comes from spacing, not smaller or faded ink: full interface
+		ink reads on every custom canvas and on the selection band alike.
+		Behaviour (by eye): each remark belongs to the title above it. */
+	.outline-remark { margin: 4px 0; }
+	.outline-text.placeholder { color: var(--ink-held); }
+	.outline-field {
+		position: relative;
+		display: block;
+		width: 100%;
+		min-width: 0;
+		margin: 0;
+		padding: 0;
+		border: 0;
+		border-bottom: 1px solid var(--line-soft);
+		background: var(--ground);
+		color: inherit;
+		line-height: var(--base-line-height);
+		resize: none;
+		overflow: hidden;
+	}
+}
