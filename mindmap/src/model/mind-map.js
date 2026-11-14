@@ -1,102 +1,71 @@
 import { Topic } from "./topic.js"
 import { AuxiliaryLine } from "./auxiliary-line.js"
 import { NODE, BRANCH, LINE, hexColour } from "./style.js"
+import { ColourScheme } from "./colour-scheme.js"
 
 export const LAYOUTS = [ "right", "both", "down" ]
-export const THEMES = [ "mono", "spectrum", "ocean", "earth", "dusk" ]
 export const APPEARANCES = [ "light", "dark" ]
 /* The forms a map's auxiliary lines take, all alike: routed round the nodes in straight runs, or arcs (drawing/line-forms.js). */
 export const LINE_FORMS = [ "straight", "arc" ]
-/* How a map's nodes take its theme's colours: by depth, all one, or by main branch (drawing/colour-styles.js). */
-export const COLOUR_STYLES = [ "level", "one", "rainbow" ]
 
-/* The map's own styles, one for each kind of thing drawn: the central node,
-	every other node, every branch and every auxiliary line; with them the
-	colour style the nodes take the theme's colours in, and the canvas colour,
-	which stands in for the theme's background. Each is what the map has been
-	given — by hand, by Set as default, or by a file — and shows through
-	wherever a node, branch or line has nothing of its own.
-
-	The fills given to whole levels, LEVEL FILL, are taken away at the
-	master's word (2026-11-12, 22:35), the colour style doing their work: a
-	file or a kept default that gives them is read without them, without a
-	word. */
+/* The map owns kind defaults, an independent Canvas and one scheme value.
+	Manual fills retain their precedence. Obsolete whole-level fills are
+	ignored on both decoding paths, as ruled on 2026-11-12. */
 export class MapStyle {
-	constructor( { root = NODE.style(), node = NODE.style(), branch = BRANCH.style(), line = LINE.style(), colourStyle = "", canvas = "" } = {} ){
-		this.root = root
-		this.node = node
-		this.branch = branch
-		this.line = line
-		/* One of COLOUR_STYLES, once one is chosen; until then empty, and the
-			 map takes its theme's own (drawing/themes.js), as every map was drawn
-			 before colour styles: Mono's all one, the palette themes' a rainbow. */
-		this.colourStyle = COLOUR_STYLES.includes( colourStyle ) ? colourStyle : ""
-		/* A solid colour, #rrggbb, or empty for the theme's own background. */
-		this.canvas = canvas
+	constructor( { root = NODE.style(), node = NODE.style(), branch = BRANCH.style(), line = LINE.style(), colourScheme = ColourScheme.from(), canvas = "" } = {} ){
+		Object.assign( this, { root, node, branch, line, colourScheme, canvas } )
 	}
 
-	/* Made from a file's or the browser's plain values, each cleaned by its kind. */
 	static from( values = {} ){
 		return new MapStyle( {
 			root: NODE.style( values?.root ),
 			node: NODE.style( values?.node ),
 			branch: BRANCH.style( values?.branch ),
 			line: LINE.style( values?.line ),
-			colourStyle: values?.colourStyle,
+			colourScheme: ColourScheme.from( values?.colourScheme ),
 			canvas: hexColour( values?.canvas ) ?? "",
 		} )
+	}
+
+	/* Shared interpretation for v1/v2 files and unversioned old defaults.
+		A v3 record, including imported colours re-saved in v3, uses from(). */
+	static legacy( values = {}, theme ){
+		return MapStyle.from( { ...values, colourScheme: ColourScheme.legacy( { theme, colourStyle: values?.colourStyle } ) } )
 	}
 
 	forTopic( topic ){
 		return topic.isRoot ? this.root : this.node
 	}
 
-	/* A new map style with this style for the topic's kind: the central node's, or every other node's. */
 	withStyleFor( topic, style ){
 		return this.withKind( topic.isRoot ? "root" : "node", style )
 	}
 
-	/* A new map style with one kind's style replaced. */
 	withKind( kind, style ){
 		return new MapStyle( { ...this, [ kind ]: style } )
 	}
 
-	/* A new map style whose nodes take the theme's colours in this colour style. */
-	withColourStyle( name ){
-		return new MapStyle( { ...this, colourStyle: name } )
+	withColourScheme( scheme ){
+		return new MapStyle( { ...this, colourScheme: ColourScheme.from( scheme ) } )
 	}
 
-	/* A new map style on this canvas colour, or, with a null, on the theme's background. */
 	withCanvas( colour ){
 		return new MapStyle( { ...this, canvas: colour ?? "" } )
 	}
 
-	/* The same styles without their colours — the canvas too — so a newly
-		 chosen theme shows; the colour style stays, as the way the new theme's
-		 colours are taken. */
-	colourless(){
-		return new MapStyle( {
-			root: this.root.colourless(),
-			node: this.node.colourless(),
-			branch: this.branch.colourless(),
-			line: this.line.colourless(),
-			colourStyle: this.colourStyle,
-		} )
-	}
-
 	toJSON(){
-		return { root: this.root.toJSON(), node: this.node.toJSON(), branch: this.branch.toJSON(), line: this.line.toJSON(), colourStyle: this.colourStyle, canvas: this.canvas }
+		return { root: this.root.toJSON(), node: this.node.toJSON(), branch: this.branch.toJSON(), line: this.line.toJSON(), colourScheme: this.colourScheme.toJSON(), canvas: this.canvas }
 	}
 }
 
 /* A mind map: the tree of topics under its central node, the auxiliary lines
-	between them and the form they take, and the map's layout, theme,
-	appearance and styles.
+	between them and the form they take, and the map's layout,
+	appearance and styles, including its colour scheme.
 
 	Pre-flight answers. The map owns the identities of its topics and lines and
 	hands out new ones, so two never share one. It owns removal too: a topic
 	that goes takes its lines with it, which no caller could be trusted to
-	remember. Layout, theme, appearance and line form refuse a name the map does not know,
+	remember. Layout, appearance and line form refuse a name the map does not know,
 	so a map is never in a state no code can draw. Two topics are joined by one
 	line at most, either way, at the master's word (2026-11-12): the map makes
 	no second, and of several handed to it, as an older file may hold, it
@@ -105,14 +74,12 @@ export class MapStyle {
 	(found in review, 2026-11-12: one in a hand-edited file stopped the page
 	drawing), so the map makes none and keeps none handed to it. */
 export class MindMap {
-	constructor( { root, layout = "right", theme = "mono", appearance = "dark", lineForm = "straight", style = new MapStyle(), lines = [] } ){
+	constructor( { root, layout = "right", appearance = "dark", lineForm = "straight", style = new MapStyle(), lines = [] } ){
 		this.root = root
 		this.chosenLayout = "right"
-		this.chosenTheme = "mono"
 		this.chosenAppearance = "dark"
 		this.chosenLineForm = "straight"
 		this.layout = layout
-		this.theme = theme
 		this.appearance = appearance
 		this.lineForm = lineForm
 		this.style = style
@@ -121,8 +88,9 @@ export class MindMap {
 	}
 
 	/* A new map: one central node, and the styles a user saved as their default. */
-	static fresh( { text, style = {}, theme = "mono", appearance = "dark" } ){
-		return new MindMap( { root: new Topic( { id: "n1", text } ), style: MapStyle.from( style ), theme, appearance } )
+	static fresh( { text, style, appearance = "dark" } ){
+		const defaults = style ?? { colourScheme: { mode: "uniform", fill: appearance === "light" ? "#000000" : "#ffffff" }, canvas: appearance === "light" ? "#ffffff" : "#000000" }
+		return new MindMap( { root: new Topic( { id: "n1", text } ), style: MapStyle.from( defaults ), appearance } )
 	}
 
 	get topics(){
@@ -188,9 +156,6 @@ export class MindMap {
 	get layout(){ return this.chosenLayout }
 	set layout( name ){ if( LAYOUTS.includes( name ) ) this.chosenLayout = name }
 
-	get theme(){ return this.chosenTheme }
-	set theme( name ){ if( THEMES.includes( name ) ) this.chosenTheme = name }
-
 	get appearance(){ return this.chosenAppearance }
 	set appearance( name ){ if( APPEARANCES.includes( name ) ) this.chosenAppearance = name }
 
@@ -200,7 +165,6 @@ export class MindMap {
 	toJSON(){
 		return {
 			layout: this.layout,
-			theme: this.theme,
 			appearance: this.appearance,
 			lineForm: this.lineForm,
 			style: this.style.toJSON(),

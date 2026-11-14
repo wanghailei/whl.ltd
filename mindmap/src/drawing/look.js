@@ -1,13 +1,12 @@
 import { NODE, BRANCH, LINE } from "../model/style.js"
-import { Theme } from "./themes.js"
+import { colourSchemeFor } from "./colour-schemes.js"
 import { inkOver, isLightColour, contrast } from "./colour.js"
 import { shownFill } from "./shapes.js"
-import { colourStyleFor } from "./colour-styles.js"
 
 /* What every value falls back to when nothing above has set it: the house's
 	shapes, sizes and widths — every node a pill with no border, set at one
 	size at every level, the central node too, and every branch an elbow.
-	Colours always come from the theme. */
+	Colours always come from the colour scheme. */
 const BASE = {
 	root: NODE.style( { shape: "pill", borderWidth: 0, font: "mono", fontSize: 12 } ),
 	node: NODE.style( { shape: "pill", borderWidth: 0, font: "mono", fontSize: 12 } ),
@@ -29,18 +28,18 @@ const EDGE_WIDTH = 1
 
 	- a node: what it has been given by hand; for its fill, then the fill of
 	  its branch — the nearest set by hand above it; then the map's style for
-	  its kind; then the theme, coloured by the map's colour style; then the
+	  its kind; then the colour scheme; then the
 	  base;
 	- a branch: what it has been given by hand, over the map's branch style;
 	  its colour, when neither gives one, the fill of the node it leads to, at
 	  the master's word (2026-11-12, 22:35): a node and its branch are one
-	  colour; where that node shows no fill, the colour the theme gives it;
+	  colour; where that node shows no fill, the colour the scheme gives it;
 	  then the base;
-	- an auxiliary line: by hand, the map's line style, the theme, the base.
+	- an auxiliary line: by hand, the map's line style, the scheme, the base.
 
-	The theme is taken in the map's appearance, light or dark; a canvas
-	colour of the map's own stands in for the theme's background, and then
-	the appearance is the canvas's own, so the nodes follow it.
+	Canvas is independent of the colour scheme. The provider sees the actual
+	ground, so derived shades and compatibility colours read on it without
+	changing the settings the user chose.
 
 	Whatever is drawn straight onto the canvas — a branch, an auxiliary line
 	and its label, a node's border, the words of a node that shows no fill
@@ -53,22 +52,18 @@ const EDGE_WIDTH = 1
 export class Look {
 	constructor( map ){
 		this.map = map
-		this.canvas = map.style.canvas
-		this.appearance = this.canvas ? ( isLightColour( this.canvas ) ? "light" : "dark" ) : map.appearance
-		this.scheme = Theme.for( map.theme ).scheme( this.appearance )
-		/* The colour style the map has been given, or else its theme's own. */
-		this.colourStyle = map.style.colourStyle || Theme.for( map.theme ).colourStyle
-		this.colours = colourStyleFor( this.colourStyle )
+		this.scheme = colourSchemeFor( map.style.colourScheme, { canvas: map.style.canvas, appearance: map.appearance } )
+		this.appearance = isLightColour( this.background ) ? "light" : "dark"
 	}
 
 	/* Words not given a colour — by hand or by the map's style — are black
 		 or white, whichever reads better over what lies behind them: the
 		 node's fill, or the map's background where the shape shows no fill. A
-		 theme cannot choose them, since it does not know the shape or a fill
+		 scheme cannot choose them, since it does not know the shape or a fill
 		 set by hand. */
 	node( topic ){
 		const chosen = topic.style.over( this.inheritedFill( topic ) ).over( this.map.style.forTopic( topic ) )
-		const style = chosen.over( this.scheme.node( topic, this.colours ) ).over( topic.isRoot ? BASE.root : BASE.node )
+		const style = chosen.over( this.scheme.node( topic ) ).over( topic.isRoot ? BASE.root : BASE.node )
 		const fill = shownFill( style ), words = chosen.get( "textColour" ) ?? inkOver( fill ?? this.background )
 		const border = style.get( "borderWidth" ) > 0 ? this.onCanvas( style.get( "border" ), MARKS_SEEN ) : style.get( "border" )
 		return style.with( { textColour: fill ? words : this.onCanvas( words, WORDS_READ ), border } )
@@ -94,14 +89,14 @@ export class Look {
 	}
 
 	/* The width offered for the whole map, independent of any legacy topic
-		 override. Themes choose branch colours, not widths. */
+		 override. Schemes choose branch colours, not widths. */
 	get branchWidth(){
 		return this.map.style.branch.get( "width" ) ?? BASE.branch.get( "width" )
 	}
 
 	branch( topic ){
 		const chosen = topic.branch.over( this.map.style.branch )
-		const given = chosen.over( this.scheme.branch( topic, this.colours ) ).over( BASE.branch )
+		const given = chosen.over( this.scheme.branch( topic ) ).over( BASE.branch )
 		const to = chosen.get( "colour" ) !== undefined || topic.isRoot ? null : shownFill( this.node( topic ) )
 		return given.with( { colour: this.onCanvas( to ?? given.get( "colour" ), MARKS_SEEN ) } )
 	}
@@ -122,7 +117,7 @@ export class Look {
 	}
 
 	get background(){
-		return this.canvas || this.scheme.background
+		return this.scheme.background
 	}
 
 	/* Whether the ground is light, which turns the interface's ink black. */

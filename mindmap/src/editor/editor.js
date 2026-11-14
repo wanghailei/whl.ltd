@@ -1,7 +1,9 @@
 import { MapFile } from "../file/map-file.js"
 import { History } from "./history.js"
 import { Selection } from "./selection.js"
-import { NODE, BRANCH, LINE } from "../model/style.js"
+import { NODE, BRANCH, LINE, hexColour } from "../model/style.js"
+import { COLOUR_SCHEMES, UNIFORM_PRESETS, validChroma } from "../model/colour-scheme.js"
+import { APPEARANCES } from "../model/mind-map.js"
 import { Look } from "../drawing/look.js"
 
 /* The editor: the map being edited, what is selected, and every change the
@@ -272,9 +274,15 @@ export class Editor {
 		}, gesture )
 	}
 
-	/* The map stands on this solid colour; a null gives it back the theme's background. */
+	/* Clearing uses the appearance actually shown, not an older stored flag.
+		A Canvas edit never replaces a scheme setting or manual colour. */
 	paintCanvas( colour, gesture = null ){
-		this.change( () => { this.map.style = this.map.style.withCanvas( colour ) }, gesture )
+		const appearance = new Look( this.map ).appearance
+		const canvas = colour === null ? ( appearance === "light" ? "#ffffff" : "#000000" ) : hexColour( colour )
+		if( !canvas ) return
+		this.change( () => {
+			this.map.style = this.map.style.withCanvas( canvas )
+		}, gesture )
 	}
 
 	/* Takes away what the selected nodes have been given by hand, node and branch. */
@@ -322,25 +330,44 @@ export class Editor {
 		this.change( () => { this.map.lineForm = name } )
 	}
 
-	/* How the nodes take the theme's colours: by level, all one, or by main branch. */
-	changeColourStyle( name ){
-		this.change( () => { this.map.style = this.map.style.withColourStyle( name ) } )
-	}
-
-	/* A theme sets aside the colours of the map's own styles, so it shows;
-		 what nodes and lines have been given by hand stays. */
-	changeTheme( name ){
+	/* A new scheme replaces only generated colours. Materialise an imported
+		ground first: an old omitted Canvas must not turn into pure black/white
+		as a side effect of choosing a modern provider. */
+	changeColourScheme( mode ){
+		if( !COLOUR_SCHEMES.includes( mode ) || this.map.style.colourScheme.mode === mode ) return
+		const look = new Look( this.map ), canvas = look.background, fill = look.isLight ? "#000000" : "#ffffff"
 		this.change( () => {
-			this.map.theme = name
-			this.map.style = this.map.style.colourless()
+			this.map.style = this.map.style.withCanvas( canvas ).withColourScheme( { mode, fill } )
 		} )
 	}
 
-	/* LIGHT or DARK asks for the theme's own ground, so a canvas colour is set aside. */
+	chooseUniform( index ){
+		const preset = UNIFORM_PRESETS[ index ]
+		if( !preset ) return
+		this.change( () => {
+			this.map.style = this.map.style.withColourScheme( { mode: "uniform", fill: preset.fill } ).withCanvas( preset.canvas )
+		} )
+	}
+
+	changePrimary( value, gesture = null ){
+		const primary = hexColour( value )
+		if( !primary || this.map.style.colourScheme.mode !== "cascade" ) return
+		this.change( () => { this.map.style = this.map.style.withColourScheme( { mode: "cascade", primary } ) }, gesture )
+	}
+
+	changeChroma( chroma, gesture = null ){
+		if( !validChroma( chroma ) || this.map.style.colourScheme.mode !== "rainbow" ) return
+		this.change( () => { this.map.style = this.map.style.withColourScheme( { mode: "rainbow", chroma } ) }, gesture )
+	}
+
+	/* Only the black/white Uniform default follows LIGHT/DARK. Custom fills,
+		Cascade/Rainbow settings and all manual colours remain the user's. */
 	changeAppearance( name ){
+		if( !APPEARANCES.includes( name ) ) return
 		this.change( () => {
 			this.map.appearance = name
-			this.map.style = this.map.style.withCanvas( null )
+			if( this.map.style.colourScheme.isDefaultUniform ) this.map.style = this.map.style.withColourScheme( { mode: "uniform", fill: name === "light" ? "#000000" : "#ffffff" } )
+			this.map.style = this.map.style.withCanvas( name === "light" ? "#ffffff" : "#000000" )
 		} )
 	}
 

@@ -26,7 +26,7 @@ import { Search } from "../editor/search.js"
 	step if the release holds any feature, otherwise one patch step; the major
 	is the master's. A commit leaves it as it is; the changes since gather
 	under CHANGELOG.md's Unreleased heading, which the release then numbers. */
-const VERSION = "0.42.1"
+const VERSION = "0.43.0"
 /* How long a notice stays, unless another takes its place. */
 const NOTICE_TIME = 7000
 /* The notice for each reason a file would not open. */
@@ -699,6 +699,8 @@ class Page {
 		}
 		const settings = {
 			canvas: ( colour, gesture ) => editor.paintCanvas( colour, gesture ),
+			primary: ( colour, gesture ) => editor.changePrimary( colour, gesture ),
+			chroma: ( value, gesture ) => editor.changeChroma( value, gesture ),
 			/* The selection's colour is the user's, not the map's: kept by the browser, never undone. */
 			highlight: colour => {
 				this.store.keepHighlight( colour )
@@ -706,15 +708,15 @@ class Page {
 				this.redraw( { mapChanged: false } )
 			},
 		}
-		/* A new layout moves every node, so the map is centred again; a theme moves none. */
+		/* A new layout moves every node, so the map is centred again; a scheme moves none. */
 		const choosers = {
 			layout: value => { editor.changeLayout( value ); this.view.centre() },
-			theme: value => editor.changeTheme( value ),
-			colourStyle: value => editor.changeColourStyle( value ),
+			colourScheme: value => editor.changeColourScheme( value ),
 			lineForm: value => editor.changeLineForm( value ),
 		}
 		return {
 			command: name => commands[ name ]?.(),
+			uniform: index => editor.chooseUniform( index ),
 			style: ( kind, changes, gesture = null ) => stylers[ kind ]( changes, gesture ),
 			map: ( which, value ) => choosers[ which ]( value ),
 			setting: ( name, value, gesture = null ) => settings[ name ]( value, gesture ),

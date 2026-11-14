@@ -7,15 +7,16 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>WHL Mindmap</title>
-<!-- Favicon: IBM Carbon Design System "decision-tree", @carbon/icons 11.92.0.
+<!-- Favicon: IBM Carbon Design System "Model", @carbon/icons 11.92.0.
 	Copyright IBM Corp. 2016, 2023. Apache-2.0; licence copied below.
-	Source: https://unpkg.com/@carbon/icons@11.92.0/svg/32/decision-tree.svg
-	Path unchanged; #111 fill and white ground added, PNG rasterised from SVG.
-	Behaviour (by eye): its root and two branches read at 16px and 32px.
+	Source: https://unpkg.com/@carbon/icons@11.92.0/svg/32/model.svg
+	Pristine source: src/page/carbon-model.svg. Geometry unchanged in favicon.svg;
+	#111 fill and white ground added, PNG rasterised from that SVG.
+	Behaviour (by eye): Model reads at 16px and 32px on light and dark tab bars.
 	PNG supports Safari before SVG favicons; SVG-capable browsers can prefer
 	the last declaration. Both ship in the existing index.html/src archive. -->
 <link rel="icon" type="image/png" sizes="32x32" href="src/page/favicon.png">
-<link rel="icon" type="image/svg+xml" sizes="any" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2032%2032'%20fill='%23111'%3E%3Cpath%20fill='%23fff'%20d='M0%200h32v32H0z'/%3E%3Cpath%20d='M30,12V4H22V7H18a2.0023,2.0023,0,0,0-2,2v6H10V12H2v8h8V17h6v6a2.0023,2.0023,0,0,0,2,2h4v3h8V20H22v3H18V9h4v3ZM8,18H4V14H8Zm16,4h4v4H24ZM24,6h4v4H24Z'/%3E%3C/svg%3E">
+<link rel="icon" type="image/svg+xml" sizes="any" href="src/page/favicon.svg">
 <link rel="stylesheet" href="styles/base.css">
 <link rel="stylesheet" href="styles/page.css">
 <link rel="stylesheet" href="styles/panel.css">
@@ -130,7 +131,7 @@
 	</div>
 </section>
 
-<!-- The map as a whole: its layout, its theme and the canvas it stands on. -->
+<!-- The map as a whole: its layout, colour scheme and independent Canvas. -->
 <section class="panel">
 	<h2 data-cn="布局">Layout</h2>
 	<div class="control-row group" data-map="layout">
@@ -140,23 +141,32 @@
 	</div>
 </section>
 
-<section class="panel">
-	<h2 data-cn="主題">Theme</h2>
-	<div class="control-row group" data-map="theme">
-		<button class="word" data-value="mono" data-cn="墨">Mono</button>
-		<button class="word" data-value="spectrum" data-cn="光譜">Spectrum</button>
-		<button class="word" data-value="ocean" data-cn="海洋">Ocean</button>
-		<button class="word" data-value="earth" data-cn="大地">Earth</button>
-		<button class="word" data-value="dusk" data-cn="暮色">Dusk</button>
+<section class="panel" id="colour-scheme-panel">
+	<h2 data-cn="配色方案">Colour scheme</h2>
+	<div class="control-row group" data-map="colourScheme" role="group" aria-label="Colour scheme" data-cn-aria-label="配色方案">
+		<button class="word" data-value="uniform" data-cn="全局同色" aria-pressed="false">Uniform</button>
+		<button class="word" data-value="cascade" data-cn="層級配色" aria-pressed="false">Cascade</button>
+		<button class="word" data-value="rainbow" data-cn="彩虹分支" aria-pressed="false">Rainbow</button>
 	</div>
-	<!-- How the nodes take the theme's colours, for the whole map: each
-		level one colour, every node one colour, or each main branch one
-		colour (2026-11-12). -->
-	<div class="control-row group" data-map="colourStyle">
-		<span class="label" data-cn="配色">Colour</span>
-		<button class="word" data-value="level" data-cn="同層同色">Level</button>
-		<button class="word" data-value="one" data-cn="全局同色">One</button>
-		<button class="word" data-value="rainbow" data-cn="彩虹色">Rainbow</button>
+	<div class="control-row hidden" id="imported-colours" data-cn="已導入配色">Imported colours</div>
+	<!-- Paired swatches are commands, not colour bindings. Their actual
+		colours come from UNIFORM_PRESETS in model/colour-scheme.js. -->
+	<div class="control-row uniform-presets" data-scheme-controls="uniform">
+		<button type="button" class="uniform-swatch" data-uniform="0" aria-label="Black on white" data-cn-aria-label="黑色／白底" title="Black on white" data-cn-title="黑色／白底" aria-pressed="false"><span aria-hidden="true"></span></button>
+		<button type="button" class="uniform-swatch" data-uniform="1" aria-label="White on black" data-cn-aria-label="白色／黑底" title="White on black" data-cn-title="白色／黑底" aria-pressed="false"><span aria-hidden="true"></span></button>
+		<button type="button" class="uniform-swatch" data-uniform="2" aria-label="Grey on white" data-cn-aria-label="灰色／白底" title="Grey on white" data-cn-title="灰色／白底" aria-pressed="false"><span aria-hidden="true"></span></button>
+		<button type="button" class="uniform-swatch" data-uniform="3" aria-label="IBM blue on white" data-cn-aria-label="IBM 藍／白底" title="IBM blue on white" data-cn-title="IBM 藍／白底" aria-pressed="false"><span aria-hidden="true"></span></button>
+		<button type="button" class="uniform-swatch" data-uniform="4" aria-label="Pale gold on black" data-cn-aria-label="淡金色／黑底" title="Pale gold on black" data-cn-title="淡金色／黑底" aria-pressed="false"><span aria-hidden="true"></span></button>
+	</div>
+	<div class="control-row hidden" data-scheme-controls="cascade">
+		<span class="label" data-cn="主色">Primary</span>
+		<button type="button" class="chip" data-for="primary-colour" title="Pick" data-cn-title="選擇顏色" aria-label="Pick the primary colour" data-cn-aria-label="選擇主色"></button>
+		<input type="text" class="hex" id="primary-colour" data-setting="primary" spellcheck="false" aria-label="Primary colour" data-cn-aria-label="主色">
+	</div>
+	<div class="control-row hidden" data-scheme-controls="rainbow">
+		<label class="label" for="rainbow-chroma" data-cn="色度">Chroma</label>
+		<input type="range" id="rainbow-chroma" data-setting="chroma" min="0" max="0.24" step="0.005" value="0.12" aria-label="Chroma" data-cn-aria-label="色度">
+		<span class="value" data-shows="rainbow-chroma">0.12</span>
 	</div>
 	<div class="control-row">
 		<span class="label" data-cn="畫布">Canvas</span>

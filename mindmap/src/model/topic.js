@@ -105,7 +105,7 @@ export class Topic {
 		return undefined
 	}
 
-	/* The ancestor that grows straight from the root, which a theme colours a main branch by. */
+	/* The ancestor that grows straight from the root, which a colour scheme colours a main branch by. */
 	get mainBranch(){
 		if( this.isRoot ) return null
 		return this.parent.isRoot ? this : this.parent.mainBranch

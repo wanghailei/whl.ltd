@@ -5,10 +5,10 @@ import { NODE, BRANCH, LINE } from "../model/style.js"
 import { fileName } from "./file-name.js"
 
 export const FORMAT = "whl-mindmap"
-/* 2 since 0.2.0: the map's style holds a canvas colour, and until 0.32.0
-	held level fills, which a Mindmap reading version 1 would lose without a
-	word. */
-export const VERSION = 2
+/* Version 3 replaces authoritative theme/colourStyle fields with one scheme.
+	Older readers must refuse it rather than silently draw the wrong colours.
+	This is the file format's version, not the application's release number. */
+export const VERSION = 3
 
 /* Version 1 gave a new map's central node these words as its own, in
 	English or Chinese, where later versions show only a placeholder. Read
@@ -30,7 +30,7 @@ export class MapFileError extends Error {
 
 /* The map's own file, `.mindmap.json`: every topic with its words, remark,
 	styles and fold, every auxiliary line and the form the lines take, the
-	map's styles, theme, appearance and layout, under the format's name and
+	map's styles, colour scheme, appearance and layout, under the format's name and
 	version. The lines' form came with 0.26.0 and needs no new version: a
 	file without it, or a Mindmap before it reading one with it, draws the
 	lines straight, as they were. So with the colour style, in the map's
@@ -66,7 +66,8 @@ export class MapFile {
 		const root = new TopicReader().read( saved.root )
 		if( !( saved.version >= 2 ) && VERSION_ONE_CENTRAL_WORDS.includes( root.text ) ) root.text = ""
 		const lines = linesFrom( saved.auxiliaryLines, root )
-		return new MindMap( { root, layout: saved.layout, theme: saved.theme, appearance: saved.appearance, lineForm: saved.lineForm, style: MapStyle.from( saved.style ), lines } )
+		const style = saved.version >= 3 ? MapStyle.from( saved.style ) : MapStyle.legacy( saved.style, saved.theme )
+		return new MindMap( { root, layout: saved.layout, appearance: saved.appearance, lineForm: saved.lineForm, style, lines } )
 	}
 
 	nameFor( map ){

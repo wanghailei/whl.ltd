@@ -208,10 +208,10 @@ export function hexToLch( hex ){
 	their own edge-finder and could land a digit off the swatch's hex. */
 const HOUSE = { hueStart: 25, chroma: 0.12, hues: 28, rungs: 18 }
 
-export function houseCell( column, rung ){
+export function houseCell( column, rung, requestedChroma = HOUSE.chroma ){
 	const level = ( rung + 1 ) / ( HOUSE.rungs + 1 )
 	const hue = ( HOUSE.hueStart + column * 360 / HOUSE.hues ) % 360
-	const wanted = HOUSE.chroma * ( 0.2 + 0.8 * Math.sin( Math.PI * level ) )
+	const wanted = requestedChroma * ( 0.2 + 0.8 * Math.sin( Math.PI * level ) )
 	const linear = function( chroma ){
 		const a = chroma * Math.cos( hue * Math.PI / 180 ), b = chroma * Math.sin( hue * Math.PI / 180 )
 		const long = Math.pow( level + 0.3963377774 * a + 0.2158037573 * b, 3 )

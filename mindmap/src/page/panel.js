@@ -1,10 +1,24 @@
 import { NODE, BRANCH, LINE, hexColour } from "../model/style.js"
+import { UNIFORM_PRESETS } from "../model/colour-scheme.js"
+import { contrast, laidOver } from "../drawing/colour.js"
+
+/* Held-back panel words must still read at 12px. On unusual Canvas colours
+	a fixed alpha fails, so strengthen only this panel's ink until it reaches
+	WCAG text contrast. The full canvas ink is already chosen to meet it. */
+function panelInk( ink, ground, strength ){
+	for( let hundredths = strength * 100; hundredths <= 100; hundredths++ ){
+		const colour = laidOver( ground, ink, hundredths / 100 )
+		if( contrast( colour, ground ) >= 4.5 ) return colour
+	}
+	return ink
+}
 
 const KINDS = { node: NODE, branch: BRANCH, line: LINE }
 /* The colour settings and what each would keep of what is typed: only a solid colour. */
 const SETTINGS = {
 	canvas: typed => hexColour( typed ),
 	highlight: typed => hexColour( typed ),
+	primary: typed => hexColour( typed ),
 }
 
 /* A hex field of a style — data-style and data-property — keeps what the
@@ -33,7 +47,7 @@ class SettingHexField {
 
 	/* The colour it would keep, null for none, or undefined when refused. */
 	accept( typed ){
-		return typed === "" ? null : SETTINGS[ this.name ]( typed )
+		return typed === "" && this.name !== "primary" ? null : SETTINGS[ this.name ]( typed )
 	}
 
 	apply( actions, value, gesture ){
@@ -91,6 +105,12 @@ export class Panel {
 		this.wireFields()
 		this.wireSteppers()
 		this.wireLine()
+		for( const button of this.all( "[data-uniform]" ) ){
+			const preset = UNIFORM_PRESETS[ Number( button.dataset.uniform ) ]
+			button.style.setProperty( "--preset-fill", preset.fill )
+			button.style.setProperty( "--preset-canvas", preset.canvas )
+			button.addEventListener( "click", () => this.actions.uniform( Number( button.dataset.uniform ) ) )
+		}
 	}
 
 	element( id ){
@@ -117,7 +137,7 @@ export class Panel {
 		}
 	}
 
-	/* A row of words, one of which is live: a style's choice, the layout, the theme. */
+	/* A row of words, one of which is live: a style's choice, the layout, the colour scheme. */
 	wireChoices(){
 		for( const row of this.all( ".group[data-style]" ) ){
 			row.addEventListener( "click", event => {
@@ -146,10 +166,12 @@ export class Panel {
 				this.picker.toggle( target, chip )
 			} )
 		}
-		for( const slider of this.all( "input[type=range][data-style]" ) ){
+		for( const slider of this.all( "input[type=range][data-style], input[type=range][data-setting]" ) ){
 			slider.addEventListener( "input", () => {
 				this.shows( slider )
-				this.actions.style( slider.dataset.style, { [ slider.dataset.property ]: Number( slider.value ) }, "slide " + slider.id + " " + this.gestures )
+				const gesture = "slide " + slider.id + " " + this.gestures
+				if( slider.dataset.setting ) this.actions.setting( slider.dataset.setting, Number( slider.value ), gesture )
+				else this.actions.style( slider.dataset.style, { [ slider.dataset.property ]: Number( slider.value ) }, gesture )
 			} )
 			slider.addEventListener( "change", () => { this.gestures += 1 } )
 		}
@@ -179,16 +201,34 @@ export class Panel {
 	// ── Showing what is selected ────────────────────────────────────
 
 	/* Every control set to the look of what is selected — its look as drawn,
-		 theme and all, so the panel says what the eye sees. */
+		 scheme and all, so the panel says what the eye sees. */
 	sync( { editor, look, zoom, highlight } ){
+		const toolbar = this.element( "toolbar" )
+		toolbar.style.setProperty( "--panel-label-ink", panelInk( look.ink, look.background, .75 ) )
+		toolbar.style.setProperty( "--panel-choice-ink", panelInk( look.ink, look.background, .7 ) )
 		const map = editor.map
 		const topics = editor.selectedTopics
 		const focus = topics[ 0 ]
 		const line = editor.selectedLine
 		this.choose( "[data-map=layout]", map.layout )
-		this.choose( "[data-map=theme]", map.theme )
-		/* The colour style the map is drawn in: its own, or else its theme's. */
-		this.choose( "[data-map=colourStyle]", look.colourStyle )
+		const scheme = map.style.colourScheme
+		if( this.schemeMode !== scheme.mode ) this.picker.close()
+		this.schemeMode = scheme.mode
+		this.choose( "[data-map=colourScheme]", scheme.mode )
+		for( const controls of this.all( "[data-scheme-controls]" ) ) controls.classList.toggle( "hidden", controls.dataset.schemeControls !== scheme.mode )
+		this.element( "imported-colours" ).classList.toggle( "hidden", scheme.mode !== "imported" )
+		for( const button of this.all( "[data-uniform]" ) ){
+			const preset = UNIFORM_PRESETS[ Number( button.dataset.uniform ) ]
+			const active = scheme.mode === "uniform" && scheme.fill === preset.fill && look.background === preset.canvas
+			button.classList.toggle( "on", active )
+			button.setAttribute( "aria-pressed", String( active ) )
+		}
+		if( scheme.mode === "cascade" ) this.showHex( "primary-colour", scheme.primary )
+		if( scheme.mode === "rainbow" ){
+			const slider = this.element( "rainbow-chroma" )
+			slider.value = String( scheme.chroma )
+			this.shows( slider )
+		}
 		this.choose( "[data-map=lineForm]", map.lineForm )
 		this.showHex( "canvas-colour", look.background )
 		this.showHex( "highlight-colour", highlight )
@@ -245,7 +285,11 @@ export class Panel {
 
 	choose( row, value ){
 		const group = typeof row === "string" ? this.document.querySelector( row ) : row
-		for( const button of group.querySelectorAll( "[data-value]" ) ) button.classList.toggle( "on", button.dataset.value === value )
+		for( const button of group.querySelectorAll( "[data-value]" ) ){
+			const active = button.dataset.value === value
+			button.classList.toggle( "on", active )
+			button.setAttribute( "aria-pressed", String( active ) )
+		}
 	}
 
 	shows( slider ){

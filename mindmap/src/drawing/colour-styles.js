@@ -1,4 +1,7 @@
-/* How a map's nodes take the colours of its theme, chosen for the whole map
+/* Legacy compatibility only: how a pre-v3 map's nodes take its theme's colours.
+	Imported colours delegates here; new schemes never use these selectors.
+
+	How a map's nodes take the colours of its theme, chosen for the whole map
 	at the master's word (2026-11-12, 22:35): every node at one depth in one
 	colour, every node in one colour, or each main branch with all under it in
 	one colour. The central node always takes its scheme's own colour; the

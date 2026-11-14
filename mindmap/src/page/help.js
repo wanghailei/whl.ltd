@@ -87,16 +87,16 @@ const TASKS = [
 		cn: [ "怎麼加粗邊框、分支或輔助線？", "在「分支寬度」下點擊 + 或 −，統一修改所有分支，無需選擇。邊框和輔助線則選擇後修改各自的寬度。選擇邊框顏色可為節點添加寬度為 1 的邊框。" ],
 	},
 	{
-		en: [ "Can I use one colour, or colour by level or branch?", "Under Theme, choose LEVEL for one colour per level, ONE for one colour throughout, or RAINBOW for one colour per main branch. A node's branch always takes the node's colour, and a fill given to a node wins." ],
-		cn: [ "導圖可以統一配色，或按層級、分支配色嗎？", "在「主題」下選擇「同層同色」，每層一色；「全局同色」為整張導圖統一配色；「彩虹色」每個主分支一色。分支與其節點同色，手動設置的節點填充優先。" ],
+		en: [ "Can I use one colour, or colour by level or branch?", "Under Colour Scheme, choose UNIFORM and a paired swatch, CASCADE and its PRIMARY colour, or RAINBOW and its CHROMA slider. Hand-set node and branch colours still win." ],
+		cn: [ "導圖可以統一配色，或按層級、分支配色嗎？", "在「配色方案」下選擇「全局同色」並選配色塊，或「層級配色」並設主色，或「彩虹分支」並調整色度。手動節點和分支顏色優先。" ],
 	},
 	{
 		en: [ "Can auxiliary lines be curved?", "Choose ARC under Line to draw every line as part of a circle from node to node, or STRAIGHT for straight lines that turn round the nodes on round corners." ],
 		cn: [ "輔助線可以改成弧線嗎？", "在「輔助線」下選擇「弧線」，每條輔助線即為連接節點的一段圓弧；選擇「直線」，則使用繞過節點、轉角圓滑的直線。" ],
 	},
 	{
-		en: [ "How do I change the layout or theme?", "Press RIGHT, BOTH or DOWN under Layout, or a theme under Theme. LIGHT/DARK at the top switches the appearance." ],
-		cn: [ "怎麼切換布局或主題？", "在「布局」下選擇「向右」、「兩側」或「向下」，在「主題」下選擇主題。頂部的淺/深切換明暗外觀。" ],
+		en: [ "How do I change the layout or canvas?", "Choose RIGHT, BOTH or DOWN under Layout. Edit CANVAS freely below Colour Scheme; scheme settings stay. LIGHT/DARK sets white/black Canvas, flipping only a black/white Uniform fill." ],
+		cn: [ "怎麼切換布局或畫布顏色？", "在「布局」下選擇「向右」「兩側」或「向下」。可自由修改「畫布」，配色設置不變；淺/深切換白底或黑底，只翻轉全局同色的黑白填充。" ],
 	},
 	{
 		en: [ `How do I add a ${ EN_REMARK } to a node?`, `Select one node: write up to 50 characters including spaces in the bottom field. ENTER or leaving keeps it; ESC cancels. Pasted line breaks become spaces; excess input shows a notice instead of being cut.` ],

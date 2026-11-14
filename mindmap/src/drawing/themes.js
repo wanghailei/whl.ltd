@@ -1,3 +1,6 @@
+/* Pre-v3 themes, retained only by the Imported colours provider so older
+	maps and defaults keep their exact generated colours. No theme is offered
+	by the current panel. The original palette arithmetic remains unchanged. */
 import { NODE, BRANCH, LINE } from "../model/style.js"
 import { houseCell } from "./colour.js"
 
