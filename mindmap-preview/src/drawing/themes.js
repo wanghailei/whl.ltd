@@ -1,6 +1,5 @@
-/* Pre-v3 themes, retained only by the Imported colours provider so older
-	maps and defaults keep their exact generated colours. No theme is offered
-	by the current panel. The original palette arithmetic remains unchanged. */
+/* Pre-v3 theme colours supply the old Canvas and central colour during
+	one-way conversion to Uniform. No theme is offered by the current panel. */
 import { NODE, BRANCH, LINE } from "../model/style.js"
 import { houseCell } from "./colour.js"
 

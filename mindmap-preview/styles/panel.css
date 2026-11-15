@@ -73,10 +73,10 @@
 	button.word:focus-visible, .group .word:focus-visible { opacity: 1; color: inherit; }
 	.chip:focus-visible::before { inset: -5px; background: none; border: 3px solid var(--highlight-mark); }
 
-	/* Behaviour (by eye): five crisp paired-colour previews keep the row's
-		36px rhythm; an ink underline marks the active pair, independently of
-		the keyboard's highlight ring. These use the house's native control
-		grammar and Carbon spacing, without a second component runtime. */
+	/* Behaviour (by eye): four crisp node-colour previews keep the row's
+		36px rhythm; an ink underline marks the active colour, independently of
+		the keyboard's highlight ring. These are Carbon ghost buttons customised
+		as SPEC's node-colour previews, without a second button widget. */
 	.uniform-swatch {
 		width: 28px;
 		height: 28px;
@@ -98,24 +98,50 @@
 	#toolbar input[type=text].wide { flex: 1 1 0; min-width: 0; }
 	#toolbar input::placeholder { color: inherit; opacity: .35; }
 
-	#toolbar input[type=range] {
+	/* Behaviour (by eye): v11's track/thumb retain the existing hairline
+		and thin thumb, with no new tick, progress fill or focus treatment.
+		The native range alone owns interaction, focus and input/change undo
+		gestures. Its transparent thumb has the same travel as the visible one;
+		the decorative Carbon elements never take focus or pointer events. */
+	#toolbar .cds--slider { min-inline-size: 0; inline-size: clamp(72px, 8vw, 92px); height: 32px; padding: 0; margin: 0; flex: none; }
+	/* Native tracks/thumbs paint on pixel edges. Avoid v11's half-pixel
+			transforms: those blur the house's one-pixel rail and three-pixel thumb. */
+	#toolbar .cds--slider__track { inset-inline-start: 0; inline-size: 100%; block-size: 1px; top: calc(50% - 1px); transform: none; background: var(--line-strong); pointer-events: none; }
+	#toolbar .cds--slider__track::before { content: none; }
+	#toolbar .cds--slider__thumb-wrapper { inline-size: 3px; block-size: 13px; top: calc(50% - 7px); inset-inline-start: calc((100% - 3px) * var(--mindmap-slider-position, 0)); transform: none; pointer-events: none; }
+	#toolbar .cds--slider__thumb { background: var(--ink); box-shadow: none; transition: none; }
+	/* Firefox's previous native thumb has 6px UA corner radii (measured in
+			getComputedStyle), even under the element-only square-corner reset.
+			Retain those caps without weakening that reset for any other control. */
+	@supports (-moz-appearance: none) {
+		#toolbar .cds--slider__thumb { clip-path: inset(0 round 6px); }
+	}
+	#toolbar input.cds--slider__input {
+		display: block;
+		position: absolute;
+		inset: 0;
+		z-index: 1;
+		opacity: 0;
 		-webkit-appearance: none;
 		appearance: none;
 		background: transparent;
 		height: 32px;
 		margin: 0;
-		width: clamp(72px, 8vw, 92px);
+		width: 100%;
 	}
-	#toolbar input[type=range]::-webkit-slider-runnable-track { height: 1px; background: var(--line-strong); }
-	#toolbar input[type=range]::-moz-range-track { height: 1px; background: var(--line-strong); }
-	#toolbar input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 3px; height: 13px; background: currentColor; margin-top: -6px; cursor: pointer; }
-	#toolbar input[type=range]::-moz-range-thumb { width: 3px; height: 13px; background: currentColor; border: 0; cursor: pointer; }
+	#toolbar input[type=range]::-webkit-slider-runnable-track { height: 1px; }
+	#toolbar input[type=range]::-moz-range-track { height: 1px; }
+	#toolbar input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 3px; height: 13px; margin-top: -6px; cursor: pointer; }
+	#toolbar input[type=range]::-moz-range-thumb { width: 3px; height: 13px; border: 0; cursor: pointer; }
 	.value { min-width: 34px; text-align: right; color: var(--panel-label-ink, var(--ink)); font-variant-numeric: tabular-nums; }
 
 	/* A chip shows the colour of the hex field beside it and, pressed, opens
 		the picker on that field. Its hairline edge is seen on any ground, so a
 		chip in the ground's own colour does not vanish into it. */
 	.chip {
+		/* Canvas changes immediately. Carbon's colour transition would leave
+			the old chip edge on the new Canvas briefly below 3:1. */
+		transition: none;
 		width: 16px;
 		height: 16px;
 		padding: 0;

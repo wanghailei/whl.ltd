@@ -33,10 +33,10 @@ export class MapFileError extends Error {
 	map's styles, colour scheme, appearance and layout, under the format's name and
 	version. The lines' form came with 0.26.0 and needs no new version: a
 	file without it, or a Mindmap before it reading one with it, draws the
-	lines straight, as they were. So with the colour style, in the map's
-	style from 0.32.0: a file without it opens in its theme's own, as every
-	map was drawn before, and the level fills an older file gives are left out
-	without a word. Writing and reading are
+	lines straight, as they were. Older theme and colour-style records open
+	directly in Uniform with the nearest preset, preserving their Canvas
+	and manual colours. Obsolete level fills are left out without a word.
+	Writing and reading are
 	exact inverses for every map the editor makes, which the round-trip test
 	holds it to.
 
@@ -66,7 +66,7 @@ export class MapFile {
 		const root = new TopicReader().read( saved.root )
 		if( !( saved.version >= 2 ) && VERSION_ONE_CENTRAL_WORDS.includes( root.text ) ) root.text = ""
 		const lines = linesFrom( saved.auxiliaryLines, root )
-		const style = saved.version >= 3 ? MapStyle.from( saved.style ) : MapStyle.legacy( saved.style, saved.theme )
+		const style = saved.version >= 3 ? MapStyle.from( saved.style, saved.appearance ) : MapStyle.legacy( saved.style, saved.theme, saved.appearance )
 		return new MindMap( { root, layout: saved.layout, appearance: saved.appearance, lineForm: saved.lineForm, style, lines } )
 	}
 

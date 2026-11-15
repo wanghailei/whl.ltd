@@ -1,21 +1,22 @@
 import { hexColour } from "./style.js"
+import { Theme } from "../drawing/themes.js"
+import { hexToLch, isLightColour } from "../drawing/colour.js"
 
 export const COLOUR_SCHEMES = [ "uniform", "cascade", "rainbow" ]
-/* Paired commands, not a dependency: later Canvas edits never replace the fill. */
+/* Node colours only. Null is black/white ink for the current appearance. */
 export const UNIFORM_PRESETS = Object.freeze( [
-	{ fill: "#000000", canvas: "#ffffff" },
-	{ fill: "#ffffff", canvas: "#000000" },
-	{ fill: "#616161", canvas: "#ffffff" },
-	{ fill: "#0f62fe", canvas: "#ffffff" },
-	{ fill: "#e8d8a0", canvas: "#000000" },
+	{ fill: null },
+	{ fill: "#616161" },
+	{ fill: "#0f62fe" },
+	{ fill: "#e8d8a0" },
 ].map( Object.freeze ) )
 export const LEGACY_THEMES = [ "mono", "spectrum", "ocean", "earth", "dusk" ]
 export const LEGACY_COLOUR_STYLES = [ "level", "one", "rainbow" ]
 
 /* A scheme owns only its active settings. Canvas and manual styles belong to
 	MapStyle, not to a preset. This immutable value crosses file/default/history
-	boundaries with the same validation. Imported is permanent file compatibility,
-	not a fourth product choice; only the decoder creates it from old records. */
+	boundaries with the same validation. Older generated colours are reduced
+	to the nearest Uniform preset at decoding, with no extra state. */
 export class ColourScheme {
 	constructor( values ){
 		Object.assign( this, values )
@@ -31,15 +32,16 @@ export class ColourScheme {
 		}
 	}
 
-	/* Old defaults held no theme, so they were always Mono, independently of
-		the map open when Set as default was pressed. Empty style meant the
-		theme's own colour style, not the default of the new scheme picker. */
-	static legacy( { theme, colourStyle } = {} ){
-		return new ColourScheme( {
-			mode: "imported",
-			theme: LEGACY_THEMES.includes( theme ) ? theme : "mono",
-			colourStyle: LEGACY_COLOUR_STYLES.includes( colourStyle ) ? colourStyle : "",
-		} )
+	/* Use the old scheme's central colour, not a manual node override.
+		OKLab distance chooses the visually nearest preset; the old theme
+		and colour style never survive in the decoded value. */
+	static legacy( { theme, appearance = "dark", canvas } = {} ){
+		const scheme = Theme.for( theme ).scheme( canvas ? ( isLightColour( canvas ) ? "light" : "dark" ) : appearance )
+		const source = lab( scheme.root )
+		const distance = fill => lab( fill ).reduce( ( sum, value, at ) => sum + ( value - source[ at ] ) ** 2, 0 )
+		const fills = [ "#000000", "#ffffff", ...UNIFORM_PRESETS.map( preset => preset.fill ).filter( Boolean ) ]
+		const fill = fills.reduce( ( best, colour ) => distance( colour ) < distance( best ) ? colour : best )
+		return new ColourScheme( { mode: "uniform", fill } )
 	}
 
 	get isDefaultUniform(){
@@ -49,6 +51,11 @@ export class ColourScheme {
 	toJSON(){
 		return { ...this }
 	}
+}
+
+function lab( hex ){
+	const [ lightness, chroma, hue ] = hexToLch( hex ), radians = hue * Math.PI / 180
+	return [ lightness, chroma * Math.cos( radians ), chroma * Math.sin( radians ) ]
 }
 
 export function validChroma( value ){

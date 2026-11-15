@@ -47,8 +47,8 @@ const TASKS = [
 		cn: [ "怎麼調整同級節點的順序？", `選擇後按 ${ ALT.cn.up } 或 ${ ALT.cn.down }，或將其拖拽到兩個同級節點之間。` ],
 	},
 	{
-		en: [ "Can I copy or move a whole branch?", "Select its node and press CMD+C to copy or CMD+X to cut it, then select another node and press CMD+V: the branch goes under it." ],
-		cn: [ "可以複製或移動整個分支嗎？", "選擇其節點，按 CMD+C 複製或 CMD+X 剪切，再選擇另一個節點，按 CMD+V 將分支粘貼為其子節點。" ],
+		en: [ "Can I copy or move a node with its descendants?", "Select the node and press CMD+C to copy or CMD+X to cut it, then select another node and press CMD+V: the node and its descendants go under it." ],
+		cn: [ "可以複製或移動節點及其下級節點嗎？", "選擇節點，按 CMD+C 複製或 CMD+X 剪切，再選擇另一個節點，按 CMD+V 將節點及其下級節點粘貼到目標節點下。" ],
 	},
 	{
 		en: [ "How do I delete a node?", "Select it and press DELETE or BACKSPACE; everything under it goes with it." ],
@@ -67,36 +67,36 @@ const TASKS = [
 		cn: [ "怎麼將節點移到其他位置？", "將其拖拽到另一個節點上，該節點及其子節點會移至目標的子節點末尾。也可拖拽到兩個節點之間，短線標出插入位置，鬆開即可插入。" ],
 	},
 	{
-		en: [ "Can I collapse and expand a branch?", "Select its node and press CMD+., or click the small dot at the node's end; do it again to open it." ],
-		cn: [ "分支可以收起和展開嗎？", "選擇節點後按 CMD+.，或點擊節點末端的小圓點；再次操作即可展開。" ],
+		en: [ "Can I collapse and expand a node’s descendants?", "Select the node and press CMD+., or click the small dot at the node's end; do it again to open it." ],
+		cn: [ "怎麼收起和展開節點？", "選擇節點後按 CMD+.，或點擊節點末端的小圓點；再次操作即可展開。" ],
 	},
 	{
 		en: [ "How do I view and edit the map as an outline?", `Press OUTLINE for an indented list with each ${ EN_REMARK } below its title. Click either to select; double-click or SPACE edits only the title. Edit remarks in the bottom field. ENTER, TAB and SHIFT+TAB add nodes.` ],
 		cn: [ "怎麼在大綱中查看和編輯導圖？", `點擊「大綱」查看縮進列表及標題下的${ REMARK.cn }。點擊選擇，雙擊或空格鍵僅編輯標題；${ REMARK.cn }在底部編輯。ENTER、TAB、SHIFT+TAB 添加節點。` ],
 	},
 	{
-		en: [ "How do I connect two nodes and label the line?", "Select both and press ADD under Line, or select one, press ADD and click the other. Double-click the line to write its label. Two nodes take one line." ],
-		cn: [ "怎麼用輔助線連接兩個節點並添加標籤？", "選擇兩個節點，點擊「輔助線」下的「添加」；或選擇一個、點擊「添加」，再點擊另一個。雙擊輔助線可輸入標籤。兩個節點之間最多一條輔助線。" ],
+		en: [ "How do I connect two nodes and label the link?", "Select both and press ADD under LINK, or select one, press ADD and click the other. Double-click the link to write its label. Two nodes take one link." ],
+		cn: [ "怎麼用關聯線連接兩個節點並添加標籤？", "選擇兩個節點，點擊「關聯線」下的「添加」；或選擇一個、點擊「添加」，再點擊另一個。雙擊關聯線可輸入標籤。兩個節點之間最多一條關聯線。" ],
 	},
 	{
-		en: [ "How do I change colours and styles?", "Click a node, branch or line to change its colour, shape or dash. SET AS DEFAULT on a node or line gives its look to its kind where not styled by hand, and to new maps." ],
-		cn: [ "怎麼修改顏色和樣式？", "點擊節點、分支或輔助線，在面板中修改顏色、形狀或線型。選擇節點或輔助線後點擊「設為默認」，同類中未手動設置樣式的對象和新建導圖都使用此樣式。" ],
+		en: [ "How do I change colours and styles?", "Click a node, LINE (parent-child) or LINK (auxiliary) to change its colour, shape or dash. SET AS DEFAULT on a node or link gives its look to its kind where not styled by hand, and to new maps." ],
+		cn: [ "怎麼修改顏色和樣式？", "點擊節點、連線或關聯線，在面板中修改顏色、形狀或線型。選擇節點或關聯線後點擊「設為默認」，同類中未手動設置樣式的對象和新建導圖都使用此樣式。" ],
 	},
 	{
-		en: [ "How do I make borders, branches or auxiliary lines thicker?", "Under Branch width, press + or − to change every branch; no selection needed. For a border or auxiliary line, select it and use its WIDTH. Picking a BORDER colour adds a border where none shows." ],
-		cn: [ "怎麼加粗邊框、分支或輔助線？", "在「分支寬度」下點擊 + 或 −，統一修改所有分支，無需選擇。邊框和輔助線則選擇後修改各自的寬度。選擇邊框顏色可為節點添加寬度為 1 的邊框。" ],
+		en: [ "How do I make borders, lines or links thicker?", "Under LINE WIDTH, press + or − to change every parent-child line; no selection needed. For a border or link, select it and use its WIDTH. Picking a BORDER colour adds a border where none shows." ],
+		cn: [ "怎麼加粗邊框、連線或關聯線？", "在「連線寬度」下點擊 + 或 −，統一修改所有連線，無需選擇。邊框和關聯線則選擇後修改各自的寬度。選擇邊框顏色可為節點添加寬度為 1 的邊框。" ],
 	},
 	{
-		en: [ "Can I use one colour, or colour by level or branch?", "Under Colour Scheme, choose UNIFORM and a paired swatch, CASCADE and its PRIMARY colour, or RAINBOW and its CHROMA slider. Hand-set node and branch colours still win." ],
-		cn: [ "導圖可以統一配色，或按層級、分支配色嗎？", "在「配色方案」下選擇「全局同色」並選配色塊，或「層級配色」並設主色，或「彩虹分支」並調整色度。手動節點和分支顏色優先。" ],
+		en: [ "Can I use one colour, or colour by level or main node?", "Under Colour Scheme, choose UNIFORM and a node-colour swatch, CASCADE and its PRIMARY colour, or RAINBOW and its CHROMA slider. Hand-set node and line colours still win." ],
+		cn: [ "導圖可以統一配色，或按層級、主節點配色嗎？", "在「配色方案」下選擇「全局同色」並選節點顏色，或「層級配色」並設主色，或「彩虹分支」並調整色度。手動節點和連線顏色優先。" ],
 	},
 	{
-		en: [ "Can auxiliary lines be curved?", "Choose ARC under Line to draw every line as part of a circle from node to node, or STRAIGHT for straight lines that turn round the nodes on round corners." ],
-		cn: [ "輔助線可以改成弧線嗎？", "在「輔助線」下選擇「弧線」，每條輔助線即為連接節點的一段圓弧；選擇「直線」，則使用繞過節點、轉角圓滑的直線。" ],
+		en: [ "Can links be curved?", "Choose ARC under LINK to draw every link as part of a circle from node to node, or STRAIGHT for straight links that turn round the nodes on round corners." ],
+		cn: [ "關聯線可以改成弧線嗎？", "在「關聯線」下選擇「弧線」，每條關聯線即為連接節點的一段圓弧；選擇「直線」，則使用繞過節點、轉角圓滑的直線。" ],
 	},
 	{
-		en: [ "How do I change the layout or canvas?", "Choose RIGHT, BOTH or DOWN under Layout. Edit CANVAS freely below Colour Scheme; scheme settings stay. LIGHT/DARK sets white/black Canvas, flipping only a black/white Uniform fill." ],
-		cn: [ "怎麼切換布局或畫布顏色？", "在「布局」下選擇「向右」「兩側」或「向下」。可自由修改「畫布」，配色設置不變；淺/深切換白底或黑底，只翻轉全局同色的黑白填充。" ],
+		en: [ "How do I change the layout or canvas?", "Choose RIGHT, BOTH or DOWN under Layout. Edit CANVAS freely below Colour Scheme; scheme settings stay. Only the title line’s LIGHT/DARK switches white/black Canvas and Uniform ink; swatches change node colour only." ],
+		cn: [ "怎麼切換布局或畫布顏色？", "在「布局」下選擇「向右」「兩側」或「向下」。可自由修改「畫布」，配色設置不變；僅標題欄的淺/深切換黑白畫布及全局同色的黑白填充；色塊只改節點顏色。" ],
 	},
 	{
 		en: [ `How do I add a ${ EN_REMARK } to a node?`, `Select one node: write up to 50 characters including spaces in the bottom field. ENTER or leaving keeps it; ESC cancels. Pasted line breaks become spaces; excess input shows a notice instead of being cut.` ],
@@ -115,8 +115,8 @@ const TASKS = [
 		cn: [ "怎麼撤銷或重做修改？", "CMD+Z 撤銷，CMD+SHIFT+Z 重做。在 Windows 與 Linux 上使用 CTRL 代替 CMD。" ],
 	},
 	{
-		en: [ "How do I save a map and open it again?", "SAVE keeps the map as a file, and OPEN reads it back. Every change is also kept in this browser as you go." ],
-		cn: [ "怎麼保存導圖並再次打開？", "點擊「保存」將導圖保存為文件，點擊「打開」讀取文件。每次修改也會自動保存在此瀏覽器中。" ],
+		en: [ "How do I save a map and open it again?", "SAVE keeps the map as a file, and OPEN reads it back. Older files open in Uniform. Changes are also kept in this browser." ],
+		cn: [ "怎麼保存導圖並再次打開？", "點擊「保存」將導圖保存為文件，點擊「打開」讀取文件。舊版文件以全局同色打開。修改也會自動保存在此瀏覽器中。" ],
 	},
 	{
 		en: [ "How do I export a picture or Markdown outline?", "PNG, SVG and PDF export the map as it is drawn; MD exports its words as a Markdown outline." ],

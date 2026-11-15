@@ -1,13 +1,10 @@
 import { NODE, BRANCH, LINE } from "../model/style.js"
-import { Theme } from "./themes.js"
-import { colourStyleFor } from "./colour-styles.js"
 import { contrast, inkOver, isLightColour, hexToLch, lchToHex, houseCell } from "./colour.js"
 
 /* One factory is the only place that selects behaviour. Look asks a provider
 	for styles and keeps precedence/contrast protection, not mode switches.
 	Each provider owns its settings and its actual ground for this drawing. */
 export function colourSchemeFor( settings, { canvas, appearance } ){
-	if( settings.mode === "imported" ) return new Imported( settings, { canvas, appearance } )
 	const background = canvas || ( appearance === "light" ? "#ffffff" : "#000000" )
 	switch( settings.mode ){
 		case "cascade": return new Cascade( settings, background )
@@ -139,29 +136,5 @@ class Rainbow extends Colours {
 			if( strength >= SAFE_CONTRAST && strength <= ceiling && sameSide ) return colour
 		}
 		return main ?? inkOver( this.background )
-	}
-}
-
-/* The unchanged pre-v3 generators are the independent compatibility path.
-	A custom Canvas selected their light/dark appearance before v3 too. No
-	generated fill is baked into node overrides during decoding or re-saving. */
-class Imported {
-	constructor( { theme, colourStyle }, { canvas, appearance } ){
-		const legacy = Theme.for( theme )
-		this.scheme = legacy.scheme( canvas ? ( isLightColour( canvas ) ? "light" : "dark" ) : appearance )
-		this.colours = colourStyleFor( colourStyle || legacy.colourStyle )
-		this.background = canvas || this.scheme.background
-	}
-
-	node( topic ){
-		return this.scheme.node( topic, this.colours )
-	}
-
-	branch( topic ){
-		return this.scheme.branch( topic, this.colours )
-	}
-
-	line(){
-		return this.scheme.line()
 	}
 }

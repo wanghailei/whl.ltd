@@ -2,6 +2,8 @@ import { Topic } from "./topic.js"
 import { AuxiliaryLine } from "./auxiliary-line.js"
 import { NODE, BRANCH, LINE, hexColour } from "./style.js"
 import { ColourScheme } from "./colour-scheme.js"
+import { Theme } from "../drawing/themes.js"
+import { isLightColour } from "../drawing/colour.js"
 
 export const LAYOUTS = [ "right", "both", "down" ]
 export const APPEARANCES = [ "light", "dark" ]
@@ -16,7 +18,8 @@ export class MapStyle {
 		Object.assign( this, { root, node, branch, line, colourScheme, canvas } )
 	}
 
-	static from( values = {} ){
+	static from( values = {}, appearance = "dark" ){
+		if( values?.colourScheme?.mode === "imported" ) return MapStyle.legacy( values, values.colourScheme.theme, appearance )
 		return new MapStyle( {
 			root: NODE.style( values?.root ),
 			node: NODE.style( values?.node ),
@@ -27,10 +30,15 @@ export class MapStyle {
 		} )
 	}
 
-	/* Shared interpretation for v1/v2 files and unversioned old defaults.
-		A v3 record, including imported colours re-saved in v3, uses from(). */
-	static legacy( values = {}, theme ){
-		return MapStyle.from( { ...values, colourScheme: ColourScheme.legacy( { theme, colourStyle: values?.colourStyle } ) } )
+	/* Preserve even an implicit old Canvas while discarding the old scheme.
+		Files and browser defaults use the same one-way conversion. */
+	static legacy( values = {}, theme, appearance = "dark" ){
+		const canvas = hexColour( values?.canvas )
+		const effective = canvas ? ( isLightColour( canvas ) ? "light" : "dark" ) : appearance
+		return MapStyle.from( { ...values,
+			canvas: canvas ?? Theme.for( theme ).scheme( effective ).background,
+			colourScheme: ColourScheme.legacy( { theme, appearance, canvas } ),
+		} )
 	}
 
 	forTopic( topic ){

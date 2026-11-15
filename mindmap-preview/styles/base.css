@@ -2,7 +2,7 @@
 	face, the tokens, and the element defaults. The other files each fill one
 	layer: page (the shell and what lies over the canvas), panel (the
 	controls), picker (the colour picker), canvas (the map). */
-@layer base, page, panel, picker, canvas;
+@layer carbon, base, page, panel, picker, canvas;
 
 @layer base {
 	/* Berkeley Mono lives beside the page as berkeley.woff2, exactly as it does
@@ -99,6 +99,17 @@
 	}
 
 	button, input, select, textarea { font-family: inherit; font-size: inherit; color: inherit; }
+
+	/* Current Carbon supplies layout and interaction states. Higher house
+		layers keep the unboxed ground, 12px ink and highlight band. Logical
+		sizes must be reset too: v11 uses these rather than min-height/width.
+		Panel words retain the 32px target in panel.css. */
+	/* Native buttons centred short words and stepper symbols inside their
+			minimum target. Carbon's space-between would shift them left. */
+	button.cds--btn { min-block-size: 0; min-inline-size: 0; justify-content: center; text-align: center; letter-spacing: inherit; color: inherit; background: transparent; }
+	button.cds--btn:focus { box-shadow: none; }
+	button.cds--btn svg { fill: currentColor; }
+	input.cds--text-input { letter-spacing: inherit; }
 
 	/* No focus box: nothing else in this interface is boxed. A button the
 		keyboard has reached, in the title line, the outline, the help or the
