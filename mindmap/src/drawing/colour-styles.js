@@ -1,5 +1,5 @@
 /* Legacy compatibility only: how a pre-v3 map's nodes take its theme's colours.
-	Imported colours delegates here; new schemes never use these selectors.
+	Historical selectors; current schemes do not use these.
 
 	How a map's nodes take the colours of its theme, chosen for the whole map
 	at the master's word (2026-11-12, 22:35): every node at one depth in one

@@ -39,7 +39,7 @@ export class BrowserStore {
 		if( kept === null ) return null
 		try {
 			const values = JSON.parse( kept )
-			return values?.colourScheme ? MapStyle.from( values ) : MapStyle.legacy( values )
+			return values?.colourScheme ? MapStyle.from( values, this.appearance() ?? "dark" ) : MapStyle.legacy( values, undefined, this.appearance() ?? "dark" )
 		} catch {
 			return null
 		}

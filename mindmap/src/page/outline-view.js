@@ -171,7 +171,7 @@ export class OutlineView {
 		const document = this.rows.ownerDocument
 		const button = document.createElement( "button" )
 		button.type = "button"
-		button.className = "outline-fold"
+		button.className = "outline-fold cds--btn cds--btn--ghost cds--btn--sm"
 		button.setAttribute( "aria-label", this.say( topic.folded ? "openBranch" : "foldBranch" ) )
 		const svg = document.createElementNS( SVG, "svg" ), path = document.createElementNS( SVG, "path" )
 		svg.setAttribute( "viewBox", "0 0 16 16" )

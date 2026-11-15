@@ -106,9 +106,6 @@ export class Panel {
 		this.wireSteppers()
 		this.wireLine()
 		for( const button of this.all( "[data-uniform]" ) ){
-			const preset = UNIFORM_PRESETS[ Number( button.dataset.uniform ) ]
-			button.style.setProperty( "--preset-fill", preset.fill )
-			button.style.setProperty( "--preset-canvas", preset.canvas )
 			button.addEventListener( "click", () => this.actions.uniform( Number( button.dataset.uniform ) ) )
 		}
 	}
@@ -216,10 +213,12 @@ export class Panel {
 		this.schemeMode = scheme.mode
 		this.choose( "[data-map=colourScheme]", scheme.mode )
 		for( const controls of this.all( "[data-scheme-controls]" ) ) controls.classList.toggle( "hidden", controls.dataset.schemeControls !== scheme.mode )
-		this.element( "imported-colours" ).classList.toggle( "hidden", scheme.mode !== "imported" )
 		for( const button of this.all( "[data-uniform]" ) ){
 			const preset = UNIFORM_PRESETS[ Number( button.dataset.uniform ) ]
-			const active = scheme.mode === "uniform" && scheme.fill === preset.fill && look.background === preset.canvas
+			const fill = preset.fill ?? ( look.isLight ? "#000000" : "#ffffff" )
+			button.style.setProperty( "--preset-fill", fill )
+			button.style.setProperty( "--preset-canvas", look.background )
+			const active = scheme.mode === "uniform" && ( preset.fill === null ? scheme.isDefaultUniform : scheme.fill === fill )
 			button.classList.toggle( "on", active )
 			button.setAttribute( "aria-pressed", String( active ) )
 		}
@@ -293,6 +292,11 @@ export class Panel {
 	}
 
 	shows( slider ){
+		/* Native value sanitisation owns the bounds and step. Both user input
+			and selection/file/undo sync come here; painting a Carbon thumb never
+			dispatches an event or edits the map. CSS accounts for thumb travel. */
+		const position = ( slider.valueAsNumber - Number( slider.min ) ) / ( Number( slider.max ) - Number( slider.min ) )
+		slider.parentElement.style.setProperty( "--mindmap-slider-position", String( position ) )
 		const readout = this.document.querySelector( `[data-shows="${ slider.id }"]` )
 		if( readout ) readout.textContent = slider.value
 	}

@@ -330,9 +330,7 @@ export class Editor {
 		this.change( () => { this.map.lineForm = name } )
 	}
 
-	/* A new scheme replaces only generated colours. Materialise an imported
-		ground first: an old omitted Canvas must not turn into pure black/white
-		as a side effect of choosing a modern provider. */
+	/* A new scheme replaces only generated colours and keeps Canvas. */
 	changeColourScheme( mode ){
 		if( !COLOUR_SCHEMES.includes( mode ) || this.map.style.colourScheme.mode === mode ) return
 		const look = new Look( this.map ), canvas = look.background, fill = look.isLight ? "#000000" : "#ffffff"
@@ -344,8 +342,9 @@ export class Editor {
 	chooseUniform( index ){
 		const preset = UNIFORM_PRESETS[ index ]
 		if( !preset ) return
+		const fill = preset.fill ?? ( new Look( this.map ).isLight ? "#000000" : "#ffffff" )
 		this.change( () => {
-			this.map.style = this.map.style.withColourScheme( { mode: "uniform", fill: preset.fill } ).withCanvas( preset.canvas )
+			this.map.style = this.map.style.withColourScheme( { mode: "uniform", fill } )
 		} )
 	}
 
